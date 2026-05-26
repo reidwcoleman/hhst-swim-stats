@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="theme-color" content="#0b1d3a"/>
+<title>Admin — Highcroft Hurricanes</title>
+<meta name="robots" content="noindex,nofollow"/>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="assets/styles.css"/>
+
+<!-- Firebase compat SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="assets/firebase-init.js"></script>
+</head>
+<body>
+
+<!-- ============ LOGIN VIEW ============ -->
+<div id="loginView" class="login-wrap">
+  <div class="login-card">
+    <a class="brand" href="index.html" style="justify-content:center;color:var(--text)">
+      <span class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2 12c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/>
+          <path d="M2 17c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/>
+          <path d="M2 7c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/>
+        </svg>
+      </span>
+      Highcroft <em>Hurricanes</em><span class="admin-pill">Admin</span>
+    </a>
+    <h1>Coach Login</h1>
+    <p class="lead">Sign in to upload meet results and manage swimmers.</p>
+
+    <form id="loginForm" autocomplete="off">
+      <div class="field">
+        <label for="user">Email</label>
+        <input type="email" id="user" placeholder="admin@hhststats.com" required/>
+      </div>
+      <div class="field">
+        <label for="pass">Password</label>
+        <input type="password" id="pass" placeholder="••••••••••••" required/>
+      </div>
+      <div class="error-msg" id="loginErr"></div>
+      <button class="btn lg block" type="submit" id="loginBtn" style="margin-top:8px">
+        <span class="btn-label">Sign in</span>
+        <svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </button>
+    </form>
+
+    <p style="text-align:center;font-size:13px;color:var(--text-subtle);margin-top:20px">
+      <a href="index.html">← Back to public site</a>
+    </p>
+  </div>
+</div>
+
+<!-- ============ ADMIN DASHBOARD ============ -->
+<div id="adminView" style="display:none">
+
+  <div class="topbar">
+    <a class="brand" href="admin.html" style="color:#fff">
+      <span class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2 12c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/>
+          <path d="M2 17c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/>
+          <path d="M2 7c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/>
+        </svg>
+      </span>
+      Highcroft <em>Hurricanes</em><span class="admin-pill">Admin</span>
+    </a>
+    <div class="topbar-right">
+      <a href="index.html" class="btn-sm btn-site">View Site</a>
+      <button class="theme-toggle-sm" id="themeToggle" aria-label="Toggle theme">
+        <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+        <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+      <button class="btn-sm btn-logout" id="logoutBtn">Logout</button>
+    </div>
+  </div>
+
+  <main class="admin-shell">
+
+    <div class="admin-page-head">
+      <div>
+        <h1>Team Roster & Results</h1>
+        <p>Upload meet result CSVs, add swimmers, and review what families will see.</p>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn ghost" id="downloadSampleBtn">Download sample CSV</button>
+        <button class="btn danger" id="resetDataBtn">Reset all data</button>
+      </div>
+    </div>
+
+    <div class="kpi-row">
+      <div class="kpi"><div class="label">Swimmers</div><div class="value" id="kSwimmers">0</div><div class="delta" id="dSwimmers">In the roster</div></div>
+      <div class="kpi"><div class="label">Races Logged</div><div class="value" id="kRaces">0</div><div class="delta">Across all meets</div></div>
+      <div class="kpi"><div class="label">Meets</div><div class="value" id="kMeets">0</div><div class="delta">Distinct competitions</div></div>
+      <div class="kpi"><div class="label">Last Upload</div><div class="value" id="kLast">—</div><div class="delta" id="dLast">No CSV uploaded yet</div></div>
+    </div>
+
+    <!-- UPLOAD CARD -->
+    <div class="card">
+      <h2>Upload Meet Results</h2>
+      <p class="lead">
+        Drop a CSV (or Google Sheets → File → Download → CSV). Required columns: <code>name</code>, <code>event</code>, <code>time</code>, <code>meet</code>. Optional: <code>address</code>, <code>parent</code>, <code>date</code>, <code>distance</code>, <code>age</code>, <code>group</code>, <code>place</code>.
+      </p>
+
+      <label class="drop-zone" id="dropZone" for="csvFile">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <h3>Drag &amp; drop your CSV here</h3>
+        <p>or click to browse · CSV, Google Sheets export, or text/csv</p>
+        <input type="file" id="csvFile" accept=".csv,text/csv,text/plain"/>
+      </label>
+      <div class="upload-status" id="uploadStatus"></div>
+
+      <details style="margin-top:18px;color:var(--text-muted);font-size:13.5px">
+        <summary style="cursor:pointer;font-weight:600;color:var(--text)">CSV format example</summary>
+<pre style="background:var(--bg-alt);padding:14px;border-radius:10px;margin-top:12px;font-size:12.5px;overflow-x:auto;border:1px solid var(--border);color:var(--text)">name,address,parent,event,time,meet,date,age,group,place
+Riley Carter,415 Coastline Drive,Jordan Carter,50 Free,28.42,Spring Invitational,2026-03-14,11,Bronze,3
+Riley Carter,415 Coastline Drive,Jordan Carter,100 Free,1:02.18,Spring Invitational,2026-03-14,11,Bronze,5
+Riley Carter,415 Coastline Drive,Jordan Carter,50 Back,33.55,Hurricane Classic,2026-04-19,11,Bronze,2
+Mateo Rivera,82 Pine Ridge Lane,Sofia Rivera,50 Free,30.10,Spring Invitational,2026-03-14,10,Silver,7</pre>
+      </details>
+    </div>
+
+    <!-- MANUAL ADD CARD -->
+    <div class="card">
+      <h2>Add or Update Swimmer Manually</h2>
+      <p class="lead">Use this when you need to register a swimmer before their first meet, or fix an address/parent name.</p>
+      <form id="manualForm" autocomplete="off" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px">
+        <div class="field"><label>Full name *</label><input type="text" id="mName" required/></div>
+        <div class="field"><label>Address *</label><input type="text" id="mAddress" required/></div>
+        <div class="field"><label>Parent name *</label><input type="text" id="mParent" required/></div>
+        <div class="field"><label>Age</label><input type="text" id="mAge"/></div>
+        <div class="field"><label>Training group</label><input type="text" id="mGroup" placeholder="e.g. Bronze"/></div>
+        <div style="display:flex;align-items:flex-end">
+          <button type="submit" class="btn lg block">Save Swimmer</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- ROSTER TABLE -->
+    <div class="card">
+      <h2>Roster</h2>
+      <p class="lead">Click a swimmer to see what families see when they look them up.</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+        <input type="text" id="searchInput" placeholder="Search swimmers, parents, or addresses…" style="flex:1;min-width:240px;padding:12px 14px;border-radius:10px;background:var(--surface);color:var(--text);border:1px solid var(--border-strong);font-size:14px"/>
+      </div>
+      <div class="table-wrap" id="rosterWrap"></div>
+    </div>
+
+  </main>
+</div>
+
+<script src="assets/data.js"></script>
+<script>
+  HHST.initTheme();
+
+  // Theme toggles for both views
+  document.getElementById('themeToggle')?.addEventListener('click', HHST.toggleTheme);
+
+  const loginView = document.getElementById('loginView');
+  const adminView = document.getElementById('adminView');
+
+  function showAdmin(){
+    loginView.style.display = 'none';
+    adminView.style.display = 'block';
+    refreshAll();
+  }
+  function showLogin(){
+    loginView.style.display = 'flex';
+    adminView.style.display = 'none';
+  }
+
+  // React to Firebase Auth state (handles refresh / persisted session)
+  HHST.onAuthChanged(user => {
+    if(user) showAdmin(); else showLogin();
+  });
+
+  // LOGIN
+  const loginBtn = document.getElementById('loginBtn');
+  const loginLabel = loginBtn.querySelector('.btn-label');
+  document.getElementById('loginForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const u = document.getElementById('user').value.trim();
+    const p = document.getElementById('pass').value;
+    const err = document.getElementById('loginErr');
+    err.classList.remove('show');
+    loginBtn.disabled = true; loginLabel.textContent = 'Signing in…';
+    const result = await HHST.loginAdmin(u, p);
+    loginBtn.disabled = false; loginLabel.textContent = 'Sign in';
+    if(!result.ok){
+      err.textContent = result.reason;
+      err.classList.add('show');
+    }
+    // showAdmin() is called by onAuthChanged on success
+  });
+  document.getElementById('logoutBtn').addEventListener('click', async ()=>{
+    await HHST.logoutAdmin();
+    // showLogin() called by onAuthChanged
+  });
+
+  // ============ ADMIN ACTIONS ============
+  const dropZone = document.getElementById('dropZone');
+  const fileInput = document.getElementById('csvFile');
+  const uploadStatus = document.getElementById('uploadStatus');
+
+  ['dragenter','dragover'].forEach(ev => dropZone.addEventListener(ev, e=>{
+    e.preventDefault(); e.stopPropagation(); dropZone.classList.add('drag');
+  }));
+  ['dragleave','drop'].forEach(ev => dropZone.addEventListener(ev, e=>{
+    e.preventDefault(); e.stopPropagation(); dropZone.classList.remove('drag');
+  }));
+  dropZone.addEventListener('drop', e => {
+    const f = e.dataTransfer.files[0];
+    if(f) handleFile(f);
+  });
+  fileInput.addEventListener('change', e => {
+    const f = e.target.files[0];
+    if(f) handleFile(f);
+  });
+
+  function handleFile(f){
+    if(!f.name.toLowerCase().endsWith('.csv') && f.type && f.type.indexOf('csv')===-1 && f.type.indexOf('text')===-1){
+      setStatus('err', 'Please upload a CSV file (or a Google Sheets CSV export).');
+      return;
+    }
+    setStatus('ok', 'Uploading to Firestore…');
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try{
+        const result = await HHST.ingestCSV(reader.result);
+        const msg = `Imported ${result.added} race${result.added===1?'':'s'} across ${result.swimmers} swimmer${result.swimmers===1?'':'s'}` +
+                    (result.meets ? ` from ${result.meets} meet${result.meets===1?'':'s'}` : '') + '.';
+        if(result.errors.length){
+          setStatus('err', msg + ' ' + result.errors.length + ' rows skipped: ' + result.errors.slice(0,3).join('; '));
+        } else {
+          setStatus('ok', msg);
+        }
+        await refreshAll();
+      } catch(err){
+        console.error(err);
+        setStatus('err', 'Upload failed: ' + (err.message || err));
+      }
+    };
+    reader.onerror = () => setStatus('err', 'Could not read that file.');
+    reader.readAsText(f);
+  }
+  function setStatus(kind, msg){
+    uploadStatus.className = 'upload-status ' + kind;
+    uploadStatus.textContent = msg;
+  }
+
+  // MANUAL ADD
+  document.getElementById('manualForm').addEventListener('submit', async e=>{
+    e.preventDefault();
+    try{
+      await HHST.addSwimmerManual({
+        name: document.getElementById('mName').value,
+        address: document.getElementById('mAddress').value,
+        parent: document.getElementById('mParent').value,
+        age: document.getElementById('mAge').value,
+        group: document.getElementById('mGroup').value
+      });
+      e.target.reset();
+      await refreshAll();
+      setStatus('ok','Swimmer saved to the roster.');
+    } catch(err){
+      console.error(err);
+      setStatus('err','Could not save swimmer: ' + (err.message || err));
+    }
+  });
+
+  // RESET
+  document.getElementById('resetDataBtn').addEventListener('click', async ()=>{
+    if(!confirm('Delete all swimmers, parents, and meet results? This cannot be undone.')) return;
+    try{
+      await HHST.clearAll();
+      await refreshAll();
+      setStatus('ok','All data has been reset.');
+    } catch(err){
+      console.error(err);
+      setStatus('err','Reset failed: ' + (err.message || err));
+    }
+  });
+
+  // SAMPLE CSV
+  document.getElementById('downloadSampleBtn').addEventListener('click', ()=>{
+    const sample = `name,address,parent,event,time,meet,date,age,group,place
+Riley Carter,415 Coastline Drive,Jordan Carter,50 Free,28.42,Spring Invitational,2026-03-14,11,Bronze,3
+Riley Carter,415 Coastline Drive,Jordan Carter,100 Free,1:02.18,Spring Invitational,2026-03-14,11,Bronze,5
+Riley Carter,415 Coastline Drive,Jordan Carter,50 Back,33.55,Hurricane Classic,2026-04-19,11,Bronze,2
+Riley Carter,415 Coastline Drive,Jordan Carter,50 Free,27.91,Hurricane Classic,2026-04-19,11,Bronze,2
+Riley Carter,415 Coastline Drive,Jordan Carter,50 Free,27.55,League Championships,2026-05-17,11,Bronze,1
+Mateo Rivera,82 Pine Ridge Lane,Sofia Rivera,50 Free,30.10,Spring Invitational,2026-03-14,10,Silver,7
+Mateo Rivera,82 Pine Ridge Lane,Sofia Rivera,50 Breast,42.18,Spring Invitational,2026-03-14,10,Silver,4
+Mateo Rivera,82 Pine Ridge Lane,Sofia Rivera,50 Free,29.55,Hurricane Classic,2026-04-19,10,Silver,5
+Mateo Rivera,82 Pine Ridge Lane,Sofia Rivera,100 IM,1:18.42,Hurricane Classic,2026-04-19,10,Silver,3
+Ava Thompson,127 Lakeshore Court,Marcus Thompson,50 Fly,35.20,Spring Invitational,2026-03-14,12,Gold,2
+Ava Thompson,127 Lakeshore Court,Marcus Thompson,100 IM,1:14.30,Spring Invitational,2026-03-14,12,Gold,1
+Ava Thompson,127 Lakeshore Court,Marcus Thompson,50 Fly,34.55,Hurricane Classic,2026-04-19,12,Gold,1
+Ava Thompson,127 Lakeshore Court,Marcus Thompson,100 IM,1:13.50,League Championships,2026-05-17,12,Gold,1
+Noah Patel,9 Beacon Hill Road,Priya Patel,50 Back,37.80,Spring Invitational,2026-03-14,9,Bronze,8
+Noah Patel,9 Beacon Hill Road,Priya Patel,50 Free,32.15,Spring Invitational,2026-03-14,9,Bronze,9
+Noah Patel,9 Beacon Hill Road,Priya Patel,50 Back,36.45,Hurricane Classic,2026-04-19,9,Bronze,6
+Noah Patel,9 Beacon Hill Road,Priya Patel,50 Free,31.20,Hurricane Classic,2026-04-19,9,Bronze,7
+Lila Chen,308 Cypress Way,David Chen,200 Free,2:25.60,Spring Invitational,2026-03-14,13,Gold,3
+Lila Chen,308 Cypress Way,David Chen,100 Back,1:08.40,Spring Invitational,2026-03-14,13,Gold,2
+Lila Chen,308 Cypress Way,David Chen,200 Free,2:23.90,Hurricane Classic,2026-04-19,13,Gold,2
+Lila Chen,308 Cypress Way,David Chen,100 Back,1:07.10,Hurricane Classic,2026-04-19,13,Gold,1
+Lila Chen,308 Cypress Way,David Chen,200 Free,2:22.55,League Championships,2026-05-17,13,Gold,1
+`;
+    const blob = new Blob([sample], {type:'text/csv'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'hurricanes-sample.csv';
+    a.click();
+  });
+
+  // SEARCH BOX
+  let cachedData = { swimmers:{}, lastUpload:null };
+  document.getElementById('searchInput').addEventListener('input', e => renderRoster(e.target.value));
+
+  // KPI + roster refresh
+  async function refreshAll(){
+    try {
+      cachedData = await HHST.readAll();
+    } catch(err){
+      console.error(err);
+      setStatus('err','Could not load roster: ' + (err.message || err));
+      return;
+    }
+    const swimmers = Object.values(cachedData.swimmers);
+    const totalRaces = swimmers.reduce((sum, s)=> sum + (s.results||[]).length, 0);
+    const meets = new Set();
+    swimmers.forEach(s => (s.results||[]).forEach(r => meets.add(r.meet)));
+    document.getElementById('kSwimmers').textContent = swimmers.length;
+    document.getElementById('kRaces').textContent = totalRaces;
+    document.getElementById('kMeets').textContent = meets.size;
+    if(cachedData.lastUpload){
+      // Firestore Timestamp -> Date
+      const d = cachedData.lastUpload.toDate ? cachedData.lastUpload.toDate() : new Date(cachedData.lastUpload);
+      document.getElementById('kLast').textContent = d.toLocaleDateString(undefined,{month:'short',day:'numeric'});
+      document.getElementById('dLast').textContent = d.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'});
+    } else {
+      document.getElementById('kLast').textContent = '—';
+      document.getElementById('dLast').textContent = 'No CSV uploaded yet';
+    }
+    renderRoster(document.getElementById('searchInput').value);
+  }
+
+  function renderRoster(filter){
+    filter = (filter||'').trim().toLowerCase();
+    let swimmers = Object.values(cachedData.swimmers);
+    if(filter){
+      swimmers = swimmers.filter(s => {
+        const hay = (s.name + ' ' + (s.address||'') + ' ' + (s.parents||[]).join(' ') + ' ' + (s.group||'')).toLowerCase();
+        return hay.includes(filter);
+      });
+    }
+    swimmers.sort((a,b)=> a.name.localeCompare(b.name));
+
+    const wrap = document.getElementById('rosterWrap');
+    if(swimmers.length === 0){
+      wrap.innerHTML = `<div class="empty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        <div>No swimmers in the roster yet. Upload a CSV to get started.</div>
+      </div>`;
+      return;
+    }
+    wrap.innerHTML = `<table>
+      <thead><tr><th>Name</th><th>Age</th><th>Group</th><th>Parents</th><th>Address</th><th>Races</th><th></th></tr></thead>
+      <tbody>${swimmers.map(s=>`
+        <tr>
+          <td><strong>${escapeHtml(s.name)}</strong></td>
+          <td>${escapeHtml(s.age||'—')}</td>
+          <td>${escapeHtml(s.group||'—')}</td>
+          <td>${(s.parents||[]).map(escapeHtml).join(', ') || '—'}</td>
+          <td>${escapeHtml(s.address||'—')}</td>
+          <td>${(s.results||[]).length}</td>
+          <td class="row-actions">
+            <button onclick="window.open('dashboard.html?s=${encodeURIComponent(s.key)}','_blank')">View</button>
+            <button class="danger" data-del="${s.key}">Delete</button>
+          </td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+    wrap.querySelectorAll('button[data-del]').forEach(b => b.addEventListener('click', async ()=>{
+      if(!confirm(`Remove "${b.dataset.del.replace(/-/g,' ')}" and all their results?`)) return;
+      try {
+        await HHST.deleteSwimmer(b.dataset.del);
+        await refreshAll();
+      } catch(err){
+        console.error(err);
+        setStatus('err','Delete failed: ' + (err.message || err));
+      }
+    }));
+  }
+
+  function escapeHtml(s){
+    return (s||'').toString().replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+</script>
+
+</body>
+</html>
