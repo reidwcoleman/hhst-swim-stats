@@ -1281,17 +1281,13 @@ table tr:hover td{background:rgba(96,165,250,.05)}
 }
 
 @media (max-width:760px){
-  .nav-links a:not(.btn){display:none}
-  .hero{padding:64px 18px 80px}
-  section{padding:64px 18px}
-  .lookup-card{padding:24px 20px}
-  .admin-shell{padding:24px 18px 48px}
+  /* Let public-site nav stay accessible — wrap instead of hiding links.
+     A taller, two-row nav beats a hamburger we'd have to ship JS for. */
+  nav{flex-wrap:wrap;row-gap:6px}
+  .nav-links{flex-wrap:wrap;justify-content:flex-end}
   .swimmer-meta{font-size:13px}
-  .medal-row{grid-template-columns:repeat(2,1fr)}
-  .lb-grid{grid-template-columns:1fr}
   .rank-row{grid-template-columns:1fr;gap:8px;text-align:left}
   .rank-place{justify-content:flex-start}
-  .awards-host{grid-template-columns:1fr !important}
 }
 
 /* ============ PRINTABLE FASTEST FIVE AWARDS ============ */
@@ -1414,6 +1410,300 @@ table tr:hover td{background:rgba(96,165,250,.05)}
 
 /* Awards look the same in dark mode — they're cards meant to be printed,
    not blended into the page chrome. */
+
+/* ============ ADMIN HEAD ACTION BUTTONS ============ */
+.admin-head-actions{
+  display:flex;gap:10px;flex-wrap:wrap;
+}
+.admin-head-actions .btn{flex:0 1 auto}
+
+/* ============ AGE-GROUP HEADERS (admin roster sections) ============ */
+.age-group-h{
+  margin:24px 0 8px;font-family:'Fraunces',serif;font-weight:700;
+  font-size:1.15em;color:var(--text);letter-spacing:-.01em;
+}
+.age-group-h:first-of-type{margin-top:8px}
+.age-group-count{color:var(--text-subtle);font-weight:500;font-size:.85em}
+
+/* ============ MOBILE / TABLET RESPONSIVE ============
+   Breakpoints:
+     ≤1024 — tablet: keep desktop layout but tighten leaderboard grid
+     ≤768  — narrow tablet / large phone: stack hero buttons, condense nav, etc.
+     ≤480  — phone (iPhone SE 375 width target): single-column everything,
+             full-width buttons, smaller padding, larger tap targets.
+   The @media (hover:none) block at the bottom enforces 44pt tap minimums
+   on touch devices regardless of width.
+*/
+
+@media (max-width:1024px){
+  .lb-grid{grid-template-columns:1fr}
+  .best-times-rich{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+}
+
+@media (max-width:768px){
+  /* Layout containers */
+  .wrap{padding:0 18px}
+  nav{padding:14px 18px;gap:10px}
+  section{padding:64px 18px}
+  .hero{padding:64px 18px 80px}
+  .hero h1{font-size:clamp(32px,9vw,52px)}
+  .hero-sub{font-size:15.5px}
+
+  /* Nav */
+  .brand{font-size:18px;gap:10px}
+  .brand-mark{width:34px;height:34px}
+  .brand-mark svg{width:19px;height:19px}
+  .nav-links{gap:2px}
+  .nav-links a{padding:8px 10px;font-size:13.5px}
+  .nav-links a.btn{padding:9px 14px}
+  .theme-toggle{width:36px;height:36px}
+
+  /* Lookup */
+  .lookup-card{padding:24px 20px}
+  .lookup-card h2{font-size:22px}
+
+  /* Login */
+  .login-wrap{padding:18px}
+  .login-card{padding:32px 24px;max-width:none}
+  .login-card h1{font-size:24px}
+
+  /* Admin topbar */
+  .topbar{padding:11px 16px;flex-wrap:wrap;gap:10px}
+  .topbar .brand{font-size:17px}
+  .topbar-right{gap:6px;flex-wrap:wrap;justify-content:flex-end}
+  .btn-sm{padding:8px 12px;font-size:12.5px}
+  .btn-site{padding:8px 10px;font-size:12.5px}
+
+  /* Admin shell */
+  .admin-shell{padding:24px 16px 48px}
+  .admin-page-head{flex-direction:column;align-items:stretch;gap:14px}
+  .admin-page-head h1{font-size:28px}
+  .admin-head-actions{
+    display:grid;grid-template-columns:1fr 1fr;gap:8px;
+  }
+  .admin-head-actions .btn{width:100%;flex:1 1 auto}
+
+  /* KPI */
+  .kpi-row{grid-template-columns:1fr 1fr;gap:10px}
+  .kpi{padding:16px 18px}
+  .kpi .value{font-size:26px}
+
+  /* Cards */
+  .card{padding:22px 18px}
+  .card h2{font-size:20px}
+  .card .lead{font-size:13.5px}
+
+  /* Drop zone */
+  .drop-zone{padding:28px 16px}
+  .drop-zone h3{font-size:15px}
+  .drop-zone p{font-size:13px}
+
+  /* Steps */
+  .steps > li{padding:14px 14px;gap:12px}
+  .step-num{width:30px;height:30px;font-size:13px}
+  .step-body h3{font-size:14.5px}
+  .step-body p{font-size:13px}
+
+  /* Tables */
+  .table-wrap{margin:0 -18px;border-radius:0;border-left:none;border-right:none}
+  table th, table td{padding:10px 12px;font-size:13px}
+  .row-actions{flex-direction:column;gap:5px}
+  .row-actions button{padding:6px 10px;font-size:11.5px;width:100%}
+
+  /* Modal */
+  .modal-backdrop{padding:14px}
+  .modal-card{padding:24px 20px}
+
+  /* Dashboard hero */
+  .dash-hero{padding:34px 18px 28px}
+  .swimmer-id{gap:14px}
+  .avatar{width:62px;height:62px;font-size:24px;border-radius:14px}
+  .swimmer-meta{gap:8px}
+  .stat-grid{grid-template-columns:1fr 1fr;gap:10px}
+  .medal-row{grid-template-columns:repeat(2,1fr);gap:10px}
+  .medal{padding:14px 10px 12px}
+  .medal-count{font-size:24px}
+
+  /* Leaderboards */
+  .leaderboard-hero{padding:34px 18px 30px}
+  .lb-team-row{gap:18px}
+  .lb-filters{padding:18px 16px}
+  .lb-filter-grid{grid-template-columns:1fr;gap:14px}
+  .seg{padding:3px;gap:4px;flex-wrap:wrap;width:100%}
+  .seg button{padding:9px 12px;font-size:13px;flex:0 1 auto}
+  .lb-card{padding:14px 14px 10px}
+  .lb-card-head h3{font-size:16px}
+  .lb-table{font-size:12.5px}
+  .lb-table th, .lb-table td{padding:7px 6px}
+  .lb-toc{gap:6px}
+  .lb-toc-pill{padding:8px 12px;font-size:12.5px}
+
+  /* Awards (printable cards still keep desktop size) */
+  .awards-host{grid-template-columns:1fr}
+}
+
+@media (max-width:480px){
+  /* Page chrome */
+  nav{padding:11px 14px;gap:6px}
+  .brand{font-size:16px;gap:8px}
+  .brand-mark{width:30px;height:30px}
+  .brand-mark svg{width:17px;height:17px}
+  /* On the public site at narrow widths, hide secondary nav links to leave
+     room for the Admin pill + theme toggle. nav-links wraps already, but
+     keeping the bar single-row is cleaner. */
+  .nav-links a:not(.btn){padding:6px 8px;font-size:13px}
+  .theme-toggle{width:34px;height:34px}
+
+  .wrap{padding:0 14px}
+  section{padding:48px 14px}
+  .hero{padding:48px 14px 60px}
+  .hero h1{font-size:34px;letter-spacing:-.03em}
+  .hero-sub{font-size:15px}
+  .kicker{font-size:10px;letter-spacing:.26em;padding:7px 13px}
+
+  /* Buttons — bump tap target */
+  .btn{padding:13px 20px;font-size:14.5px;min-height:46px}
+  .btn.lg{padding:14px 22px;font-size:15.5px;min-height:50px}
+
+  /* Lookup */
+  .lookup-card{padding:20px 16px}
+  .lookup-card h2{font-size:20px}
+  .field input, .field select{padding:13px 14px;font-size:16px}
+
+  /* Login */
+  .login-card{padding:26px 18px}
+  .login-card .brand{font-size:18px}
+  .login-card h1{font-size:22px}
+  .login-card .lead{font-size:13px}
+
+  /* Admin topbar */
+  .topbar{padding:10px 14px;gap:8px}
+  .topbar .brand{font-size:16px}
+  .topbar .brand .admin-pill{font-size:8.5px;padding:3px 7px;margin-left:4px}
+  .btn-sm{padding:9px 11px;font-size:12px}
+  .theme-toggle-sm{width:36px;height:36px}
+
+  /* Admin shell */
+  .admin-shell{padding:20px 14px 40px}
+  .admin-page-head h1{font-size:24px}
+  .admin-page-head p{font-size:13.5px}
+  .admin-head-actions{grid-template-columns:1fr;gap:8px}
+
+  /* KPI single col */
+  .kpi-row{grid-template-columns:1fr;gap:10px;margin-bottom:18px}
+  .kpi{padding:14px 16px}
+  .kpi .label{font-size:11px}
+  .kpi .value{font-size:24px}
+  .kpi .delta{font-size:11.5px}
+
+  /* Cards */
+  .card{padding:18px 14px;margin-bottom:18px;border-radius:14px}
+  .card h2{font-size:18px}
+
+  /* Drop zone — make CSV upload work well by touch */
+  .drop-zone{padding:24px 12px}
+  .drop-zone svg{width:36px;height:36px;margin-bottom:8px}
+  .drop-zone h3{font-size:14.5px}
+  .drop-zone p{font-size:12.5px}
+  .upload-status{font-size:13px;padding:10px 12px}
+
+  /* Steps */
+  .steps > li{padding:12px 12px;gap:10px}
+
+  /* Tables — let the inner table scroll horizontally, hide some columns
+     to keep the most important info visible on a 375 viewport. */
+  .table-wrap{margin:0 -14px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{font-size:12.5px;min-width:520px}
+  table th, table td{padding:9px 10px}
+  .row-actions{flex-direction:row;gap:4px;flex-wrap:wrap}
+  .row-actions button{padding:6px 8px;font-size:11px;width:auto}
+
+  /* Roster sections — let admin scan by bracket on small screens */
+  .age-group-h{margin:18px 0 6px;font-size:16px}
+  .age-group-count{font-size:12.5px;display:block;margin-top:2px}
+
+  /* Modal */
+  .modal-backdrop{padding:12px;align-items:flex-end}
+  .modal-card{padding:22px 18px;border-radius:18px 18px 14px 14px;width:100%}
+
+  /* Dashboard hero */
+  .dash-hero{padding:28px 14px 24px}
+  .swimmer-id{gap:12px}
+  .avatar{width:54px;height:54px;font-size:22px;border-radius:12px}
+  .swimmer-name{font-size:26px}
+  .swimmer-meta{font-size:13px;gap:6px}
+  .swimmer-meta .chip{font-size:11.5px;padding:3px 9px}
+  .stat-grid{grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px}
+  .stat-card{padding:14px 14px}
+  .stat-card .value{font-size:22px}
+  .stat-card .sub{font-size:11px}
+  .medal-row{grid-template-columns:1fr 1fr;gap:8px}
+  .medal-count{font-size:22px}
+  .medal-label{font-size:10.5px}
+  .chart-card{padding:18px 14px;margin-bottom:18px;border-radius:14px}
+  .chart-card h3{font-size:17px}
+  .chart-host{height:240px}
+  .tabs{gap:2px;margin-bottom:16px}
+  .tabs button{padding:10px 12px;font-size:13px}
+
+  /* Leaderboards */
+  .leaderboard-hero{padding:28px 14px 26px}
+  .leaderboard-hero h1{font-size:32px}
+  .lb-sub{font-size:14px}
+  .lb-team-row{gap:14px;margin-top:18px;padding-top:14px}
+  .lb-mini{min-width:auto}
+  .lb-mini-val{font-size:20px}
+  .lb-filters{padding:16px 14px;margin-bottom:18px}
+  .seg{flex-wrap:wrap}
+  .seg button{padding:9px 11px;font-size:12.5px;min-height:38px}
+  .lb-age-section{margin-bottom:26px}
+  .lb-age-head h2{font-size:22px}
+  .lb-card{padding:14px 12px 10px;border-radius:14px}
+  .lb-card-head{gap:8px;margin-bottom:10px;padding-bottom:8px}
+  .lb-card-head h3{font-size:15px}
+  .lb-stroke-tag{font-size:9.5px;padding:2px 7px}
+  .lb-table th, .lb-table td{padding:7px 5px;font-size:12px}
+  .lb-time{font-size:14px}
+  .lb-meet{font-size:11.5px}
+  .lb-meet small{font-size:10.5px}
+
+  /* Footer */
+  footer{padding:24px 14px;font-size:12.5px}
+  footer a{margin:0 5px}
+
+  /* Section heads */
+  .section-head{margin-bottom:36px}
+  .section-head h2{font-size:30px}
+  .section-head p{font-size:15px}
+  .feature{padding:22px 18px}
+  .feature h3{font-size:17px}
+}
+
+/* Touch devices: enforce 44pt minimum tap targets regardless of width.
+   Uses pointer:coarse so it doesn't affect desktop with mouse but applies
+   to touchscreens / tablets even at wider widths. */
+@media (hover:none) and (pointer:coarse){
+  .btn, .btn-sm, .row-actions button, .lb-toc-pill,
+  .seg button, .nav-links a, .theme-toggle, .theme-toggle-sm,
+  .award-print-one, .tabs button{
+    min-height:44px;
+  }
+  .btn, .btn-sm, .lb-toc-pill, .seg button{
+    min-width:44px;
+  }
+  /* Stop iOS Safari from zooming on input focus when font-size <16px */
+  .field input, .field select, input[type=email], input[type=password],
+  input[type=text], input[type=search], input[type=number], textarea, select{
+    font-size:16px;
+  }
+}
+
+/* Long-name protection: roster table cells never burst past the row */
+table td, table th{word-break:break-word}
+.email-cell{max-width:200px;word-break:break-all}
+@media (max-width:480px){
+  .email-cell{max-width:140px}
+}
 
 /* ============ PRINT RULES ============ */
 @media print {
