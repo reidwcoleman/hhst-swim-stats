@@ -405,7 +405,7 @@
           touched = true;
         }
       }
-      // Auto-assigned bracket from numeric age (6 & Under / 7-8 / 9-10 / 11-12 / 13 & Up).
+      // Auto-assigned bracket from numeric age (6 & Under / 7-8 / 9-10 / 11-12 / 13-14 / 15-18).
       // Kept distinct from sw.ageGroup (Swimtopia raw label) so existing leaderboard
       // grouping stays intact while the new collections always have a clean bracket.
       const computedBracket = getAgeGroup(sw.age);
@@ -740,7 +740,7 @@
 
   // -------- Stats helpers --------
   // HHST age groups
-  const AGE_GROUP_ORDER = ['6 & Under','7-8','9-10','11-12','13 & Up','Unknown'];
+  const AGE_GROUP_ORDER = ['6 & Under','7-8','9-10','11-12','13-14','15-18','Unknown'];
   function getAgeGroup(age){
     const n = parseInt(age, 10);
     if(!isFinite(n) || n <= 0) return 'Unknown';
@@ -748,7 +748,8 @@
     if(n <= 8) return '7-8';
     if(n <= 10) return '9-10';
     if(n <= 12) return '11-12';
-    return '13 & Up';
+    if(n <= 14) return '13-14';
+    return '15-18';
   }
 
   // Stroke order for grouping / sorting
