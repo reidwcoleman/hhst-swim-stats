@@ -117,7 +117,7 @@
         <svg class="collapsible-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
       </summary>
       <div class="collapsible-body">
-      <p class="lead">Two CSVs flow into this site: a <strong>roster</strong> (who's on the team, with parent emails) and <strong>meet results</strong> (the times). The importer auto-detects Swimtopia's column names — including "Athlete Last Name / Athlete First Name" and the "Last, First" name format used in result reports.</p>
+      <p class="lead">Two files flow into this site: a <strong>roster</strong> (who's on the team, with parent emails) and <strong>meet results</strong> (the times). Drop them as <strong>CSV or Excel</strong> (<code>.xlsx</code> / <code>.xls</code>) — multiple at once is fine. The importer auto-detects Swimtopia's column names — including "Athlete Last Name / Athlete First Name" and the "Last, First" name format used in result reports.</p>
 
       <h3 class="sub-h">Roster export (do this first)</h3>
       <ol class="steps">
@@ -183,6 +183,9 @@
         </div>
         <ul>
           <li><strong>Upload the roster first, then meet results.</strong> That way the email/parent info is on file before times start landing.</li>
+          <li><strong>CSV and Excel both work</strong> — drop <code>.csv</code>, <code>.xlsx</code>, or <code>.xls</code> straight from Swimtopia. Excel workbooks with multiple sheets are merged.</li>
+          <li><strong>Drop multiple files at once.</strong> Whole season's worth of meets? Select them all — each is processed and the totals are aggregated.</li>
+          <li><strong>Times upload auto-cleans the roster.</strong> After importing meet times, any swimmer no longer on the roster is removed automatically (so old kids don't linger on leaderboards). Always re-upload the latest roster first if folks have left the team.</li>
           <li><strong>The importer understands Swimtopia's column names</strong> — <code>Athlete First Name</code>, <code>Athlete Last Name</code>, <code>Account Name</code>, <code>Parent 1 Email</code>, <code>Group Name</code>, <code>Date of Birth</code>, etc. No renaming needed.</li>
           <li><strong>Names in "Last, First" format are auto-flipped.</strong> "Carter, Riley" becomes "Riley Carter" automatically — Swimtopia's results reports use that format.</li>
           <li>Multiple email columns are all kept (e.g. <code>Parent 1 Email</code> + <code>Parent 2 Email</code>) — families can look up the swimmer using any of them.</li>
@@ -370,6 +373,57 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
   });
 
   // ============ ADMIN ACTIONS ============
+
+  // Decide whether a dropped/selected file looks importable. Accept anything
+  // ending in .csv / .xlsx / .xls, plus the matching MIME types for cases
+  // where the browser sets type but not extension cleanly.
+  function isSupportedImportFile(f){
+    const n = (f.name || '').toLowerCase();
+    if(n.endsWith('.csv') || n.endsWith('.xlsx') || n.endsWith('.xls')) return true;
+    const t = (f.type || '').toLowerCase();
+    return t.includes('csv') || t.includes('text/plain')
+        || t.includes('spreadsheetml') || t.includes('ms-excel') || t.includes('excel');
+  }
+
+  // Read a single file into the array-of-arrays shape that HHST.ingestRows expects.
+  async function readFileToRows(f){
+    const name = (f.name || '').toLowerCase();
+    if(name.endsWith('.xlsx') || name.endsWith('.xls')){
+      if(typeof XLSX === 'undefined'){
+        throw new Error('Excel reader (SheetJS) failed to load. Check your network and reload.');
+      }
+      const buf = await f.arrayBuffer();
+      const wb  = XLSX.read(buf, { type:'array' });
+      // Walk every sheet so a workbook with separate sheets for Times / Roster /
+      // Meet Summary still imports everything in one pass.
+      const collected = [];
+      let headerLen = 0;
+      wb.SheetNames.forEach((sheetName, idx) => {
+        const sheet = wb.Sheets[sheetName];
+        if(!sheet) return;
+        const raw = XLSX.utils.sheet_to_json(sheet, { header:1, defval:'', raw:false, blankrows:false });
+        const cleaned = raw
+          .map(row => (row || []).map(c => c == null ? '' : String(c).trim()))
+          .filter(r => r.length && r.some(x => x !== ''));
+        if(!cleaned.length) return;
+        if(!collected.length){
+          collected.push(...cleaned);
+          headerLen = cleaned[0].length;
+        } else {
+          // Skip the header on additional sheets if it looks identical
+          const sameHeader = cleaned[0].length === headerLen
+            && cleaned[0].every((v,i) => v === collected[0][i]);
+          const body = sameHeader ? cleaned.slice(1) : cleaned;
+          collected.push(...body);
+        }
+      });
+      return collected;
+    }
+    // CSV / text
+    const text = await f.text();
+    return HHST.parseCSV(text);
+  }
+
   function bindDropZone(zoneId, inputId, statusId, label){
     const zone = document.getElementById(zoneId);
     const input = document.getElementById(inputId);
@@ -379,49 +433,111 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
       statusEl.className = 'upload-status ' + kind;
       statusEl.textContent = msg;
     }
-    function handleFile(f){
-      if(!f.name.toLowerCase().endsWith('.csv') && f.type && f.type.indexOf('csv')===-1 && f.type.indexOf('text')===-1){
-        setStatus('err', 'Please upload a CSV file (or a Google Sheets CSV export).');
+
+    async function handleFiles(fileList){
+      const all = Array.from(fileList || []);
+      if(!all.length) return;
+      const supported = all.filter(isSupportedImportFile);
+      const rejected  = all.filter(f => !isSupportedImportFile(f));
+      if(!supported.length){
+        setStatus('err','Please upload CSV or Excel (.xlsx / .xls) files.');
         return;
       }
-      setStatus('ok', `Reading ${f.name} and saving to Firebase…`);
-      const reader = new FileReader();
-      reader.onload = async () => {
-        try{
-          const mode = label === 'roster' ? 'roster' : 'results';
-          const result = await HHST.ingestCSV(reader.result, { mode });
-          let msg;
-          if(label === 'roster'){
-            msg = `Saved ${result.swimmers} swimmer${result.swimmers===1?'':'s'} to Firebase`
-                + (result.profileUpdates ? ` (${result.profileUpdates} profile${result.profileUpdates===1?'':'s'} updated)` : '')
-                + (result.added ? `, plus ${result.added} race${result.added===1?'':'s'}` : '')
-                + '.';
-          } else {
-            msg = `Imported ${result.added} race${result.added===1?'':'s'} across ${result.swimmers} swimmer${result.swimmers===1?'':'s'}`
-                + (result.meets ? ` from ${result.meets} meet${result.meets===1?'':'s'}` : '')
-                + '.';
-          }
-          const skipped = result.skippedSwimmers || [];
-          if(skipped.length){
-            const preview = skipped.slice(0,5).join(', ');
-            const more = skipped.length > 5 ? `, +${skipped.length-5} more` : '';
-            msg += ` Skipped ${skipped.length} unknown swimmer${skipped.length===1?'':'s'} (${preview}${more}). Upload them in the Roster card first so their times can be saved.`;
-          }
-          if(result.errors.length){
-            setStatus('err', `${msg} ${result.errors.length} row${result.errors.length===1?'':'s'} also skipped: ${result.errors.slice(0,3).join('; ')}`);
-          } else if(skipped.length){
-            setStatus('err', msg);
-          } else {
-            setStatus('ok', msg);
-          }
-          await refreshAll();
+
+      const mode = label === 'roster' ? 'roster' : 'results';
+      const totals = {
+        added: 0,
+        racesPerFile: [],
+        swimmerKeysTouched: new Set(),
+        profileUpdates: 0,
+        meets: 0,
+        errors: [],
+        skippedSwimmers: new Set(),
+        filesOk: 0,
+        filesFailed: []
+      };
+
+      for(let i = 0; i < supported.length; i++){
+        const f = supported[i];
+        setStatus('ok', `Reading ${f.name} (${i+1}/${supported.length})…`);
+        try {
+          const rows = await readFileToRows(f);
+          const result = await HHST.ingestRows(rows, { mode });
+          totals.added         += result.added || 0;
+          totals.profileUpdates += result.profileUpdates || 0;
+          totals.meets         += result.meets || 0;
+          totals.racesPerFile.push({ name: f.name, added: result.added || 0 });
+          (result.errors || []).forEach(e => totals.errors.push(`${f.name}: ${e}`));
+          (result.skippedSwimmers || []).forEach(n => totals.skippedSwimmers.add(n));
+          // result.swimmers is # touched per-file — for an overall figure we
+          // re-read after all files have run, since the same swimmer may
+          // appear in several uploads.
+          totals.filesOk++;
         } catch(err){
           console.error(err);
-          setStatus('err', 'Upload failed: ' + (err.message || err));
+          totals.filesFailed.push({ name: f.name, reason: err.message || String(err) });
+          totals.errors.push(`${f.name}: ${err.message || err}`);
         }
-      };
-      reader.onerror = () => setStatus('err', 'Could not read that file.');
-      reader.readAsText(f);
+      }
+
+      // Auto-prune: any swimmer still in the DB after a times upload that
+      // isn't on the current roster gets deleted. Guarded inside the helper
+      // so it's a no-op when no roster has been uploaded yet.
+      let prunedNames = [];
+      if(mode === 'results'){
+        try {
+          setStatus('ok', `Cleaning up swimmers no longer on the roster…`);
+          const removedKeys = await HHST.pruneNonRosterSwimmers();
+          prunedNames = removedKeys || [];
+        } catch(err){
+          console.error('Prune failed', err);
+          totals.errors.push(`Cleanup of non-roster swimmers failed: ${err.message || err}`);
+        }
+      }
+
+      // Recompute totals from the live DB so "swimmers touched" reflects
+      // the post-prune state.
+      await refreshAll();
+      const touchedSwimmers = Object.values(cachedData.swimmers).filter(s =>
+        (s.results || []).length > 0
+      ).length;
+
+      // Build a human summary
+      const fileLine = `Processed ${totals.filesOk} of ${supported.length} file${supported.length===1?'':'s'}`
+        + (rejected.length ? ` (${rejected.length} skipped — wrong type)` : '')
+        + '.';
+      let body;
+      if(mode === 'roster'){
+        body = `Saved roster data`
+          + (totals.profileUpdates ? `; updated ${totals.profileUpdates} profile${totals.profileUpdates===1?'':'s'}` : '')
+          + (totals.added ? `; added ${totals.added} race${totals.added===1?'':'s'}` : '')
+          + '.';
+      } else {
+        body = `Added ${totals.added} race${totals.added===1?'':'s'} across ${touchedSwimmers} swimmer${touchedSwimmers===1?'':'s'}.`;
+        if(prunedNames.length){
+          body += ` Removed ${prunedNames.length} swimmer${prunedNames.length===1?'':'s'} no longer on the roster.`;
+        }
+      }
+      const skippedArr = Array.from(totals.skippedSwimmers);
+      if(skippedArr.length){
+        const preview = skippedArr.slice(0,5).join(', ');
+        const more = skippedArr.length > 5 ? `, +${skippedArr.length-5} more` : '';
+        body += ` Skipped ${skippedArr.length} unknown swimmer${skippedArr.length===1?'':'s'} (${preview}${more}) — upload them in the Roster card first.`;
+      }
+
+      let msg = `${fileLine} ${body}`;
+      if(totals.filesFailed.length){
+        msg += ` Failed: ${totals.filesFailed.map(x=>x.name).join(', ')}.`;
+      }
+      if(totals.errors.length){
+        const sample = totals.errors.slice(0,3).join('; ');
+        const more = totals.errors.length > 3 ? `, +${totals.errors.length-3} more` : '';
+        setStatus(totals.filesOk ? 'err' : 'err', `${msg} Issues: ${sample}${more}`);
+      } else if(skippedArr.length || totals.filesFailed.length){
+        setStatus('err', msg);
+      } else {
+        setStatus('ok', msg);
+      }
     }
 
     ['dragenter','dragover'].forEach(ev => zone.addEventListener(ev, e=>{
@@ -430,8 +546,16 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
     ['dragleave','drop'].forEach(ev => zone.addEventListener(ev, e=>{
       e.preventDefault(); e.stopPropagation(); zone.classList.remove('drag');
     }));
-    zone.addEventListener('drop', e => { const f = e.dataTransfer.files[0]; if(f) handleFile(f); });
-    input.addEventListener('change', e => { const f = e.target.files[0]; if(f) handleFile(f); });
+    zone.addEventListener('drop', e => {
+      const files = e.dataTransfer && e.dataTransfer.files;
+      if(files && files.length) handleFiles(files);
+    });
+    input.addEventListener('change', e => {
+      const files = e.target.files;
+      if(files && files.length) handleFiles(files);
+      // Allow re-selecting the same file(s) again
+      e.target.value = '';
+    });
 
     return { setStatus };
   }
@@ -589,24 +713,42 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
       return;
     }
     const buckets = HHST.groupByBracket(swimmers);
-    function rowsFor(list){
+    function bracketPillClass(g){
+      // Map bracket to a stable modifier so each section has its own accent
+      const slug = (g||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+      return `bracket-pill bracket-${slug}`;
+    }
+    function rowsFor(list, bracket){
       return list.map(s=>{
         const emails = (s.emails||[]).filter(Boolean);
-        const emailCell = emails.length
-          ? emails.slice(0,2).map(escapeHtml).join('<br>') + (emails.length > 2 ? `<br><span class="email-more">+${emails.length-2} more</span>` : '')
+        const primaryEmail = emails[0] || '';
+        const moreEmails = emails.length > 1 ? `<span class="email-more">+${emails.length-1}</span>` : '';
+        const emailCell = primaryEmail
+          ? `<span class="email-primary" title="${escapeHtml(emails.join(', '))}">${escapeHtml(primaryEmail)}</span>${moreEmails}`
           : '<span class="addr-missing">Add email</span>';
+        const parentsCell = (s.parents||[]).length
+          ? `<span class="parents-cell" title="${escapeHtml((s.parents||[]).join(', '))}">${escapeHtml((s.parents||[])[0])}${s.parents.length>1 ? ` <span class="email-more">+${s.parents.length-1}</span>` : ''}</span>`
+          : '<span class="addr-missing">—</span>';
+        const trainingGroup = s.group
+          ? `<span class="training-chip" title="Training group">${escapeHtml(s.group)}</span>`
+          : '';
         return `
         <tr>
-          <td><strong>${escapeHtml(s.name)}</strong></td>
-          <td>${escapeHtml(s.age||'—')}</td>
-          <td>${escapeHtml(s.group||'—')}</td>
-          <td>${(s.parents||[]).map(escapeHtml).join(', ') || '—'}</td>
-          <td class="email-cell">${emailCell}</td>
-          <td>${(s.results||[]).length}</td>
-          <td class="row-actions">
-            <button data-edit="${s.key}">Edit</button>
-            <button onclick="window.open('dashboard.html?s=${encodeURIComponent(s.key)}','_blank')">View</button>
-            <button class="danger" data-del="${s.key}">Delete</button>
+          <td class="cell-name">
+            <div class="swimmer-name-cell">
+              <strong>${escapeHtml(s.name)}</strong>
+              ${trainingGroup}
+            </div>
+          </td>
+          <td class="cell-age">${escapeHtml(s.age||'—')}</td>
+          <td class="cell-bracket"><span class="${bracketPillClass(bracket)}">${escapeHtml(bracket)}</span></td>
+          <td class="cell-parents">${parentsCell}</td>
+          <td class="cell-email">${emailCell}</td>
+          <td class="cell-races"><span class="race-count">${(s.results||[]).length}</span></td>
+          <td class="row-actions cell-actions">
+            <button data-edit="${s.key}" title="Edit swimmer">Edit</button>
+            <button onclick="window.open('dashboard.html?s=${encodeURIComponent(s.key)}','_blank')" title="Open dashboard">View</button>
+            <button class="danger" data-del="${s.key}" title="Delete swimmer">Delete</button>
           </td>
         </tr>`;
       }).join('');
@@ -615,12 +757,13 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
       const list = buckets[g];
       return `
         <h3 class="age-group-h">
-          ${escapeHtml(g)} <span class="age-group-count">— ${list.length} swimmer${list.length===1?'':'s'}</span>
+          <span class="${bracketPillClass(g)} bracket-pill-lg">${escapeHtml(g)}</span>
+          <span class="age-group-count">${list.length} swimmer${list.length===1?'':'s'}</span>
         </h3>
         <div class="table-wrap">
         <table class="roster-table">
-          <thead><tr><th>Name</th><th>Age</th><th>Group</th><th>Parents</th><th>Emails</th><th>Races</th><th></th></tr></thead>
-          <tbody>${rowsFor(list)}</tbody>
+          <thead><tr><th>Swimmer</th><th>Age</th><th>Age Group</th><th>Parent</th><th>Email</th><th class="th-races">Races</th><th></th></tr></thead>
+          <tbody>${rowsFor(list, g)}</tbody>
         </table>
         </div>`;
     }).join('');
