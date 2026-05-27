@@ -105,9 +105,10 @@
 
     <!-- SWIMTOPIA EXPORT GUIDE -->
     <div class="card">
-      <h2>Exporting Times from Swimtopia</h2>
-      <p class="lead">Follow these steps to download swimmer times from Swimtopia, then drop the CSV in the upload zone below. Every row is saved to Firebase, so families instantly see the new times on the public site.</p>
+      <h2>Importing from Swimtopia</h2>
+      <p class="lead">Two CSVs flow into this site: a <strong>roster</strong> (who's on the team, with parent emails) and <strong>meet results</strong> (the times). The importer auto-detects Swimtopia's column names — including "Athlete Last Name / Athlete First Name" and the "Last, First" name format used in result reports.</p>
 
+      <h3 class="sub-h">Roster export (do this first)</h3>
       <ol class="steps">
         <li>
           <span class="step-num">1</span>
@@ -119,36 +120,47 @@
         <li>
           <span class="step-num">2</span>
           <div class="step-body">
-            <h3>Open the team site → Meets</h3>
-            <p>From your team dashboard, click <strong>Meets</strong> in the side navigation. You'll see every meet your team has competed in.</p>
+            <h3>Open Athletes → Export</h3>
+            <p>From the team dashboard, go to <strong>People → Athletes</strong> (or <strong>Roster</strong>). Click the <strong>Export</strong> / <strong>Download</strong> button and pick <strong>CSV</strong>.</p>
           </div>
         </li>
         <li>
           <span class="step-num">3</span>
           <div class="step-body">
-            <h3>Pick the meet you want to import</h3>
-            <p>Click the meet name. If results have been finalized in Meet Maestro, you'll see the <strong>Results</strong> tab become available.</p>
+            <h3>Include parent contact columns</h3>
+            <p>Make sure the export includes <code>Athlete First Name</code>, <code>Athlete Last Name</code>, <code>Group</code>, <code>Date of Birth</code>, <code>Account Name</code> (parent), and at least one email column (<code>Parent 1 Email</code> / <code>Account Email</code>). These power the family lookup.</p>
           </div>
         </li>
         <li>
           <span class="step-num">4</span>
           <div class="step-body">
-            <h3>Open Results → Reports</h3>
-            <p>On the meet page, click <strong>Results</strong>, then <strong>Reports</strong>. Choose <strong>Individual Results</strong> (or <strong>Athlete Results</strong>) to get one row per swimmer per event.</p>
+            <h3>Drop it in the Roster zone below</h3>
+            <p>Use the <strong>Upload Roster</strong> card. Every swimmer, parent, group, and email is saved to Firebase. No times are added by this step.</p>
+          </div>
+        </li>
+      </ol>
+
+      <h3 class="sub-h">Meet results export (after each meet)</h3>
+      <ol class="steps">
+        <li>
+          <span class="step-num">1</span>
+          <div class="step-body">
+            <h3>Open the meet → Results → Reports</h3>
+            <p>On the meet page, click <strong>Results</strong>, then <strong>Reports</strong>. Choose <strong>Individual Results</strong> or <strong>Athlete Results</strong> (one row per swimmer per event).</p>
           </div>
         </li>
         <li>
-          <span class="step-num">5</span>
+          <span class="step-num">2</span>
           <div class="step-body">
             <h3>Export as CSV</h3>
-            <p>Click the <strong>Export</strong> button (or the download icon in the top right) and pick <strong>CSV (.csv)</strong>. Save the file somewhere you can find it — your Downloads folder is fine.</p>
+            <p>Click <strong>Export</strong> → <strong>CSV (.csv)</strong>. Swimtopia results usually use the <code>Athlete</code> column in <em>"Last, First"</em> format — that's fine, the importer flips it for you.</p>
           </div>
         </li>
         <li>
-          <span class="step-num">6</span>
+          <span class="step-num">3</span>
           <div class="step-body">
-            <h3>Drop it in the upload zone below</h3>
-            <p>Drag the CSV into the dashed box below, or click to browse. Times will be merged into matching swimmers and saved to Firebase automatically.</p>
+            <h3>Drop it in the Meet Results zone below</h3>
+            <p>Times merge into the roster you already uploaded. Matching swimmers gain new races; nothing is overwritten.</p>
           </div>
         </li>
       </ol>
@@ -159,49 +171,77 @@
           <h4>Tips for the cleanest import</h4>
         </div>
         <ul>
-          <li><strong>Keep swimmer names consistent</strong> across meets. "Riley Carter" and "riley carter" will merge, but "Riley J. Carter" creates a separate swimmer.</li>
-          <li><strong>Include at least <code>name</code>, <code>event</code>, <code>time</code>, <code>meet</code>, and <code>date</code></strong>. <code>age</code>, <code>group</code>, and <code>place</code> are optional and just make the family dashboard richer.</li>
-          <li>If Swimtopia exports <code>first name</code> and <code>last name</code> as separate columns, that's fine — they're auto-combined.</li>
-          <li>Times can be <code>SS.HH</code> (<code>28.42</code>) or <code>M:SS.HH</code> (<code>1:02.18</code>). Both work — the seconds format is also stored for ranking.</li>
-          <li><strong>Swimtopia exports don't include home addresses.</strong> After uploading, click <strong>Edit</strong> next to each swimmer below to add their address so families can look them up.</li>
-          <li>Re-uploading the same meet is safe. Matching swimmers merge; new races append.</li>
-          <li>Use the <strong>Download sample CSV</strong> button above to see the exact column layout the importer is happiest with.</li>
+          <li><strong>Upload the roster first, then meet results.</strong> That way the email/parent info is on file before times start landing.</li>
+          <li><strong>The importer understands Swimtopia's column names</strong> — <code>Athlete First Name</code>, <code>Athlete Last Name</code>, <code>Account Name</code>, <code>Parent 1 Email</code>, <code>Group Name</code>, <code>Date of Birth</code>, etc. No renaming needed.</li>
+          <li><strong>Names in "Last, First" format are auto-flipped.</strong> "Carter, Riley" becomes "Riley Carter" automatically — Swimtopia's results reports use that format.</li>
+          <li>Multiple email columns are all kept (e.g. <code>Parent 1 Email</code> + <code>Parent 2 Email</code>) — families can look up the swimmer using any of them.</li>
+          <li>Keep swimmer names consistent across meets so results stack on one swimmer card.</li>
+          <li>Times can be <code>SS.HH</code> (<code>28.42</code>) or <code>M:SS.HH</code> (<code>1:02.18</code>). Both formats work.</li>
+          <li>Re-uploading the same file is safe — matching rows merge, new ones append.</li>
         </ul>
       </div>
     </div>
 
-    <!-- UPLOAD CARD -->
+    <!-- ROSTER UPLOAD CARD -->
+    <div class="card">
+      <h2>Upload Roster</h2>
+      <p class="lead">
+        Drop your Swimtopia <strong>roster export</strong> here. Recognized columns include
+        <code>Athlete First Name</code>, <code>Athlete Last Name</code>,
+        <code>Parent 1 Email</code> / <code>Account Email</code>,
+        <code>Account Name</code> (parent), <code>Group Name</code>, and <code>Date of Birth</code> (used to compute age).
+        No times are required.
+      </p>
+
+      <label class="drop-zone" id="rosterDrop" for="rosterFile">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <h3>Drag &amp; drop your roster CSV here</h3>
+        <p>or click to browse · Swimtopia roster export</p>
+        <input type="file" id="rosterFile" accept=".csv,text/csv,text/plain"/>
+      </label>
+      <div class="upload-status" id="rosterStatus"></div>
+
+      <details style="margin-top:18px;color:var(--text-muted);font-size:13.5px">
+        <summary style="cursor:pointer;font-weight:600;color:var(--text)">Roster CSV columns the importer recognizes</summary>
+<pre style="background:var(--bg-alt);padding:14px;border-radius:10px;margin-top:12px;font-size:12.5px;overflow-x:auto;border:1px solid var(--border);color:var(--text)">Athlete First Name,Athlete Last Name,Date of Birth,Group Name,Account Name,Parent 1 Email,Parent 2 Email,Address
+Riley,Carter,2014-08-12,Bronze,Jordan Carter,jordan@example.com,morgan@example.com,415 Coastline Drive
+Mateo,Rivera,2015-02-04,Silver,Sofia Rivera,sofia@example.com,,82 Pine Ridge Lane
+Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore Court</pre>
+      </details>
+    </div>
+
+    <!-- MEET RESULTS UPLOAD CARD -->
     <div class="card">
       <h2>Upload Meet Results</h2>
       <p class="lead">
-        Drop the Swimtopia CSV here (or any Google Sheets → File → Download → CSV). Required columns: <code>name</code>, <code>event</code>, <code>time</code>, <code>meet</code>. Optional: <code>address</code>, <code>parent</code>, <code>date</code>, <code>distance</code>, <code>age</code>, <code>group</code>, <code>place</code>.
+        Drop the Swimtopia <strong>meet results CSV</strong> here. Required: <code>Athlete</code> (or <code>Athlete First Name</code> + <code>Athlete Last Name</code>), <code>Event</code>, <code>Time</code>, <code>Meet</code>. Optional: <code>Date</code>, <code>Place</code>, <code>Age</code>, <code>Group</code>. Names in <em>"Last, First"</em> format are flipped automatically.
       </p>
 
       <label class="drop-zone" id="dropZone" for="csvFile">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        <h3>Drag &amp; drop your CSV here</h3>
-        <p>or click to browse · CSV, Google Sheets export, or text/csv</p>
+        <h3>Drag &amp; drop your results CSV here</h3>
+        <p>or click to browse · Swimtopia individual / athlete results export</p>
         <input type="file" id="csvFile" accept=".csv,text/csv,text/plain"/>
       </label>
       <div class="upload-status" id="uploadStatus"></div>
 
       <details style="margin-top:18px;color:var(--text-muted);font-size:13.5px">
-        <summary style="cursor:pointer;font-weight:600;color:var(--text)">CSV format example</summary>
-<pre style="background:var(--bg-alt);padding:14px;border-radius:10px;margin-top:12px;font-size:12.5px;overflow-x:auto;border:1px solid var(--border);color:var(--text)">name,address,parent,event,time,meet,date,age,group,place
-Riley Carter,415 Coastline Drive,Jordan Carter,50 Free,28.42,Spring Invitational,2026-03-14,11,Bronze,3
-Riley Carter,415 Coastline Drive,Jordan Carter,100 Free,1:02.18,Spring Invitational,2026-03-14,11,Bronze,5
-Riley Carter,415 Coastline Drive,Jordan Carter,50 Back,33.55,Hurricane Classic,2026-04-19,11,Bronze,2
-Mateo Rivera,82 Pine Ridge Lane,Sofia Rivera,50 Free,30.10,Spring Invitational,2026-03-14,10,Silver,7</pre>
+        <summary style="cursor:pointer;font-weight:600;color:var(--text)">Results CSV format example</summary>
+<pre style="background:var(--bg-alt);padding:14px;border-radius:10px;margin-top:12px;font-size:12.5px;overflow-x:auto;border:1px solid var(--border);color:var(--text)">Athlete,Event,Time,Meet,Date,Age,Group,Place
+"Carter, Riley",50 Free,28.42,Spring Invitational,2026-03-14,11,Bronze,3
+"Carter, Riley",100 Free,1:02.18,Spring Invitational,2026-03-14,11,Bronze,5
+"Rivera, Mateo",50 Free,30.10,Spring Invitational,2026-03-14,10,Silver,7
+"Thompson, Ava",50 Fly,35.20,Spring Invitational,2026-03-14,12,Gold,2</pre>
       </details>
     </div>
 
     <!-- MANUAL ADD CARD -->
     <div class="card">
       <h2>Add or Update Swimmer Manually</h2>
-      <p class="lead">Use this when you need to register a swimmer before their first meet, or fix an address/parent name.</p>
+      <p class="lead">Use this when you need to register a swimmer before their first meet, or fix a parent name / email. "Last, First" names are auto-flipped.</p>
       <form id="manualForm" autocomplete="off" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px">
-        <div class="field"><label>Full name *</label><input type="text" id="mName" required/></div>
-        <div class="field"><label>Address *</label><input type="text" id="mAddress" required/></div>
+        <div class="field"><label>Full name *</label><input type="text" id="mName" placeholder="Riley Carter or Carter, Riley" required/></div>
+        <div class="field"><label>Email *</label><input type="email" id="mEmail" placeholder="parent@example.com" required/></div>
         <div class="field"><label>Parent name *</label><input type="text" id="mParent" required/></div>
         <div class="field"><label>Age</label><input type="text" id="mAge"/></div>
         <div class="field"><label>Training group</label><input type="text" id="mGroup" placeholder="e.g. Bronze"/></div>
@@ -214,9 +254,9 @@ Mateo Rivera,82 Pine Ridge Lane,Sofia Rivera,50 Free,30.10,Spring Invitational,2
     <!-- ROSTER TABLE -->
     <div class="card">
       <h2>Roster</h2>
-      <p class="lead">Click <strong>Edit</strong> next to any swimmer to add or update their home address — Swimtopia exports don't include addresses, so this is how families' lookups stay accurate.</p>
+      <p class="lead">Click <strong>Edit</strong> next to any swimmer to manage their emails, parents, age, or group. Families look up their swimmer using the swimmer's name + an email on this list.</p>
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">
-        <input type="text" id="searchInput" placeholder="Search swimmers, parents, or addresses…" style="flex:1;min-width:240px;padding:12px 14px;border-radius:10px;background:var(--surface);color:var(--text);border:1px solid var(--border-strong);font-size:14px"/>
+        <input type="text" id="searchInput" placeholder="Search by name, parent, email, or group…" style="flex:1;min-width:240px;padding:12px 14px;border-radius:10px;background:var(--surface);color:var(--text);border:1px solid var(--border-strong);font-size:14px"/>
       </div>
       <div class="table-wrap" id="rosterWrap"></div>
     </div>
@@ -232,18 +272,23 @@ Mateo Rivera,82 Pine Ridge Lane,Sofia Rivera,50 Free,30.10,Spring Invitational,2
     <p class="lead" id="editSwimmerName" style="margin-bottom:18px">—</p>
     <form id="editForm" autocomplete="off">
       <div class="field">
-        <label for="eAddress">Home address</label>
-        <input type="text" id="eAddress" placeholder="123 Coastline Drive"/>
+        <label>Emails on file</label>
+        <div class="chip-list" id="eEmailChips" aria-live="polite"></div>
+        <div class="chip-add">
+          <input type="email" id="eEmailInput" placeholder="parent@example.com — Enter or Add"/>
+          <button type="button" class="btn ghost btn-sm-inline" id="eEmailAdd">Add</button>
+        </div>
+        <p class="field-hint">Families look up their swimmer with the swimmer's name + any one of these emails.</p>
       </div>
 
       <div class="field">
         <label>Parents / Guardians</label>
         <div class="chip-list" id="eParentChips" aria-live="polite"></div>
         <div class="chip-add">
-          <input type="text" id="eParentInput" placeholder="Type a name and press Enter or Add"/>
+          <input type="text" id="eParentInput" placeholder="Type a name — Enter or Add"/>
           <button type="button" class="btn ghost btn-sm-inline" id="eParentAdd">Add</button>
         </div>
-        <p class="field-hint">Add as many as you need. Families can use any one of these names to verify their swimmer.</p>
+        <p class="field-hint">Add as many as you need. Any one of these names will verify a family.</p>
       </div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
@@ -313,55 +358,67 @@ Mateo Rivera,82 Pine Ridge Lane,Sofia Rivera,50 Free,30.10,Spring Invitational,2
   });
 
   // ============ ADMIN ACTIONS ============
-  const dropZone = document.getElementById('dropZone');
-  const fileInput = document.getElementById('csvFile');
-  const uploadStatus = document.getElementById('uploadStatus');
+  function bindDropZone(zoneId, inputId, statusId, label){
+    const zone = document.getElementById(zoneId);
+    const input = document.getElementById(inputId);
+    const statusEl = document.getElementById(statusId);
 
-  ['dragenter','dragover'].forEach(ev => dropZone.addEventListener(ev, e=>{
-    e.preventDefault(); e.stopPropagation(); dropZone.classList.add('drag');
-  }));
-  ['dragleave','drop'].forEach(ev => dropZone.addEventListener(ev, e=>{
-    e.preventDefault(); e.stopPropagation(); dropZone.classList.remove('drag');
-  }));
-  dropZone.addEventListener('drop', e => {
-    const f = e.dataTransfer.files[0];
-    if(f) handleFile(f);
-  });
-  fileInput.addEventListener('change', e => {
-    const f = e.target.files[0];
-    if(f) handleFile(f);
-  });
-
-  function handleFile(f){
-    if(!f.name.toLowerCase().endsWith('.csv') && f.type && f.type.indexOf('csv')===-1 && f.type.indexOf('text')===-1){
-      setStatus('err', 'Please upload a CSV file (or a Google Sheets CSV export).');
-      return;
+    function setStatus(kind, msg){
+      statusEl.className = 'upload-status ' + kind;
+      statusEl.textContent = msg;
     }
-    setStatus('ok', 'Uploading to Firestore…');
-    const reader = new FileReader();
-    reader.onload = async () => {
-      try{
-        const result = await HHST.ingestCSV(reader.result);
-        const msg = `Imported ${result.added} race${result.added===1?'':'s'} across ${result.swimmers} swimmer${result.swimmers===1?'':'s'}` +
-                    (result.meets ? ` from ${result.meets} meet${result.meets===1?'':'s'}` : '') + '.';
-        if(result.errors.length){
-          setStatus('err', msg + ' ' + result.errors.length + ' rows skipped: ' + result.errors.slice(0,3).join('; '));
-        } else {
-          setStatus('ok', msg);
-        }
-        await refreshAll();
-      } catch(err){
-        console.error(err);
-        setStatus('err', 'Upload failed: ' + (err.message || err));
+    function handleFile(f){
+      if(!f.name.toLowerCase().endsWith('.csv') && f.type && f.type.indexOf('csv')===-1 && f.type.indexOf('text')===-1){
+        setStatus('err', 'Please upload a CSV file (or a Google Sheets CSV export).');
+        return;
       }
-    };
-    reader.onerror = () => setStatus('err', 'Could not read that file.');
-    reader.readAsText(f);
+      setStatus('ok', `Reading ${f.name} and saving to Firebase…`);
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try{
+          const result = await HHST.ingestCSV(reader.result);
+          let msg;
+          if(label === 'roster'){
+            msg = `Saved ${result.swimmers} swimmer${result.swimmers===1?'':'s'} to Firebase`
+                + (result.profileUpdates ? ` (${result.profileUpdates} profile${result.profileUpdates===1?'':'s'} updated)` : '')
+                + (result.added ? `, plus ${result.added} race${result.added===1?'':'s'}` : '')
+                + '.';
+          } else {
+            msg = `Imported ${result.added} race${result.added===1?'':'s'} across ${result.swimmers} swimmer${result.swimmers===1?'':'s'}`
+                + (result.meets ? ` from ${result.meets} meet${result.meets===1?'':'s'}` : '')
+                + '.';
+          }
+          if(result.errors.length){
+            setStatus('err', msg + ' ' + result.errors.length + ' rows skipped: ' + result.errors.slice(0,3).join('; '));
+          } else {
+            setStatus('ok', msg);
+          }
+          await refreshAll();
+        } catch(err){
+          console.error(err);
+          setStatus('err', 'Upload failed: ' + (err.message || err));
+        }
+      };
+      reader.onerror = () => setStatus('err', 'Could not read that file.');
+      reader.readAsText(f);
+    }
+
+    ['dragenter','dragover'].forEach(ev => zone.addEventListener(ev, e=>{
+      e.preventDefault(); e.stopPropagation(); zone.classList.add('drag');
+    }));
+    ['dragleave','drop'].forEach(ev => zone.addEventListener(ev, e=>{
+      e.preventDefault(); e.stopPropagation(); zone.classList.remove('drag');
+    }));
+    zone.addEventListener('drop', e => { const f = e.dataTransfer.files[0]; if(f) handleFile(f); });
+    input.addEventListener('change', e => { const f = e.target.files[0]; if(f) handleFile(f); });
+
+    return { setStatus };
   }
-  function setStatus(kind, msg){
-    uploadStatus.className = 'upload-status ' + kind;
-    uploadStatus.textContent = msg;
-  }
+
+  const rosterZone = bindDropZone('rosterDrop', 'rosterFile', 'rosterStatus', 'roster');
+  const meetZone   = bindDropZone('dropZone',   'csvFile',    'uploadStatus', 'meet');
+  // Single setStatus shim used by the manual form / reset / edit modal — write into meet card
+  function setStatus(kind, msg){ meetZone.setStatus(kind, msg); }
 
   // MANUAL ADD
   document.getElementById('manualForm').addEventListener('submit', async e=>{
@@ -369,14 +426,14 @@ Mateo Rivera,82 Pine Ridge Lane,Sofia Rivera,50 Free,30.10,Spring Invitational,2
     try{
       await HHST.addSwimmerManual({
         name: document.getElementById('mName').value,
-        address: document.getElementById('mAddress').value,
+        email: document.getElementById('mEmail').value,
         parent: document.getElementById('mParent').value,
         age: document.getElementById('mAge').value,
         group: document.getElementById('mGroup').value
       });
       e.target.reset();
       await refreshAll();
-      setStatus('ok','Swimmer saved to the roster.');
+      setStatus('ok','Swimmer saved to Firebase.');
     } catch(err){
       console.error(err);
       setStatus('err','Could not save swimmer: ' + (err.message || err));
@@ -398,29 +455,29 @@ Mateo Rivera,82 Pine Ridge Lane,Sofia Rivera,50 Free,30.10,Spring Invitational,2
 
   // SAMPLE CSV
   document.getElementById('downloadSampleBtn').addEventListener('click', ()=>{
-    const sample = `name,address,parent,event,time,meet,date,age,group,place
-Riley Carter,415 Coastline Drive,Jordan Carter,50 Free,28.42,Spring Invitational,2026-03-14,11,Bronze,3
-Riley Carter,415 Coastline Drive,Jordan Carter,100 Free,1:02.18,Spring Invitational,2026-03-14,11,Bronze,5
-Riley Carter,415 Coastline Drive,Jordan Carter,50 Back,33.55,Hurricane Classic,2026-04-19,11,Bronze,2
-Riley Carter,415 Coastline Drive,Jordan Carter,50 Free,27.91,Hurricane Classic,2026-04-19,11,Bronze,2
-Riley Carter,415 Coastline Drive,Jordan Carter,50 Free,27.55,League Championships,2026-05-17,11,Bronze,1
-Mateo Rivera,82 Pine Ridge Lane,Sofia Rivera,50 Free,30.10,Spring Invitational,2026-03-14,10,Silver,7
-Mateo Rivera,82 Pine Ridge Lane,Sofia Rivera,50 Breast,42.18,Spring Invitational,2026-03-14,10,Silver,4
-Mateo Rivera,82 Pine Ridge Lane,Sofia Rivera,50 Free,29.55,Hurricane Classic,2026-04-19,10,Silver,5
-Mateo Rivera,82 Pine Ridge Lane,Sofia Rivera,100 IM,1:18.42,Hurricane Classic,2026-04-19,10,Silver,3
-Ava Thompson,127 Lakeshore Court,Marcus Thompson,50 Fly,35.20,Spring Invitational,2026-03-14,12,Gold,2
-Ava Thompson,127 Lakeshore Court,Marcus Thompson,100 IM,1:14.30,Spring Invitational,2026-03-14,12,Gold,1
-Ava Thompson,127 Lakeshore Court,Marcus Thompson,50 Fly,34.55,Hurricane Classic,2026-04-19,12,Gold,1
-Ava Thompson,127 Lakeshore Court,Marcus Thompson,100 IM,1:13.50,League Championships,2026-05-17,12,Gold,1
-Noah Patel,9 Beacon Hill Road,Priya Patel,50 Back,37.80,Spring Invitational,2026-03-14,9,Bronze,8
-Noah Patel,9 Beacon Hill Road,Priya Patel,50 Free,32.15,Spring Invitational,2026-03-14,9,Bronze,9
-Noah Patel,9 Beacon Hill Road,Priya Patel,50 Back,36.45,Hurricane Classic,2026-04-19,9,Bronze,6
-Noah Patel,9 Beacon Hill Road,Priya Patel,50 Free,31.20,Hurricane Classic,2026-04-19,9,Bronze,7
-Lila Chen,308 Cypress Way,David Chen,200 Free,2:25.60,Spring Invitational,2026-03-14,13,Gold,3
-Lila Chen,308 Cypress Way,David Chen,100 Back,1:08.40,Spring Invitational,2026-03-14,13,Gold,2
-Lila Chen,308 Cypress Way,David Chen,200 Free,2:23.90,Hurricane Classic,2026-04-19,13,Gold,2
-Lila Chen,308 Cypress Way,David Chen,100 Back,1:07.10,Hurricane Classic,2026-04-19,13,Gold,1
-Lila Chen,308 Cypress Way,David Chen,200 Free,2:22.55,League Championships,2026-05-17,13,Gold,1
+    const sample = `Athlete,Account Name,Parent 1 Email,Event,Time,Meet,Date,Age,Group,Place
+"Carter, Riley",Jordan Carter,jordan@example.com,50 Free,28.42,Spring Invitational,2026-03-14,11,Bronze,3
+"Carter, Riley",Jordan Carter,jordan@example.com,100 Free,1:02.18,Spring Invitational,2026-03-14,11,Bronze,5
+"Carter, Riley",Jordan Carter,jordan@example.com,50 Back,33.55,Hurricane Classic,2026-04-19,11,Bronze,2
+"Carter, Riley",Jordan Carter,jordan@example.com,50 Free,27.91,Hurricane Classic,2026-04-19,11,Bronze,2
+"Carter, Riley",Jordan Carter,jordan@example.com,50 Free,27.55,League Championships,2026-05-17,11,Bronze,1
+"Rivera, Mateo",Sofia Rivera,sofia@example.com,50 Free,30.10,Spring Invitational,2026-03-14,10,Silver,7
+"Rivera, Mateo",Sofia Rivera,sofia@example.com,50 Breast,42.18,Spring Invitational,2026-03-14,10,Silver,4
+"Rivera, Mateo",Sofia Rivera,sofia@example.com,50 Free,29.55,Hurricane Classic,2026-04-19,10,Silver,5
+"Rivera, Mateo",Sofia Rivera,sofia@example.com,100 IM,1:18.42,Hurricane Classic,2026-04-19,10,Silver,3
+"Thompson, Ava",Marcus Thompson,marcus@example.com,50 Fly,35.20,Spring Invitational,2026-03-14,12,Gold,2
+"Thompson, Ava",Marcus Thompson,marcus@example.com,100 IM,1:14.30,Spring Invitational,2026-03-14,12,Gold,1
+"Thompson, Ava",Marcus Thompson,marcus@example.com,50 Fly,34.55,Hurricane Classic,2026-04-19,12,Gold,1
+"Thompson, Ava",Marcus Thompson,marcus@example.com,100 IM,1:13.50,League Championships,2026-05-17,12,Gold,1
+"Patel, Noah",Priya Patel,priya@example.com,50 Back,37.80,Spring Invitational,2026-03-14,9,Bronze,8
+"Patel, Noah",Priya Patel,priya@example.com,50 Free,32.15,Spring Invitational,2026-03-14,9,Bronze,9
+"Patel, Noah",Priya Patel,priya@example.com,50 Back,36.45,Hurricane Classic,2026-04-19,9,Bronze,6
+"Patel, Noah",Priya Patel,priya@example.com,50 Free,31.20,Hurricane Classic,2026-04-19,9,Bronze,7
+"Chen, Lila",David Chen,david@example.com,200 Free,2:25.60,Spring Invitational,2026-03-14,13,Gold,3
+"Chen, Lila",David Chen,david@example.com,100 Back,1:08.40,Spring Invitational,2026-03-14,13,Gold,2
+"Chen, Lila",David Chen,david@example.com,200 Free,2:23.90,Hurricane Classic,2026-04-19,13,Gold,2
+"Chen, Lila",David Chen,david@example.com,100 Back,1:07.10,Hurricane Classic,2026-04-19,13,Gold,1
+"Chen, Lila",David Chen,david@example.com,200 Free,2:22.55,League Championships,2026-05-17,13,Gold,1
 `;
     const blob = new Blob([sample], {type:'text/csv'});
     const a = document.createElement('a');
@@ -466,7 +523,13 @@ Lila Chen,308 Cypress Way,David Chen,200 Free,2:22.55,League Championships,2026-
     let swimmers = Object.values(cachedData.swimmers);
     if(filter){
       swimmers = swimmers.filter(s => {
-        const hay = (s.name + ' ' + (s.address||'') + ' ' + (s.parents||[]).join(' ') + ' ' + (s.group||'')).toLowerCase();
+        const hay = (
+          s.name + ' ' +
+          (s.address||'') + ' ' +
+          (s.emails||[]).join(' ') + ' ' +
+          (s.parents||[]).join(' ') + ' ' +
+          (s.group||'')
+        ).toLowerCase();
         return hay.includes(filter);
       });
     }
@@ -476,26 +539,32 @@ Lila Chen,308 Cypress Way,David Chen,200 Free,2:22.55,League Championships,2026-
     if(swimmers.length === 0){
       wrap.innerHTML = `<div class="empty">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-        <div>No swimmers in the roster yet. Upload a CSV to get started.</div>
+        <div>No swimmers in the roster yet. Upload a roster CSV to get started.</div>
       </div>`;
       return;
     }
     wrap.innerHTML = `<table>
-      <thead><tr><th>Name</th><th>Age</th><th>Group</th><th>Parents</th><th>Address</th><th>Races</th><th></th></tr></thead>
-      <tbody>${swimmers.map(s=>`
+      <thead><tr><th>Name</th><th>Age</th><th>Group</th><th>Parents</th><th>Emails</th><th>Races</th><th></th></tr></thead>
+      <tbody>${swimmers.map(s=>{
+        const emails = (s.emails||[]).filter(Boolean);
+        const emailCell = emails.length
+          ? emails.slice(0,2).map(escapeHtml).join('<br>') + (emails.length > 2 ? `<br><span class="email-more">+${emails.length-2} more</span>` : '')
+          : '<span class="addr-missing">Add email</span>';
+        return `
         <tr>
           <td><strong>${escapeHtml(s.name)}</strong></td>
           <td>${escapeHtml(s.age||'—')}</td>
           <td>${escapeHtml(s.group||'—')}</td>
           <td>${(s.parents||[]).map(escapeHtml).join(', ') || '—'}</td>
-          <td>${s.address ? escapeHtml(s.address) : '<span class="addr-missing">Add address</span>'}</td>
+          <td class="email-cell">${emailCell}</td>
           <td>${(s.results||[]).length}</td>
           <td class="row-actions">
             <button data-edit="${s.key}">Edit</button>
             <button onclick="window.open('dashboard.html?s=${encodeURIComponent(s.key)}','_blank')">View</button>
             <button class="danger" data-del="${s.key}">Delete</button>
           </td>
-        </tr>`).join('')}
+        </tr>`;
+      }).join('')}
       </tbody>
     </table>`;
     wrap.querySelectorAll('button[data-edit]').forEach(b => b.addEventListener('click', ()=>{
@@ -518,65 +587,84 @@ Lila Chen,308 Cypress Way,David Chen,200 Free,2:22.55,League Championships,2026-
   // ============ EDIT SWIMMER MODAL ============
   const editModal = document.getElementById('editModal');
   const editForm  = document.getElementById('editForm');
-  const parentChips = document.getElementById('eParentChips');
-  const parentInput = document.getElementById('eParentInput');
-  const parentAddBtn = document.getElementById('eParentAdd');
-  let editingKey = null;
-  let editingParents = []; // local list while modal is open
 
-  function renderParentChips(){
-    if(!editingParents.length){
-      parentChips.innerHTML = '<span class="chip-empty">No parents on file yet — add one below.</span>';
-      return;
+  // Helper that wires a chip list + add input pair. Returns getters for state.
+  function makeChipField({ listEl, inputEl, addBtn, validate, normalize, emptyMsg }){
+    let items = [];
+    function render(){
+      if(!items.length){
+        listEl.innerHTML = `<span class="chip-empty">${escapeHtml(emptyMsg)}</span>`;
+        return;
+      }
+      listEl.innerHTML = items.map((v, i) => `
+        <span class="chip">
+          <span class="chip-text">${escapeHtml(v)}</span>
+          <button type="button" class="chip-x" data-idx="${i}" aria-label="Remove ${escapeHtml(v)}">&times;</button>
+        </span>`).join('');
+      listEl.querySelectorAll('.chip-x').forEach(b => b.addEventListener('click', () => {
+        items.splice(parseInt(b.dataset.idx, 10), 1);
+        render();
+      }));
     }
-    parentChips.innerHTML = editingParents.map((p, i) => `
-      <span class="chip">
-        <span class="chip-text">${escapeHtml(p)}</span>
-        <button type="button" class="chip-x" data-idx="${i}" aria-label="Remove ${escapeHtml(p)}">&times;</button>
-      </span>
-    `).join('');
-    parentChips.querySelectorAll('.chip-x').forEach(b => b.addEventListener('click', () => {
-      const idx = parseInt(b.dataset.idx, 10);
-      editingParents.splice(idx, 1);
-      renderParentChips();
-    }));
-  }
-  function addParentFromInput(){
-    const v = parentInput.value.trim();
-    if(!v) return;
-    const lower = v.toLowerCase();
-    if(editingParents.some(p => p.toLowerCase() === lower)){
-      parentInput.value = '';
-      return;
+    function addFromInput(){
+      const v = inputEl.value.trim();
+      if(!v) return;
+      if(validate && !validate(v)){
+        inputEl.classList.add('input-invalid');
+        setTimeout(()=> inputEl.classList.remove('input-invalid'), 800);
+        return;
+      }
+      const key = normalize ? normalize(v) : v.toLowerCase();
+      if(items.some(x => (normalize ? normalize(x) : x.toLowerCase()) === key)){
+        inputEl.value = '';
+        return;
+      }
+      items.push(v);
+      inputEl.value = '';
+      render();
+      inputEl.focus();
     }
-    editingParents.push(v);
-    parentInput.value = '';
-    renderParentChips();
-    parentInput.focus();
+    addBtn.addEventListener('click', addFromInput);
+    inputEl.addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); addFromInput(); } });
+    return {
+      reset(list){ items = (list||[]).filter(Boolean).slice(); render(); },
+      flush(){ if(inputEl.value.trim()) addFromInput(); },
+      get(){ return items.slice(); }
+    };
   }
-  parentAddBtn.addEventListener('click', addParentFromInput);
-  parentInput.addEventListener('keydown', e => {
-    if(e.key === 'Enter'){ e.preventDefault(); addParentFromInput(); }
+
+  const emailField = makeChipField({
+    listEl:  document.getElementById('eEmailChips'),
+    inputEl: document.getElementById('eEmailInput'),
+    addBtn:  document.getElementById('eEmailAdd'),
+    validate: v => HHST.isValidEmail(v),
+    normalize: v => v.toLowerCase(),
+    emptyMsg: 'No emails on file yet — add one below.'
   });
+  const parentField = makeChipField({
+    listEl:  document.getElementById('eParentChips'),
+    inputEl: document.getElementById('eParentInput'),
+    addBtn:  document.getElementById('eParentAdd'),
+    emptyMsg: 'No parents on file yet — add one below.'
+  });
+
+  let editingKey = null;
 
   function openEditModal(key){
     const sw = cachedData.swimmers[key];
     if(!sw) return;
     editingKey = key;
-    editingParents = (sw.parents||[]).filter(Boolean).slice();
     document.getElementById('editSwimmerName').textContent = sw.name;
-    document.getElementById('eAddress').value = sw.address || '';
-    parentInput.value = '';
-    document.getElementById('eAge').value     = sw.age || '';
-    document.getElementById('eGroup').value   = sw.group || '';
-    renderParentChips();
+    emailField.reset(sw.emails);
+    parentField.reset(sw.parents);
+    document.getElementById('eAge').value   = sw.age || '';
+    document.getElementById('eGroup').value = sw.group || '';
     editModal.style.display = 'flex';
-    setTimeout(()=> document.getElementById('eAddress').focus(), 30);
+    setTimeout(()=> document.getElementById('eEmailInput').focus(), 30);
   }
   function closeEditModal(){
     editModal.style.display = 'none';
     editingKey = null;
-    editingParents = [];
   }
   document.getElementById('editClose').addEventListener('click', closeEditModal);
   document.getElementById('editCancel').addEventListener('click', closeEditModal);
@@ -590,16 +678,17 @@ Lila Chen,308 Cypress Way,David Chen,200 Free,2:22.55,League Championships,2026-
     if(!editingKey) return;
     const sw = cachedData.swimmers[editingKey];
     if(!sw) return;
-    // Roll any unsubmitted text in the parent input into the list
-    if(parentInput.value.trim()) addParentFromInput();
+    // Roll any unsubmitted text in the chip inputs into their lists
+    emailField.flush();
+    parentField.flush();
     const submitBtn = editForm.querySelector('button[type=submit]');
     submitBtn.disabled = true;
     const original = submitBtn.textContent;
     submitBtn.textContent = 'Saving…';
     try {
       await HHST.updateSwimmer(editingKey, {
-        address: document.getElementById('eAddress').value.trim(),
-        parents: editingParents.slice(),
+        emails:  emailField.get(),
+        parents: parentField.get(),
         age:     document.getElementById('eAge').value.trim(),
         group:   document.getElementById('eGroup').value.trim()
       });

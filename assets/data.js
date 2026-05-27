@@ -12,12 +12,6 @@
       .replace(/[^a-z0-9 ]/g,'')
       .replace(/\s+/g,' ');
   }
-  function normAddr(s){
-    return (s||'').toString().trim().toLowerCase()
-      .replace(/\b(apt|apartment|unit|suite|ste|#)\b/g,'')
-      .replace(/[^a-z0-9 ]/g,'')
-      .replace(/\s+/g,' ');
-  }
   function swimmerKey(name){
     return norm(name).replace(/\s+/g,'-');
   }
@@ -73,24 +67,51 @@
   }
 
   const HEADER_MAP = {
-    'swimmer':'name','name':'name','full name':'name','swimmer name':'name','athlete':'name',
-    'first':'first','first name':'first',
-    'last':'last','last name':'last','surname':'last',
-    'address':'address','street':'address','home address':'address',
+    'swimmer':'name','name':'name','full name':'name','swimmer name':'name',
+    'athlete':'name','athlete name':'name','athlete full name':'name',
+    'first':'first','first name':'first','athlete first name':'first','athlete first':'first','given name':'first',
+    'last':'last','last name':'last','surname':'last','athlete last name':'last','athlete last':'last','family name':'last',
+    'address':'address','street':'address','home address':'address','address 1':'address','address line 1':'address',
+    'email':'email','email address':'email','primary email':'email','athlete email':'email',
     'parent':'parent','parent name':'parent','parent 1':'parent','guardian':'parent','parent/guardian':'parent',
-    'event':'event','stroke':'event',
+    'account name':'parent','household name':'parent','primary contact':'parent','contact name':'parent',
+    'event':'event','stroke':'event','event name':'event',
     'distance':'distance',
-    'time':'time','final time':'time','result':'time',
+    'time':'time','final time':'time','result':'time','swim time':'time','seed time':'time',
     'meet':'meet','meet name':'meet','competition':'meet',
-    'date':'date','meet date':'date',
-    'age':'age','swimmer age':'age',
-    'group':'group','training group':'group','squad':'group',
-    'place':'place','finish':'place','rank':'place',
-    'split':'split','splits':'split'
+    'date':'date','meet date':'date','session date':'date',
+    'age':'age','swimmer age':'age','athlete age':'age',
+    'group':'group','training group':'group','squad':'group','group name':'group','team group':'group',
+    'place':'place','finish':'place','rank':'place','finish place':'place',
+    'split':'split','splits':'split',
+    'dob':'dob','date of birth':'dob','birthdate':'dob','birth date':'dob','birthday':'dob'
   };
   function mapHeader(h){
     const key = (h||'').toString().trim().toLowerCase();
     return HEADER_MAP[key] || key.replace(/[^a-z0-9]+/g,'_');
+  }
+
+  // "Carter, Riley" -> "Riley Carter".  Plain "Riley Carter" untouched.
+  function fixNameOrder(s){
+    if(!s) return '';
+    s = s.toString().trim();
+    if(s.indexOf(',') === -1) return s;
+    const parts = s.split(',').map(x=>x.trim()).filter(Boolean);
+    if(parts.length === 2) return `${parts[1]} ${parts[0]}`.replace(/\s+/g,' ').trim();
+    return s.replace(/,/g, ' ').replace(/\s+/g,' ').trim();
+  }
+  function ageFromDob(dob){
+    if(!dob) return '';
+    const d = new Date(dob);
+    if(isNaN(d.getTime())) return '';
+    const now = new Date();
+    let age = now.getFullYear() - d.getFullYear();
+    const m = now.getMonth() - d.getMonth();
+    if(m < 0 || (m === 0 && now.getDate() < d.getDate())) age--;
+    return (age > 0 && age < 120) ? String(age) : '';
+  }
+  function isValidEmail(s){
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((s||'').trim());
   }
 
   function buildEventLabel(rec){
@@ -133,14 +154,21 @@
   // -------- Ingest (admin) --------
   async function ingestCSV(text){
     const rows = parseCSV(text);
-    if(rows.length < 2) return { added:0, swimmers:0, errors:['Empty CSV'] };
-    const headers = rows[0].map(mapHeader);
+    if(rows.length < 2) return { added:0, swimmers:0, profileUpdates:0, errors:['Empty CSV'] };
+    const rawHeaders = rows[0];
+    const headers = rawHeaders.map(mapHeader);
+    // Collect every column that LOOKS like an email column, regardless of mapping
+    const emailColIdxs = [];
+    for(let i=0;i<rawHeaders.length;i++){
+      if(/email/i.test(rawHeaders[i] || '')) emailColIdxs.push(i);
+    }
 
     // Stage updates per swimmer (so we batch writes)
     const updates = {}; // key -> swimmer object
     const errors = [];
     let added = 0;
     const meetNames = new Set();
+    const profileUpdated = new Set(); // swimmers whose profile (non-result) fields changed
 
     // First pass: pull existing swimmers we'll touch (so we merge, not overwrite)
     const touchedKeys = new Set();
@@ -149,9 +177,26 @@
       const cells = rows[r];
       if(!cells || !cells.length) continue;
       const rec = {};
-      for(let i=0;i<headers.length;i++) rec[headers[i]] = (cells[i]||'').trim();
-      let name = rec.name;
-      if(!name && (rec.first || rec.last)) name = `${rec.first||''} ${rec.last||''}`.trim();
+      for(let i=0;i<headers.length;i++){
+        // don't let later headers wipe an earlier value when two map to the same key
+        const k = headers[i];
+        const v = (cells[i]||'').trim();
+        if(rec[k]) continue;
+        rec[k] = v;
+      }
+      // Gather all email-like cells for this row
+      const emails = [];
+      for(const i of emailColIdxs){
+        const v = (cells[i]||'').trim();
+        if(v && isValidEmail(v)) emails.push(v);
+      }
+      rec.__emails = emails;
+
+      // Resolve name. Prefer first+last columns; fall back to single name column.
+      let name = '';
+      if(rec.first || rec.last) name = `${rec.first||''} ${rec.last||''}`.trim();
+      else if(rec.name) name = fixNameOrder(rec.name);
+      name = name.replace(/\s+/g,' ').trim();
       if(!name){ errors.push(`Row ${r+1}: missing swimmer name`); continue; }
       rec.__name = name;
       rec.__key = swimmerKey(name);
@@ -172,23 +217,38 @@
         updates[key] = existing[key] || {
           key, name,
           address: '',
+          emails: [],
           parents: [],
           age: '',
           group: '',
           results: []
         };
         // ensure shape
+        updates[key].emails = updates[key].emails || [];
         updates[key].parents = updates[key].parents || [];
         updates[key].results = updates[key].results || [];
       }
       const sw = updates[key];
-      if(rec.address && !sw.address) sw.address = rec.address;
-      if(rec.age && !sw.age) sw.age = rec.age;
-      if(rec.group && !sw.group) sw.group = rec.group;
+      let touched = false;
+      if(rec.address && !sw.address){ sw.address = rec.address; touched = true; }
+      if(rec.age && !sw.age){ sw.age = rec.age; touched = true; }
+      else if(rec.dob && !sw.age){
+        const a = ageFromDob(rec.dob);
+        if(a){ sw.age = a; touched = true; }
+      }
+      if(rec.group && !sw.group){ sw.group = rec.group; touched = true; }
       if(rec.parent){
         const p = rec.parent.trim();
-        if(p && !sw.parents.map(norm).includes(norm(p))) sw.parents.push(p);
+        if(p && !sw.parents.map(norm).includes(norm(p))){ sw.parents.push(p); touched = true; }
       }
+      for(const e of rec.__emails){
+        const lower = e.toLowerCase();
+        if(!sw.emails.map(x=>x.toLowerCase()).includes(lower)){
+          sw.emails.push(e);
+          touched = true;
+        }
+      }
+      if(touched) profileUpdated.add(key);
       if(rec.event && rec.time){
         const ev = buildEventLabel(rec);
         sw.results.push({
@@ -232,15 +292,19 @@
       lastUpload: FB.FieldValue.serverTimestamp()
     }, { merge: true });
 
-    return { added, swimmers: touchedKeys.size, meets: meetNames.size, errors };
+    return { added, swimmers: touchedKeys.size, profileUpdates: profileUpdated.size, meets: meetNames.size, errors };
   }
 
   // -------- Lookup --------
-  async function findSwimmer({ name, address, parent }){
-    const targetName = norm(name);
-    const targetAddr = normAddr(address);
+  async function findSwimmer({ name, email, parent }){
+    const targetName = norm(fixNameOrder(name));
+    const targetEmail = (email||'').trim().toLowerCase();
     const targetParent = norm(parent);
     if(!targetName) return { ok:false, reason:'Please enter the swimmer\'s name.' };
+    // Build a "last first" variant of what the user typed, just in case they enter "Carter Riley"
+    const parts = targetName.split(' ').filter(Boolean);
+    const swapped = parts.length === 2 ? `${parts[1]} ${parts[0]}` : null;
+
     const snap = await FB.db.collection('swimmers').get();
     let match = null;
     snap.forEach(doc => {
@@ -249,13 +313,17 @@
       const swName = norm(sw.name);
       if(swName === targetName || swName.includes(targetName) || targetName.includes(swName)){
         match = sw;
+      } else if(swapped && swName === swapped){
+        match = sw;
       }
     });
     if(!match) return { ok:false, reason:'We couldn\'t find a swimmer with that name. Double-check the spelling.' };
-    if(match.address){
-      const swAddr = normAddr(match.address);
-      const addrOk = !targetAddr || swAddr.includes(targetAddr) || targetAddr.includes(swAddr);
-      if(!addrOk) return { ok:false, reason:'The address you entered doesn\'t match our records.' };
+    if(match.emails && match.emails.length){
+      const emailOk = !targetEmail || match.emails.some(e => e.toLowerCase() === targetEmail);
+      if(!emailOk) return { ok:false, reason:'The email you entered doesn\'t match the one we have on file for this swimmer.' };
+    } else if(targetEmail){
+      // Swimmer has no email yet on file — fall back to parent name as the verifier so legacy records still work.
+      // (Roster CSV upload should fill this in going forward.)
     }
     if(match.parents && match.parents.length){
       const parentOk = !targetParent || match.parents.some(p => {
@@ -271,16 +339,21 @@
   async function deleteSwimmer(key){
     await FB.db.collection('swimmers').doc(key).delete();
   }
-  async function addSwimmerManual({name, address, parent, age, group}){
-    const key = swimmerKey(name);
+  async function addSwimmerManual({name, address, email, parent, age, group}){
+    const key = swimmerKey(fixNameOrder(name));
     const existing = await getSwimmer(key);
-    const next = existing || { key, name, address:'', parents:[], age:'', group:'', results:[] };
+    const next = existing || { key, name: fixNameOrder(name), address:'', emails:[], parents:[], age:'', group:'', results:[] };
+    next.emails = next.emails || [];
     next.parents = next.parents || [];
     next.results = next.results || [];
     if(address) next.address = address;
     if(age) next.age = age;
     if(group) next.group = group;
     if(parent && !next.parents.map(norm).includes(norm(parent))) next.parents.push(parent);
+    if(email && isValidEmail(email)){
+      const lower = email.toLowerCase();
+      if(!next.emails.map(e=>e.toLowerCase()).includes(lower)) next.emails.push(email);
+    }
     await FB.db.collection('swimmers').doc(key).set({
       ...next, updatedAt: FB.FieldValue.serverTimestamp()
     }, { merge: true });
@@ -291,9 +364,11 @@
     if(!existing) throw new Error('Swimmer not found');
     const next = { ...existing };
     if(fields.address !== undefined) next.address = fields.address;
+    if(fields.emails !== undefined) next.emails = fields.emails;
     if(fields.parents !== undefined) next.parents = fields.parents;
     if(fields.age !== undefined) next.age = fields.age;
     if(fields.group !== undefined) next.group = fields.group;
+    next.emails = next.emails || [];
     next.parents = next.parents || [];
     next.results = next.results || [];
     await FB.db.collection('swimmers').doc(key).set({
@@ -393,6 +468,7 @@
     isAdminLoggedIn, loginAdmin, logoutAdmin, onAuthChanged,
     statsForSwimmer,
     fmtTime, timeToSeconds, swimmerKey, norm,
+    fixNameOrder, isValidEmail, ageFromDob,
     initTheme, toggleTheme
   };
 })(window);

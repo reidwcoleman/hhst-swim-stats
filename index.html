@@ -59,7 +59,7 @@
 
     <div class="lookup-card">
       <h2>Find your swimmer</h2>
-      <p class="sub">All three fields must match what we have on file.</p>
+      <p class="sub">All three fields must match what we have on file. Names can be in either "First Last" or "Last, First" order.</p>
 
       <form id="lookupForm" autocomplete="off">
         <div class="field">
@@ -67,8 +67,8 @@
           <input type="text" id="swName" name="swName" placeholder="e.g. Riley Carter" required/>
         </div>
         <div class="field">
-          <label for="swAddress">Home address</label>
-          <input type="text" id="swAddress" name="swAddress" placeholder="e.g. 415 Coastline Drive, Cary NC" required/>
+          <label for="swEmail">Email on file with the team</label>
+          <input type="email" id="swEmail" name="swEmail" placeholder="e.g. jordan@example.com" required/>
         </div>
         <div class="field">
           <label for="swParent">A parent's name</label>
@@ -101,7 +101,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg>
       </div>
       <h3>1. Enter your details</h3>
-      <p>Type your swimmer's name, your home address, and one parent's name — exactly as they appear on the roster.</p>
+      <p>Type your swimmer's name, the email you registered with the team, and one parent's name — exactly as they appear on the roster.</p>
     </div>
     <div class="feature">
       <div class="icon">
@@ -192,9 +192,9 @@
     btnIcon.style.display = 'none';
     try {
       const name = document.getElementById('swName').value;
-      const address = document.getElementById('swAddress').value;
+      const email = document.getElementById('swEmail').value;
       const parent = document.getElementById('swParent').value;
-      const result = await HHST.findSwimmer({name, address, parent});
+      const result = await HHST.findSwimmer({name, email, parent});
       if(!result.ok){
         errEl.textContent = result.reason;
         errEl.classList.add('show');
