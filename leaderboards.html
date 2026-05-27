@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="theme-color" content="#0b1d3a"/>
+<title>Team Leaderboards — Highcroft Hurricanes</title>
+<meta name="robots" content="noindex,nofollow"/>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="assets/styles.css"/>
+
+<!-- Firebase compat SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="assets/firebase-init.js"></script>
+</head>
+<body>
+
+<header>
+  <nav>
+    <a class="brand" href="index.html">
+      <span class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2 12c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/>
+          <path d="M2 17c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/>
+          <path d="M2 7c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/>
+        </svg>
+      </span>
+      Highcroft <em>Hurricanes</em>
+    </a>
+    <ul class="nav-links">
+      <li><a href="index.html">Swimmer Lookup</a></li>
+      <li><a href="leaderboards.html" class="active">Leaderboards</a></li>
+      <li><a href="admin.html" class="btn">Admin</a></li>
+      <li>
+        <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+          <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+          <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+      </li>
+    </ul>
+  </nav>
+</header>
+
+<section class="dash-hero leaderboard-hero">
+  <div class="dash-hero-inner">
+    <div class="leaderboard-hero-content">
+      <div class="kicker"><span class="pulse"></span> Team Records · Coaches View</div>
+      <h1>Hurricane Top Times</h1>
+      <p class="lb-sub">Fastest swims on the team, grouped by event and age group. Filter by stroke to focus the board, or change how many places to show.</p>
+      <div class="lb-team-row" id="lbTeamRow">
+        <div class="lb-mini"><div class="lb-mini-val" id="tSwimmers">—</div><div class="lb-mini-lbl">Swimmers</div></div>
+        <div class="lb-mini"><div class="lb-mini-val" id="tRaces">—</div><div class="lb-mini-lbl">Races logged</div></div>
+        <div class="lb-mini"><div class="lb-mini-val" id="tMeets">—</div><div class="lb-mini-lbl">Meets</div></div>
+        <div class="lb-mini"><div class="lb-mini-val" id="tGold">—</div><div class="lb-mini-lbl">Golds 🥇</div></div>
+        <div class="lb-mini"><div class="lb-mini-val" id="tDrop">—</div><div class="lb-mini-lbl">Time dropped</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<main class="admin-shell">
+
+  <div class="card lb-filters">
+    <div class="lb-filter-grid">
+      <div class="field">
+        <label>Stroke</label>
+        <div class="seg" id="strokeSeg">
+          <button data-stroke="Freestyle" class="active">Freestyle</button>
+          <button data-stroke="Backstroke">Backstroke</button>
+          <button data-stroke="Breaststroke">Breaststroke</button>
+          <button data-stroke="Butterfly">Butterfly</button>
+          <button data-stroke="IM">IM</button>
+          <button data-stroke="">All</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Age Group</label>
+        <div class="seg" id="ageSeg">
+          <button data-age="" class="active">All</button>
+          <button data-age="8 & Under">8 &amp; Under</button>
+          <button data-age="9-10">9–10</button>
+          <button data-age="11-12">11–12</button>
+          <button data-age="13-14">13–14</button>
+          <button data-age="15-18">15–18</button>
+        </div>
+      </div>
+      <div class="field" style="max-width:200px">
+        <label>Show top</label>
+        <select id="topN" class="lb-select">
+          <option value="3">Top 3</option>
+          <option value="5" selected>Top 5</option>
+          <option value="10">Top 10</option>
+          <option value="25">Top 25</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div id="loadingState" class="card" style="text-align:center;padding:48px 24px">
+    <div style="display:inline-block;width:32px;height:32px;border:3px solid var(--border-strong);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:14px"></div>
+    <p class="lead" style="margin:0">Loading team data…</p>
+  </div>
+  <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+
+  <div id="emptyState" class="card" style="display:none;text-align:center;padding:60px 24px">
+    <h2>No times in the system yet</h2>
+    <p class="lead">Upload meet results from the Admin page and the leaderboards will populate automatically.</p>
+    <a href="admin.html" class="btn lg" style="margin-top:8px;display:inline-flex">Open Admin</a>
+  </div>
+
+  <div id="lbContent" style="display:none">
+    <div class="lb-toc" id="lbToc"></div>
+    <div id="lbBody"></div>
+  </div>
+
+  <!-- ============ FASTEST FIVE PRINTABLE AWARDS ============ -->
+  <div class="card no-print awards-intro">
+    <div class="awards-intro-head">
+      <div>
+        <h2>Printable Fastest Five Awards</h2>
+        <p class="lead">One certificate per age group, top 5 swimmers in a freestyle distance. Pick a distance, then print or save as PDF.</p>
+      </div>
+      <div class="awards-controls">
+        <label class="lb-select">Distance
+          <select id="awardsDist">
+            <option value="50" selected>50 Free</option>
+            <option value="100">100 Free</option>
+            <option value="200">200 Free</option>
+            <option value="500">500 Free</option>
+          </select>
+        </label>
+        <button class="btn ghost" id="printAllAwards">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          Print all · Save as PDF
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <section id="awardsHost" class="awards-host"></section>
+
+</main>
+
+<footer>
+  Highcroft Hurricanes Swim Team · <a href="index.html">Back to home</a> · <a href="admin.html">Admin</a>
+</footer>
+
+<script src="assets/data.js"></script>
+<script>
+  HHST.initTheme();
+  document.getElementById('themeToggle').addEventListener('click', HHST.toggleTheme);
+
+  let swimmers = {};
+  let state = { stroke: 'Freestyle', age: '', top: 5 };
+
+  (async () => {
+    const loading = document.getElementById('loadingState');
+    const empty   = document.getElementById('emptyState');
+    const content = document.getElementById('lbContent');
+    try {
+      const { swimmers: data } = await HHST.readAll();
+      swimmers = data || {};
+      loading.style.display = 'none';
+      const total = Object.values(swimmers).reduce((s, sw) => s + ((sw.results||[]).length), 0);
+      if(total === 0){
+        empty.style.display = 'block';
+        return;
+      }
+      content.style.display = 'block';
+      renderTeamRow();
+      render();
+      renderAwards();
+    } catch(err){
+      console.error(err);
+      loading.innerHTML = '<p class="lead" style="color:var(--red-light);margin:0">Couldn\'t load team data. Try refreshing.</p>';
+    }
+  })();
+
+  // ============ Printable Fastest Five awards ============
+  const awardsDist = document.getElementById('awardsDist');
+  const awardsHost = document.getElementById('awardsHost');
+  const printAllAwards = document.getElementById('printAllAwards');
+
+  function displayName(sw){
+    if(sw.preferredName){
+      const last = (sw.swimmerName||'').split(' ').filter(Boolean).pop() || '';
+      return `${sw.preferredName} ${last}`.trim() || sw.swimmerName;
+    }
+    return sw.swimmerName;
+  }
+  function medalColor(i){
+    return i === 0 ? '#fbbf24' : i === 1 ? '#cbd5e1' : i === 2 ? '#d97706' : '';
+  }
+
+  function renderAwards(){
+    if(!awardsHost) return;
+    const dist = awardsDist.value;
+    // Gender-split age groups (Boys 13-14, Girls 13-14, …) come from leaderboardsByEvent
+    // so each printable certificate covers a single Swimtopia age class.
+    const boards = HHST.leaderboardsByEvent(Object.values(swimmers), { stroke: 'Freestyle', distance: dist }, { limit: 5 });
+    const groups = HHST.sortAgeGroups(Object.keys(boards));
+    if(!groups.length){
+      awardsHost.innerHTML = `<div class="card empty no-print" style="margin-top:16px">No ${dist} Free times yet. Upload meet results from the Admin page and they'll appear here.</div>`;
+      return;
+    }
+    const today = new Date().toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'});
+    const eventLabel = `${dist} Yard Freestyle`;
+    awardsHost.innerHTML = groups.map(group => {
+      const entries = boards[group];
+      const rows = entries.map((e,i) => {
+        const color = medalColor(i);
+        const rankCell = color
+          ? `<span class="award-medal" style="background:${color}">${i+1}</span>`
+          : `<span class="award-rank">${i+1}</span>`;
+        return `<tr>
+          <td class="award-rank-cell">${rankCell}</td>
+          <td class="award-name-cell">${escapeHtml(displayName(e))}</td>
+          <td class="award-time-cell">${escapeHtml(e.time)}</td>
+        </tr>`;
+      }).join('');
+      const filler = Array.from({length: Math.max(0, 5 - entries.length)}, (_,i) => `
+        <tr class="award-empty-row">
+          <td class="award-rank-cell"><span class="award-rank">${entries.length + i + 1}</span></td>
+          <td class="award-name-cell">—</td>
+          <td class="award-time-cell">—</td>
+        </tr>`).join('');
+      return `<article class="award-card" data-group="${escapeHtml(group)}">
+        <div class="award-corner tl"></div>
+        <div class="award-corner tr"></div>
+        <div class="award-corner bl"></div>
+        <div class="award-corner br"></div>
+        <div class="award-crest">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M6 9h12l-1 9a3 3 0 0 1-3 3h-4a3 3 0 0 1-3-3L6 9z"/>
+            <path d="M6 9V6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v3"/>
+            <path d="M6 7H3a2 2 0 0 0 0 4h3"/>
+            <path d="M18 7h3a2 2 0 0 1 0 4h-3"/>
+          </svg>
+        </div>
+        <div class="award-kicker">Highcroft Hurricanes</div>
+        <h2 class="award-title">Fastest Five</h2>
+        <div class="award-group">${escapeHtml(group)}</div>
+        <div class="award-event">${escapeHtml(eventLabel)}</div>
+        <table class="award-table">
+          <tbody>
+            ${rows}
+            ${filler}
+          </tbody>
+        </table>
+        <div class="award-footer">
+          <span class="award-team">Hurricanes Swim Team</span>
+          <span class="award-date">${today}</span>
+        </div>
+        <button class="award-print-one no-print" data-print="${escapeHtml(group)}" title="Print just this card" aria-label="Print this card">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        </button>
+      </article>`;
+    }).join('');
+
+    awardsHost.querySelectorAll('[data-print]').forEach(btn => btn.addEventListener('click', () => {
+      const group = btn.dataset.print;
+      document.body.classList.add('printing-one');
+      awardsHost.querySelectorAll('.award-card').forEach(c => {
+        c.classList.toggle('print-target', c.dataset.group === group);
+      });
+      const cleanup = () => {
+        document.body.classList.remove('printing-one');
+        awardsHost.querySelectorAll('.award-card').forEach(c => c.classList.remove('print-target'));
+        window.removeEventListener('afterprint', cleanup);
+      };
+      window.addEventListener('afterprint', cleanup);
+      window.print();
+    }));
+  }
+  awardsDist?.addEventListener('change', renderAwards);
+  printAllAwards?.addEventListener('click', () => {
+    document.body.classList.add('printing-awards');
+    const cleanup = () => {
+      document.body.classList.remove('printing-awards');
+      window.removeEventListener('afterprint', cleanup);
+    };
+    window.addEventListener('afterprint', cleanup);
+    window.print();
+  });
+
+  // Wire up filter pills + dropdown
+  document.querySelectorAll('#strokeSeg button').forEach(btn => btn.addEventListener('click', () => {
+    document.querySelectorAll('#strokeSeg button').forEach(x => x.classList.remove('active'));
+    btn.classList.add('active');
+    state.stroke = btn.dataset.stroke;
+    render();
+  }));
+  document.querySelectorAll('#ageSeg button').forEach(btn => btn.addEventListener('click', () => {
+    document.querySelectorAll('#ageSeg button').forEach(x => x.classList.remove('active'));
+    btn.classList.add('active');
+    state.age = btn.dataset.age;
+    render();
+  }));
+  document.getElementById('topN').addEventListener('change', (e) => {
+    state.top = parseInt(e.target.value, 10);
+    render();
+  });
+
+  function renderTeamRow(){
+    const t = HHST.teamStats(swimmers);
+    document.getElementById('tSwimmers').textContent = t.swimmerCount;
+    document.getElementById('tRaces').textContent    = t.totalRaces;
+    document.getElementById('tMeets').textContent    = t.meetCount;
+    document.getElementById('tGold').textContent     = t.gold;
+    document.getElementById('tDrop').textContent     = t.totalDropSec > 0 ? '−' + fmtDrop(t.totalDropSec) : '—';
+  }
+
+  function render(){
+    const boards = HHST.buildLeaderboards(swimmers, { stroke: state.stroke || null, top: state.top });
+
+    // Optional age filter
+    const filtered = state.age ? boards.filter(b => (b.ageGroup||'').includes(state.age)) : boards;
+
+    // Group by age group, then sort events within
+    const groups = {};
+    filtered.forEach(b => {
+      if(!groups[b.ageGroup]) groups[b.ageGroup] = [];
+      groups[b.ageGroup].push(b);
+    });
+    Object.values(groups).forEach(arr => arr.sort((a,b)=> HHST.compareEventLabel(a.event, b.event)));
+
+    const orderedAges = HHST.AGE_GROUP_ORDER.filter(ag => groups[ag] && groups[ag].length);
+
+    if(orderedAges.length === 0){
+      document.getElementById('lbBody').innerHTML = '<div class="card empty">No times match these filters yet.</div>';
+      document.getElementById('lbToc').innerHTML = '';
+      return;
+    }
+
+    // Build table-of-contents pills
+    const toc = orderedAges.map(ag => {
+      const evCount = groups[ag].length;
+      return `<a href="#ag-${slug(ag)}" class="lb-toc-pill"><strong>${escapeHtml(ag)}</strong><span>${evCount} event${evCount===1?'':'s'}</span></a>`;
+    }).join('');
+    document.getElementById('lbToc').innerHTML = toc;
+
+    // Build body
+    const html = orderedAges.map(ag => {
+      const items = groups[ag];
+      const cards = items.map(b => buildLeaderboardCard(b)).join('');
+      return `
+        <section class="lb-age-section" id="ag-${slug(ag)}">
+          <div class="lb-age-head">
+            <div>
+              <h2>${escapeHtml(ag)}</h2>
+              <p>${items.length} event${items.length===1?'':'s'} ranked${state.stroke ? ' · ' + escapeHtml(state.stroke) : ''}</p>
+            </div>
+          </div>
+          <div class="lb-grid">${cards}</div>
+        </section>`;
+    }).join('');
+    document.getElementById('lbBody').innerHTML = html;
+  }
+
+  function buildLeaderboardCard(b){
+    const strokeClass = (b.stroke||'Other').toLowerCase().replace(/\s+/g,'');
+    const rows = b.entries.map((e, i) => {
+      const rank = i + 1;
+      const rankBadge = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : '';
+      const rankClass = rank === 1 ? 'lb-rank-1' : rank <= 3 ? 'lb-rank-top3' : '';
+      return `
+        <tr class="${rankClass}">
+          <td class="lb-rank">${rankBadge || rank}</td>
+          <td class="lb-name">
+            <a href="dashboard.html?s=${encodeURIComponent(e.swimmerKey)}">${escapeHtml(e.swimmerName)}</a>
+            ${e.age ? `<span class="lb-age-tag">Age ${escapeHtml(e.age)}</span>` : ''}
+          </td>
+          <td class="lb-time">${escapeHtml(e.time)}</td>
+          <td class="lb-meet">${escapeHtml(e.meet || '—')}<small>${e.date ? fmtDate(e.date) : ''}</small></td>
+        </tr>`;
+    }).join('');
+    return `
+      <div class="lb-card stroke-${strokeClass}">
+        <div class="lb-card-head">
+          <span class="lb-stroke-tag">${escapeHtml(b.stroke || '—')}</span>
+          <h3>${escapeHtml(b.event)}</h3>
+        </div>
+        <table class="lb-table">
+          <thead>
+            <tr><th></th><th>Swimmer</th><th>Time</th><th>Set at</th></tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+  }
+
+  function fmtDate(s){
+    if(!s) return '';
+    const d = new Date(s);
+    if(isNaN(d)) return s;
+    return d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'});
+  }
+  function fmtDrop(sec){
+    if(!isFinite(sec)) return '—';
+    if(sec >= 60){
+      const m = Math.floor(sec/60);
+      const s = (sec - m*60).toFixed(1);
+      return `${m}:${s.padStart(4,'0')}`;
+    }
+    return sec.toFixed(1) + 's';
+  }
+  function slug(s){
+    return (s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+  }
+  function escapeHtml(s){
+    return (s||'').toString().replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+</script>
+
+</body>
+</html>

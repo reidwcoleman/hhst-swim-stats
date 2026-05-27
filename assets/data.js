@@ -151,16 +151,6 @@
     return parts.join(', ');
   }
 
-  function buildEventLabel(rec){
-    const dist = rec.distance || '';
-    const ev = rec.event || '';
-    if(dist && !/\d/.test(ev)) return `${dist} ${ev}`.trim();
-    return ev || dist || 'Unknown';
-  }
-  function extractDistance(s){
-    const m = (s||'').match(/(\d+)\s*(?:yd|y|m|meter|yard)?/i);
-    return m ? m[1] : '';
-  }
   function extractStroke(s){
     s = (s||'').toLowerCase();
     if(s.includes('free')) return 'Freestyle';
@@ -169,6 +159,38 @@
     if(s.includes('fly') || s.includes('butter')) return 'Butterfly';
     if(s.includes('im') || s.includes('medley')) return 'IM';
     return '';
+  }
+  const SWIM_DISTANCES = [25,50,75,100,150,200,400,500,800,1000,1500,1650];
+  function extractDistance(s){
+    s = (s||'').toString();
+    // 1) distance followed by stroke keyword: "50 Free", "100 Yard Back"
+    const m1 = s.match(/\b(\d{2,4})\s*(?:yd|y|m|meter|yard)?\s*(?:free|back|breast|fly|butter|im|medley)/i);
+    if(m1) return m1[1];
+    // 2) distance with explicit unit: "50 yd", "200 meter"
+    const m2 = s.match(/\b(\d{2,4})\s*(?:yd|y|m|meter|yard)\b/i);
+    if(m2) return m2[1];
+    // 3) standalone number that's a recognized swim distance
+    const re = new RegExp(`\\b(${SWIM_DISTANCES.join('|')})\\b`);
+    const m3 = s.match(re);
+    if(m3) return m3[1];
+    return '';
+  }
+  const STROKE_ABBREV = {
+    'Freestyle':'Free','Backstroke':'Back','Breaststroke':'Breast',
+    'Butterfly':'Fly','IM':'IM'
+  };
+  // Turn any event string into a canonical "<dist> <Stroke>" label,
+  // so "Boys 13-14 50 Yard Free" and "50 Free" stack on the same event.
+  function normalizeEventLabel(rec){
+    const ev = (rec.event||'').toString().trim();
+    const explicitDist = (rec.distance||'').toString().trim();
+    const dist = explicitDist || extractDistance(ev);
+    const strokeFull = extractStroke(ev);
+    const stroke = STROKE_ABBREV[strokeFull] || strokeFull || '';
+    if(dist && stroke) return `${dist} ${stroke}`;
+    if(ev) return ev;
+    if(dist) return dist;
+    return 'Unknown';
   }
 
   // -------- Firestore reads --------
@@ -189,9 +211,16 @@
   }
 
   // -------- Ingest (admin) --------
-  async function ingestCSV(text){
+  // opts.mode:
+  //   'roster'  — create swimmer docs for unknown names (used by the roster upload)
+  //   'results' — only update existing swimmers; rows for unknown swimmers are skipped
+  //               and reported in result.skippedSwimmers (default for safety so meet
+  //               uploads can't pollute the roster with phantom records)
+  async function ingestCSV(text, opts){
+    opts = opts || {};
+    const mode = opts.mode === 'roster' ? 'roster' : 'results';
     const rows = parseCSV(text);
-    if(rows.length < 2) return { added:0, swimmers:0, profileUpdates:0, errors:['Empty CSV'] };
+    if(rows.length < 2) return { added:0, swimmers:0, profileUpdates:0, skippedSwimmers:[], errors:['Empty CSV'] };
     const rawHeaders = rows[0];
     const headers = rawHeaders.map(mapHeader);
     // Collect every column that LOOKS like an email column, regardless of mapping
@@ -266,16 +295,48 @@
       touchedKeys.add(rec.__key);
       records.push(rec);
     }
-    // Fetch existing
+    // Fetch existing. In results mode, also scan the whole roster so we can
+    // alias preferred-name variants (e.g. "Maddy Cakerice" -> "Madelyn Cakerice").
     const existing = {};
-    await Promise.all(Array.from(touchedKeys).map(async k => {
-      const sw = await getSwimmer(k);
-      existing[k] = sw;
-    }));
+    if(mode === 'results'){
+      const aliasToKey = {};
+      const allSnap = await FB.db.collection('swimmers').get();
+      allSnap.forEach(doc => {
+        const sw = doc.data();
+        existing[doc.id] = sw;
+        if(sw.preferredName){
+          const lastWord = (sw.name||'').split(' ').filter(Boolean).pop();
+          if(lastWord){
+            const aliasKey = swimmerKey(`${sw.preferredName} ${lastWord}`);
+            if(aliasKey && aliasKey !== doc.id) aliasToKey[aliasKey] = doc.id;
+          }
+        }
+      });
+      // Reroute any records whose key only matches via a preferred-name alias
+      for(const rec of records){
+        if(!existing[rec.__key] && aliasToKey[rec.__key]){
+          const realKey = aliasToKey[rec.__key];
+          rec.__key = realKey;
+          rec.__name = existing[realKey].name;
+        }
+      }
+    } else {
+      await Promise.all(Array.from(touchedKeys).map(async k => {
+        const sw = await getSwimmer(k);
+        existing[k] = sw;
+      }));
+    }
 
+    const skippedSwimmers = new Set();
+    const writtenKeys = new Set();
     for(const rec of records){
       const key = rec.__key;
       const name = rec.__name;
+      // In results mode, never create a swimmer that isn't already on the roster.
+      if(mode === 'results' && !existing[key] && !updates[key]){
+        skippedSwimmers.add(name);
+        continue;
+      }
       if(!updates[key]){
         updates[key] = existing[key] || {
           key, name,
@@ -284,6 +345,7 @@
           parents: [],
           age: '',
           group: '',
+          ageGroup: '',
           results: []
         };
         // ensure shape
@@ -291,6 +353,7 @@
         updates[key].parents = updates[key].parents || [];
         updates[key].results = updates[key].results || [];
       }
+      writtenKeys.add(key);
       const sw = updates[key];
       let touched = false;
       // Compose address from line1 + city + state + zip when available
@@ -305,10 +368,16 @@
         const a = ageFromDob(rec.dob);
         if(a){ sw.age = a; touched = true; }
       }
-      // Group: prefer the team's training group (RosterGroup), fall back to age class
+      // group = team training group (RosterGroup / Bronze, Silver, Gold)
       if(!sw.group){
-        const g = (rec.rostergroup && rec.rostergroup.trim()) || (rec.group && rec.group.trim()) || (rec.agegroup && rec.agegroup.trim()) || '';
+        const g = (rec.rostergroup && rec.rostergroup.trim()) || (rec.group && rec.group.trim()) || '';
         if(g){ sw.group = g; touched = true; }
+      }
+      // ageGroup = competition age class ("Boys 13-14") — kept separate so leaderboards
+      // can group by age even when a team training group is also set.
+      if(!sw.ageGroup){
+        const ag = (rec.agegroup && rec.agegroup.trim()) || '';
+        if(ag){ sw.ageGroup = ag; touched = true; }
       }
       // Preferred name (skip values that look like a full "Last, First" — Swimtopia sometimes mis-fills this)
       if(rec.preferredname && rec.preferredname.indexOf(',') === -1 && !sw.preferredName){
@@ -329,11 +398,13 @@
       }
       if(touched) profileUpdated.add(key);
       if(rec.event && rec.time){
-        const ev = buildEventLabel(rec);
+        const eventLabel = normalizeEventLabel(rec);
+        const distance = (rec.distance||'').toString().trim() || extractDistance(rec.event);
+        const stroke = extractStroke(rec.event);
         sw.results.push({
-          event: ev,
-          distance: rec.distance || extractDistance(rec.event),
-          stroke: extractStroke(rec.event),
+          event: eventLabel,
+          distance,
+          stroke,
           time: fmtTime(rec.time),
           seconds: timeToSeconds(fmtTime(rec.time)),
           meet: rec.meet || 'Unknown Meet',
@@ -371,8 +442,69 @@
       lastUpload: FB.FieldValue.serverTimestamp()
     }, { merge: true });
 
-    return { added, swimmers: touchedKeys.size, profileUpdates: profileUpdated.size, meets: meetNames.size, errors };
+    return {
+      added,
+      swimmers: writtenKeys.size,
+      profileUpdates: profileUpdated.size,
+      skippedSwimmers: Array.from(skippedSwimmers),
+      meets: meetNames.size,
+      errors
+    };
   }
+
+  // Top N best times per age group for a given event.
+  // eventMatcher: { stroke: 'Freestyle', distance: '50' } (either can be omitted)
+  function leaderboardsByEvent(swimmers, eventMatcher, opts){
+    eventMatcher = eventMatcher || {};
+    const limit = (opts && opts.limit) || 5;
+    const byGroup = {};
+    for(const sw of swimmers){
+      const group = sw.ageGroup || sw.group;
+      if(!group) continue;
+      const matching = (sw.results||[]).filter(r => {
+        if(eventMatcher.stroke && r.stroke !== eventMatcher.stroke) return false;
+        if(eventMatcher.distance && String(r.distance) !== String(eventMatcher.distance)) return false;
+        return isFinite(r.seconds);
+      });
+      if(!matching.length) continue;
+      const best = matching.slice().sort((a,b)=> a.seconds - b.seconds)[0];
+      if(!byGroup[group]) byGroup[group] = [];
+      byGroup[group].push({
+        key: sw.key,
+        name: sw.name,
+        preferredName: sw.preferredName || '',
+        time: best.time,
+        seconds: best.seconds,
+        meet: best.meet,
+        date: best.date,
+        age: sw.age || ''
+      });
+    }
+    const out = {};
+    for(const [group, list] of Object.entries(byGroup)){
+      list.sort((a,b) => a.seconds - b.seconds);
+      out[group] = list.slice(0, limit);
+    }
+    return out;
+  }
+  // Order age-group labels in a natural age progression
+  function sortAgeGroups(groups){
+    function rank(g){
+      g = (g||'').toLowerCase();
+      const ageMatch = g.match(/(\d+)\s*[-&]/);
+      const lo = ageMatch ? parseInt(ageMatch[1],10) : (/under/.test(g) ? 0 : 99);
+      // Stable secondary sort: girls before boys at the same age tier
+      const isBoy = /boy|men/.test(g) ? 1 : 0;
+      return lo * 10 + isBoy;
+    }
+    return groups.slice().sort((a,b) => rank(a) - rank(b));
+  }
+
+  // (buildLeaderboards / teamStats / compareEventLabel / AGE_GROUP_ORDER live
+  // in the Stats helpers section below — those are the team-wide gender-merged
+  // leaderboards used by the filter view on leaderboards.html. The Fastest
+  // Five printable certificates use leaderboardsByEvent above, which keeps
+  // Swimtopia's gender-split age groups intact.)
 
   // -------- Lookup --------
   async function findSwimmer({ name, email, parent }){
@@ -500,6 +632,34 @@
   function isAdminLoggedIn(){ return !!FB.auth.currentUser; }
 
   // -------- Stats helpers --------
+  // Standard summer-league age groups
+  const AGE_GROUP_ORDER = ['8 & Under','9-10','11-12','13-14','15-18','Unknown'];
+  function getAgeGroup(age){
+    const n = parseInt(age, 10);
+    if(!isFinite(n) || n <= 0) return 'Unknown';
+    if(n <= 8) return '8 & Under';
+    if(n <= 10) return '9-10';
+    if(n <= 12) return '11-12';
+    if(n <= 14) return '13-14';
+    return '15-18';
+  }
+
+  // Stroke order for grouping / sorting
+  const STROKE_ORDER = ['Freestyle','Backstroke','Breaststroke','Butterfly','IM'];
+  function distanceNum(ev){
+    const m = (ev||'').match(/\d+/);
+    return m ? parseInt(m[0],10) : 0;
+  }
+  function compareEventLabel(a, b){
+    const sa = extractStroke(a) || 'Z';
+    const sb = extractStroke(b) || 'Z';
+    const ai = STROKE_ORDER.indexOf(sa), bi = STROKE_ORDER.indexOf(sb);
+    const aOrd = ai < 0 ? 99 : ai;
+    const bOrd = bi < 0 ? 99 : bi;
+    if(aOrd !== bOrd) return aOrd - bOrd;
+    return distanceNum(a) - distanceNum(b);
+  }
+
   function statsForSwimmer(sw){
     const results = sw.results||[];
     const total = results.length;
@@ -513,12 +673,25 @@
     });
     const bestTimes = Object.entries(events).map(([event, arr])=>{
       const sorted = arr.slice().sort((a,b)=> (a.seconds||Infinity)-(b.seconds||Infinity));
-      return { event, time: sorted[0].time, seconds: sorted[0].seconds, count: arr.length, history: arr };
-    }).sort((a,b)=>{
-      const da = parseInt((a.event.match(/\d+/)||[0])[0],10);
-      const db = parseInt((b.event.match(/\d+/)||[0])[0],10);
-      return da-db;
-    });
+      const byDate = arr.slice().sort((a,b)=> (new Date(a.date).getTime()||0) - (new Date(b.date).getTime()||0));
+      const first  = byDate.find(r => isFinite(r.seconds));
+      const latest = byDate.slice().reverse().find(r => isFinite(r.seconds));
+      const best   = sorted[0];
+      const improvement    = (first && isFinite(first.seconds)) ? (first.seconds - best.seconds) : 0;
+      const improvementPct = (first && first.seconds) ? ((first.seconds - best.seconds) / first.seconds * 100) : 0;
+      const latestIsPR = !!(latest && best && latest.seconds === best.seconds && arr.length >= 2);
+      return {
+        event,
+        time: best.time, seconds: best.seconds, count: arr.length, history: arr,
+        stroke: best.stroke || extractStroke(event),
+        distance: best.distance || extractDistance(event),
+        bestMeet: best.meet, bestDate: best.date,
+        firstTime: first ? first.time : null,   firstSeconds: first ? first.seconds : null,   firstDate: first ? first.date : null,
+        latestTime: latest ? latest.time : null, latestSeconds: latest ? latest.seconds : null, latestDate: latest ? latest.date : null,
+        improvement, improvementPct, latestIsPR
+      };
+    }).sort((a,b)=> compareEventLabel(a.event, b.event));
+
     let prCount = 0;
     bestTimes.forEach(b=>{
       if(b.history.length >= 2){
@@ -526,12 +699,156 @@
         if(sorted[sorted.length-1].seconds <= sorted[0].seconds) prCount++;
       }
     });
+
+    // Place breakdown across all races
+    let gold = 0, silver = 0, bronze = 0, top10 = 0;
+    results.forEach(r => {
+      const p = parseInt(r.place, 10);
+      if(!isFinite(p) || p <= 0) return;
+      if(p === 1) gold++;
+      else if(p === 2) silver++;
+      else if(p === 3) bronze++;
+      if(p <= 10) top10++;
+    });
+
+    // Stroke usage breakdown
+    const strokeCounts = {};
+    results.forEach(r => {
+      const s = r.stroke || extractStroke(r.event) || 'Other';
+      if(s) strokeCounts[s] = (strokeCounts[s]||0) + 1;
+    });
+
+    // Recent meets (unique, by date desc)
+    const meetMap = {};
+    results.forEach(r => {
+      if(!r.meet) return;
+      const d = new Date(r.date).getTime() || 0;
+      if(!meetMap[r.meet] || d > meetMap[r.meet].date){
+        meetMap[r.meet] = { meet: r.meet, date: d, dateStr: r.date, races: 0 };
+      }
+    });
+    Object.values(meetMap).forEach(m => {
+      m.races = results.filter(r => r.meet === m.meet).length;
+    });
+    const recentMeets = Object.values(meetMap).sort((a,b)=> b.date - a.date);
+    const recentMeet  = recentMeets[0] || null;
+
+    // Most-improved + favorite (most-raced) event
+    const improved   = bestTimes.slice().filter(b => b.improvement > 0).sort((a,b)=> b.improvement - a.improvement);
+    const mostImproved = improved[0] || null;
+    const favorite     = bestTimes.slice().sort((a,b)=> b.count - a.count)[0] || null;
+    const totalTimeDropSec = bestTimes.reduce((sum,b)=> sum + Math.max(0, b.improvement), 0);
+
+    const placeNums = results.map(r => parseInt(r.place,10)).filter(p => isFinite(p) && p > 0);
+    const avgPlace  = placeNums.length ? (placeNums.reduce((s,p)=>s+p,0) / placeNums.length) : null;
+
     return {
       totalRaces: total,
       meetCount: meets.size,
       eventCount: bestTimes.length,
       prCount,
-      bestTimes
+      bestTimes,
+      gold, silver, bronze, top10,
+      podiumCount: gold + silver + bronze,
+      strokeCounts,
+      recentMeets, recentMeet,
+      mostImproved, favorite,
+      totalTimeDropSec,
+      avgPlace,
+      ageGroup: getAgeGroup(sw.age)
+    };
+  }
+
+  // For one swimmer, where do they rank in their age group for each event they've swum?
+  function rankSwimmerInAgeGroup(sw, allSwimmers){
+    const ag = getAgeGroup(sw.age);
+    const myEvents = {};
+    (sw.results||[]).forEach(r => {
+      if(!isFinite(r.seconds)) return;
+      if(!(r.event in myEvents) || r.seconds < myEvents[r.event]) myEvents[r.event] = r.seconds;
+    });
+    const ranks = {};
+    Object.entries(myEvents).forEach(([event, mySec]) => {
+      const competitors = [];
+      Object.values(allSwimmers).forEach(other => {
+        if(getAgeGroup(other.age) !== ag) return;
+        let best = Infinity;
+        (other.results||[]).forEach(r => {
+          if(r.event === event && isFinite(r.seconds) && r.seconds < best) best = r.seconds;
+        });
+        if(isFinite(best)) competitors.push({ key: other.key, sec: best });
+      });
+      competitors.sort((a,b)=> a.sec - b.sec);
+      const idx = competitors.findIndex(c => c.key === sw.key);
+      ranks[event] = { rank: idx + 1, total: competitors.length };
+    });
+    return { ageGroup: ag, ranks };
+  }
+
+  // Build leaderboards across the whole roster.
+  // Returns array of { ageGroup, event, stroke, distance, entries:[...] }
+  function buildLeaderboards(allSwimmers, opts = {}){
+    const stroke = opts.stroke || null;
+    const top    = opts.top || 5;
+    const buckets = {};
+    Object.values(allSwimmers).forEach(sw => {
+      const ag = getAgeGroup(sw.age);
+      const byEvent = {};
+      (sw.results||[]).forEach(r => {
+        if(!isFinite(r.seconds)) return;
+        const evStroke = r.stroke || extractStroke(r.event);
+        if(stroke && evStroke !== stroke) return;
+        if(!byEvent[r.event] || r.seconds < byEvent[r.event].seconds) byEvent[r.event] = r;
+      });
+      Object.entries(byEvent).forEach(([event, r]) => {
+        const key = ag + '||' + event;
+        if(!buckets[key]){
+          buckets[key] = {
+            ageGroup: ag, event,
+            stroke: r.stroke || extractStroke(event) || 'Other',
+            distance: r.distance || extractDistance(event),
+            entries: []
+          };
+        }
+        buckets[key].entries.push({
+          swimmerKey: sw.key,
+          swimmerName: sw.name,
+          time: r.time,
+          seconds: r.seconds,
+          meet: r.meet,
+          date: r.date,
+          age: sw.age || ''
+        });
+      });
+    });
+    Object.values(buckets).forEach(b => {
+      b.entries.sort((a,b) => a.seconds - b.seconds);
+      b.entries = b.entries.slice(0, top);
+    });
+    return Object.values(buckets);
+  }
+
+  // Team-wide aggregate stats
+  function teamStats(allSwimmers){
+    const swimmers = Object.values(allSwimmers);
+    const totalRaces = swimmers.reduce((s, x) => s + (x.results||[]).length, 0);
+    const meets = new Set();
+    let gold=0, silver=0, bronze=0;
+    let totalDropSec = 0;
+    let prRaces = 0;
+    swimmers.forEach(sw => {
+      const s = statsForSwimmer(sw);
+      gold += s.gold; silver += s.silver; bronze += s.bronze;
+      totalDropSec += s.totalTimeDropSec;
+      prRaces += s.prCount;
+      (sw.results||[]).forEach(r => meets.add(r.meet));
+    });
+    return {
+      swimmerCount: swimmers.length,
+      totalRaces, meetCount: meets.size,
+      gold, silver, bronze,
+      podium: gold + silver + bronze,
+      totalDropSec, prRaces
     };
   }
 
@@ -553,9 +870,12 @@
     findSwimmer,
     deleteSwimmer, addSwimmerManual, updateSwimmer, clearAll,
     isAdminLoggedIn, loginAdmin, logoutAdmin, onAuthChanged,
-    statsForSwimmer,
+    statsForSwimmer, rankSwimmerInAgeGroup, buildLeaderboards, teamStats,
+    getAgeGroup, AGE_GROUP_ORDER, STROKE_ORDER, extractStroke, extractDistance, distanceNum, compareEventLabel,
     fmtTime, timeToSeconds, swimmerKey, norm,
     fixNameOrder, isValidEmail, ageFromDob,
+    normalizeEventLabel,
+    leaderboardsByEvent, sortAgeGroups,
     initTheme, toggleTheme
   };
 })(window);

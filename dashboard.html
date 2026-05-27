@@ -35,6 +35,7 @@
       Highcroft <em>Hurricanes</em>
     </a>
     <ul class="nav-links">
+      <li><a href="leaderboards.html">Leaderboards</a></li>
       <li><a href="index.html">New Search</a></li>
       <li><a href="admin.html" class="btn">Admin</a></li>
       <li>
@@ -51,9 +52,10 @@
   <div class="dash-hero-inner">
     <div class="swimmer-id">
       <div class="avatar" id="avatar">RC</div>
-      <div>
+      <div style="flex:1;min-width:0">
         <div class="swimmer-name" id="swimmerName">Loading…</div>
         <div class="swimmer-meta" id="swimmerMeta"></div>
+        <div class="swimmer-tagline" id="swimmerTagline" style="display:none"></div>
       </div>
     </div>
   </div>
@@ -79,6 +81,8 @@
   </div>
 
   <div id="dashContent" style="display:none">
+
+    <!-- HEADLINE STAT GRID -->
     <div class="stat-grid">
       <div class="stat-card"><div class="accent"></div>
         <div class="label">Races Logged</div>
@@ -96,30 +100,149 @@
         <div class="sub">Unique event types</div>
       </div>
       <div class="stat-card"><div class="accent"></div>
-        <div class="label">PRs Set</div>
+        <div class="label">PRs Held</div>
         <div class="value" id="kPRs">—</div>
-        <div class="sub">Improving over time</div>
+        <div class="sub">Events where the latest swim is the fastest</div>
+      </div>
+      <div class="stat-card"><div class="accent"></div>
+        <div class="label">Podium Finishes</div>
+        <div class="value" id="kPodium">—</div>
+        <div class="sub" id="kPodiumSub">Top-3 placings</div>
+      </div>
+      <div class="stat-card"><div class="accent"></div>
+        <div class="label">Total Time Dropped</div>
+        <div class="value" id="kDrop">—</div>
+        <div class="sub">Cumulative seconds shaved off PRs</div>
       </div>
     </div>
 
-    <div class="chart-card">
-      <h3>Best Times</h3>
-      <p class="lead">Personal best in each event your swimmer has competed in.</p>
-      <div class="best-times" id="bestTimes"></div>
+    <!-- MEDAL SHOWCASE + HIGHLIGHTS -->
+    <div class="dash-two-col">
+      <div class="chart-card medal-card">
+        <h3>Medal Showcase</h3>
+        <p class="lead">Heat-finish placings across every meet.</p>
+        <div class="medal-row">
+          <div class="medal medal-gold">
+            <div class="medal-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M8.5 13L5 22l7-4 7 4-3.5-9"/></svg>
+            </div>
+            <div class="medal-count" id="mGold">0</div>
+            <div class="medal-label">Gold</div>
+          </div>
+          <div class="medal medal-silver">
+            <div class="medal-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M8.5 13L5 22l7-4 7 4-3.5-9"/></svg>
+            </div>
+            <div class="medal-count" id="mSilver">0</div>
+            <div class="medal-label">Silver</div>
+          </div>
+          <div class="medal medal-bronze">
+            <div class="medal-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M8.5 13L5 22l7-4 7 4-3.5-9"/></svg>
+            </div>
+            <div class="medal-count" id="mBronze">0</div>
+            <div class="medal-label">Bronze</div>
+          </div>
+          <div class="medal medal-top10">
+            <div class="medal-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/></svg>
+            </div>
+            <div class="medal-count" id="mTop10">0</div>
+            <div class="medal-label">Top-10</div>
+          </div>
+        </div>
+        <div class="medal-footnote" id="mAvgPlace"></div>
+      </div>
+
+      <div class="chart-card highlights-card">
+        <h3>Highlights</h3>
+        <p class="lead">Headline moments across the season.</p>
+        <div class="highlights-list">
+          <div class="highlight" id="hMostImproved">
+            <div class="hl-icon hl-trend">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M21 7v6h-6"/></svg>
+            </div>
+            <div class="hl-body">
+              <div class="hl-label">Most Improved Event</div>
+              <div class="hl-value">—</div>
+              <div class="hl-sub">—</div>
+            </div>
+          </div>
+          <div class="highlight" id="hFavorite">
+            <div class="hl-icon hl-fav">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            </div>
+            <div class="hl-body">
+              <div class="hl-label">Favorite Event</div>
+              <div class="hl-value">—</div>
+              <div class="hl-sub">—</div>
+            </div>
+          </div>
+          <div class="highlight" id="hRecentMeet">
+            <div class="hl-icon hl-cal">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+            </div>
+            <div class="hl-body">
+              <div class="hl-label">Most Recent Meet</div>
+              <div class="hl-value">—</div>
+              <div class="hl-sub">—</div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
+    <!-- BEST TIMES (richer) -->
+    <div class="chart-card">
+      <h3>Personal Bests</h3>
+      <p class="lead">Best time in each event, with how much your swimmer has improved since their first attempt.</p>
+      <div class="best-times-rich" id="bestTimes"></div>
+    </div>
+
+    <!-- TEAM RANKINGS -->
+    <div class="chart-card">
+      <h3>Where You Rank<span class="rank-suffix" id="rankAgeGroup"></span></h3>
+      <p class="lead">Your placing within your age group on the Hurricanes roster for each event you've swum.</p>
+      <div id="ranksList" class="ranks-list"></div>
+    </div>
+
+    <!-- STROKE DISTRIBUTION -->
+    <div class="chart-card">
+      <h3>Stroke Mix</h3>
+      <p class="lead">Which strokes your swimmer has raced the most.</p>
+      <div class="stroke-mix">
+        <div class="stroke-chart-host">
+          <canvas id="strokeChart"></canvas>
+        </div>
+        <div class="stroke-legend" id="strokeLegend"></div>
+      </div>
+    </div>
+
+    <!-- PROGRESS CHART -->
     <div class="chart-card">
       <h3>Progress by Event</h3>
-      <p class="lead">Pick an event to see how times have trended across meets.</p>
+      <p class="lead">Pick an event to see how times have trended across meets. The brightest dot is the current PR.</p>
       <div class="tabs" id="eventTabs"></div>
       <div class="chart-host">
         <canvas id="progressChart"></canvas>
       </div>
     </div>
 
+    <!-- MEET HISTORY -->
     <div class="chart-card">
       <h3>Meet History</h3>
-      <p class="lead">Every recorded race in reverse chronological order.</p>
+      <p class="lead">Every recorded race in reverse chronological order. Filter by meet to focus on one competition.</p>
+      <div class="meet-filters">
+        <label>
+          <span>Meet</span>
+          <select id="meetFilter"><option value="">All meets</option></select>
+        </label>
+        <label>
+          <span>Stroke</span>
+          <select id="strokeFilter"><option value="">All strokes</option></select>
+        </label>
+        <div class="meet-counter" id="meetCounter">—</div>
+      </div>
       <div class="table-wrap">
         <table id="meetTable">
           <thead>
@@ -129,6 +252,7 @@
               <th>Event</th>
               <th>Time</th>
               <th>Place</th>
+              <th>Notes</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -147,23 +271,32 @@
   HHST.initTheme();
   document.getElementById('themeToggle').addEventListener('click', HHST.toggleTheme);
 
-  // Get swimmer key from URL or sessionStorage
   const params = new URLSearchParams(window.location.search);
   const key = params.get('s') || sessionStorage.getItem('hhst.swim.viewKey');
+
+  let swimmer = null;
+  let stats = null;
+  let allSwimmers = {};
 
   (async () => {
     const loadingEl = document.getElementById('loadingState');
     const notFoundEl = document.getElementById('notFound');
     const dashEl = document.getElementById('dashContent');
     try{
-      const swimmer = key ? await HHST.getSwimmer(key) : null;
+      // Load this swimmer AND the whole roster in parallel — we need the roster for rankings.
+      const [sw, all] = await Promise.all([
+        key ? HHST.getSwimmer(key) : Promise.resolve(null),
+        HHST.readAll()
+      ]);
       loadingEl.style.display = 'none';
-      if(!swimmer){
+      if(!sw){
         notFoundEl.style.display = 'block';
-      } else {
-        dashEl.style.display = 'block';
-        renderDashboard(swimmer);
+        return;
       }
+      swimmer = sw;
+      allSwimmers = all.swimmers || {};
+      dashEl.style.display = 'block';
+      renderDashboard();
     } catch(e){
       console.error(e);
       loadingEl.innerHTML = '<p class="lead" style="color:var(--red-light);margin:0">Couldn\'t load swimmer data. <a href="index.html">Try the search again</a>.</p>';
@@ -179,43 +312,134 @@
     if(isNaN(d)) return s;
     return d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'});
   }
+  function fmtDateShort(s){
+    if(!s) return '';
+    const d = new Date(s);
+    if(isNaN(d)) return s;
+    return d.toLocaleDateString(undefined,{month:'short',day:'numeric'});
+  }
+  function fmtDrop(sec){
+    if(!isFinite(sec)) return '—';
+    if(sec >= 60){
+      const m = Math.floor(sec/60);
+      const s = (sec - m*60).toFixed(2);
+      return `${m}:${s.padStart(5,'0')}`;
+    }
+    return sec.toFixed(2) + 's';
+  }
+  function ordinal(n){
+    const s = ['th','st','nd','rd'], v = n % 100;
+    return n + (s[(v-20)%10] || s[v] || s[0]);
+  }
+  const STROKE_COLORS = {
+    'Freestyle':   '#60a5fa',
+    'Backstroke':  '#34d399',
+    'Breaststroke':'#fbbf24',
+    'Butterfly':   '#f472b6',
+    'IM':          '#a78bfa',
+    'Other':       '#94a3b8'
+  };
 
-  function renderDashboard(sw){
+  function renderDashboard(){
+    const sw = swimmer;
     document.getElementById('avatar').textContent = initials(sw.name);
     document.getElementById('swimmerName').textContent = sw.name;
+    stats = HHST.statsForSwimmer(sw);
+
+    // Swimmer meta chips
     const meta = document.getElementById('swimmerMeta');
     const chips = [];
-    if(sw.age) chips.push(`<span class="chip">Age ${sw.age}</span>`);
-    if(sw.group) chips.push(`<span class="chip">${sw.group}</span>`);
-    if(sw.parents && sw.parents.length) chips.push(`<span class="chip">Parent: ${sw.parents[0]}</span>`);
+    if(sw.age) chips.push(`<span class="chip">Age ${escapeHtml(sw.age)}</span>`);
+    if(stats.ageGroup && stats.ageGroup !== 'Unknown') chips.push(`<span class="chip">${escapeHtml(stats.ageGroup)} Age Group</span>`);
+    if(sw.group) chips.push(`<span class="chip">${escapeHtml(sw.group)}</span>`);
+    if(sw.parents && sw.parents.length) chips.push(`<span class="chip">Family: ${escapeHtml(sw.parents[0])}</span>`);
     meta.innerHTML = chips.join('') || '<span class="chip">Highcroft Hurricane</span>';
 
-    const stats = HHST.statsForSwimmer(sw);
-    document.getElementById('kRaces').textContent = stats.totalRaces;
-    document.getElementById('kMeets').textContent = stats.meetCount;
+    // Tagline (one-liner summary)
+    const tagline = buildTagline(stats);
+    if(tagline){
+      const el = document.getElementById('swimmerTagline');
+      el.textContent = tagline;
+      el.style.display = 'block';
+    }
+
+    // Headline stats
+    document.getElementById('kRaces').textContent  = stats.totalRaces;
+    document.getElementById('kMeets').textContent  = stats.meetCount;
     document.getElementById('kEvents').textContent = stats.eventCount;
-    document.getElementById('kPRs').textContent = stats.prCount;
+    document.getElementById('kPRs').textContent    = stats.prCount;
+    document.getElementById('kPodium').textContent = stats.podiumCount;
+    document.getElementById('kPodiumSub').textContent = stats.top10 > stats.podiumCount
+      ? `${stats.podiumCount} top-3 · ${stats.top10} top-10 overall`
+      : `${stats.gold} gold · ${stats.silver} silver · ${stats.bronze} bronze`;
+    document.getElementById('kDrop').textContent = stats.totalTimeDropSec > 0
+      ? '−' + fmtDrop(stats.totalTimeDropSec)
+      : '—';
+
+    // Medal showcase
+    document.getElementById('mGold').textContent   = stats.gold;
+    document.getElementById('mSilver').textContent = stats.silver;
+    document.getElementById('mBronze').textContent = stats.bronze;
+    document.getElementById('mTop10').textContent  = stats.top10;
+    document.getElementById('mAvgPlace').textContent = stats.avgPlace
+      ? `Average finish across all races: ${ordinal(Math.round(stats.avgPlace))}`
+      : 'Add a finishing place to any meet upload to populate this row.';
+
+    // Highlights
+    renderHighlights(stats);
 
     // Best times grid
     const bestHost = document.getElementById('bestTimes');
     if(stats.bestTimes.length === 0){
       bestHost.innerHTML = '<div class="empty">No race results yet. Once coaches upload a meet, times will appear here.</div>';
     } else {
-      bestHost.innerHTML = stats.bestTimes.map(b => `
-        <div class="best-time-row">
-          <div class="event">${b.event}<small>${b.count} race${b.count===1?'':'s'} swum</small></div>
-          <div class="time">${b.time}</div>
-        </div>
-      `).join('');
+      bestHost.innerHTML = stats.bestTimes.map((b,i) => {
+        const dropChip = b.improvement > 0
+          ? `<span class="chip-stat chip-down">−${fmtDrop(b.improvement)}<small>(${b.improvementPct.toFixed(1)}%)</small></span>`
+          : (b.count >= 2 ? `<span class="chip-stat chip-flat">Even</span>` : '');
+        const prBadge = b.latestIsPR ? `<span class="chip-stat chip-pr">PR · latest</span>` : '';
+        const strokeClass = (b.stroke||'Other').toLowerCase().replace(/\s+/g,'');
+        return `
+          <button type="button" class="bt-card stroke-${strokeClass}" data-event-idx="${i}">
+            <div class="bt-top">
+              <div class="bt-event">
+                <span class="bt-stroke-dot" style="background:${STROKE_COLORS[b.stroke]||STROKE_COLORS.Other}"></span>
+                ${escapeHtml(b.event)}
+              </div>
+              <div class="bt-races">${b.count} race${b.count===1?'':'s'}</div>
+            </div>
+            <div class="bt-time">${escapeHtml(b.time)}</div>
+            <div class="bt-meta">
+              ${b.bestDate ? `<span>Set at ${escapeHtml(b.bestMeet||'')} · ${fmtDateShort(b.bestDate)}</span>` : ''}
+            </div>
+            <div class="bt-chips">${dropChip}${prBadge}</div>
+          </button>`;
+      }).join('');
+
+      // Clicking a best-time card focuses that event in the progress chart
+      bestHost.querySelectorAll('.bt-card').forEach(c => c.addEventListener('click', ()=>{
+        const i = parseInt(c.dataset.eventIdx, 10);
+        const tabBtn = document.querySelector(`#eventTabs button[data-i="${i}"]`);
+        if(tabBtn){
+          tabBtn.click();
+          document.querySelector('#progressChart').scrollIntoView({behavior:'smooth', block:'center'});
+        }
+      }));
     }
 
-    // Tabs for progress chart
+    // Team rankings
+    renderRanks(sw);
+
+    // Stroke chart
+    renderStrokeChart(stats.strokeCounts);
+
+    // Progress chart + tabs
     const tabs = document.getElementById('eventTabs');
     if(stats.bestTimes.length === 0){
       tabs.innerHTML = '';
       document.getElementById('progressChart').style.display = 'none';
     } else {
-      tabs.innerHTML = stats.bestTimes.map((b,i)=>`<button data-i="${i}" class="${i===0?'active':''}">${b.event}</button>`).join('');
+      tabs.innerHTML = stats.bestTimes.map((b,i)=>`<button data-i="${i}" class="${i===0?'active':''}">${escapeHtml(b.event)}</button>`).join('');
       tabs.querySelectorAll('button').forEach(btn => {
         btn.addEventListener('click', ()=>{
           tabs.querySelectorAll('button').forEach(x=>x.classList.remove('active'));
@@ -226,39 +450,204 @@
       drawChart(stats.bestTimes[0]);
     }
 
-    // Meet history table
+    // Meet history table + filters
+    initMeetHistory(sw);
+  }
+
+  function buildTagline(s){
+    const bits = [];
+    if(s.totalRaces) bits.push(`${s.totalRaces} race${s.totalRaces===1?'':'s'}`);
+    if(s.meetCount)  bits.push(`${s.meetCount} meet${s.meetCount===1?'':'s'}`);
+    if(s.totalTimeDropSec > 0) bits.push(`−${fmtDrop(s.totalTimeDropSec)} dropped`);
+    if(s.gold) bits.push(`${s.gold} gold${s.gold===1?'':'s'}`);
+    return bits.join(' · ');
+  }
+
+  function renderHighlights(s){
+    // Most improved
+    const mi = document.getElementById('hMostImproved');
+    if(s.mostImproved){
+      const m = s.mostImproved;
+      mi.querySelector('.hl-value').textContent = m.event;
+      mi.querySelector('.hl-sub').innerHTML = `<strong>−${fmtDrop(m.improvement)}</strong> · ${escapeHtml(m.firstTime||'')} → <strong>${escapeHtml(m.time)}</strong>`;
+    } else {
+      mi.querySelector('.hl-value').textContent = 'Building history…';
+      mi.querySelector('.hl-sub').textContent = 'Swim an event twice to start tracking improvements.';
+    }
+    // Favorite
+    const fv = document.getElementById('hFavorite');
+    if(s.favorite){
+      fv.querySelector('.hl-value').textContent = s.favorite.event;
+      fv.querySelector('.hl-sub').textContent = `${s.favorite.count} race${s.favorite.count===1?'':'s'} · PR ${s.favorite.time}`;
+    } else {
+      fv.querySelector('.hl-value').textContent = '—';
+      fv.querySelector('.hl-sub').textContent = 'No races yet.';
+    }
+    // Recent meet
+    const rm = document.getElementById('hRecentMeet');
+    if(s.recentMeet){
+      rm.querySelector('.hl-value').textContent = s.recentMeet.meet;
+      rm.querySelector('.hl-sub').textContent  = `${fmtDate(s.recentMeet.dateStr)} · ${s.recentMeet.races} race${s.recentMeet.races===1?'':'s'}`;
+    } else {
+      rm.querySelector('.hl-value').textContent = 'No meets yet';
+      rm.querySelector('.hl-sub').textContent = '';
+    }
+  }
+
+  function renderRanks(sw){
+    const host = document.getElementById('ranksList');
+    const ageSuffixEl = document.getElementById('rankAgeGroup');
+    const { ageGroup, ranks } = HHST.rankSwimmerInAgeGroup(sw, allSwimmers);
+    if(ageGroup && ageGroup !== 'Unknown') ageSuffixEl.textContent = ` in ${ageGroup}`;
+    const entries = Object.entries(ranks).sort((a,b) => HHST.compareEventLabel(a[0], b[0]));
+    if(!entries.length){
+      host.innerHTML = '<div class="empty">Once we have times in your age group, your team rank will appear here.</div>';
+      return;
+    }
+    host.innerHTML = entries.map(([event, r]) => {
+      const pct = r.total > 1 ? ((r.total - r.rank) / (r.total - 1)) : 1;
+      const badge = r.rank === 1 ? '🥇' : r.rank === 2 ? '🥈' : r.rank === 3 ? '🥉' : '';
+      const rankClass = r.rank === 1 ? 'rank-1' : r.rank <= 3 ? 'rank-top3' : r.rank <= Math.max(5, r.total*0.25) ? 'rank-top' : '';
+      return `
+        <div class="rank-row ${rankClass}">
+          <div class="rank-event">${escapeHtml(event)}</div>
+          <div class="rank-bar">
+            <div class="rank-bar-fill" style="width:${(pct*100).toFixed(1)}%"></div>
+          </div>
+          <div class="rank-place">
+            <span class="rank-badge">${badge}</span>
+            <strong>${ordinal(r.rank)}</strong> of ${r.total}
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  let strokeChart;
+  function renderStrokeChart(counts){
+    const host = document.getElementById('strokeChart').getContext('2d');
+    const entries = Object.entries(counts).sort((a,b)=> b[1]-a[1]);
+    if(!entries.length){
+      strokeChart && strokeChart.destroy();
+      document.querySelector('.stroke-mix').innerHTML = '<div class="empty">No stroke data yet — upload meet results to see distribution.</div>';
+      return;
+    }
+    const labels = entries.map(e=>e[0]);
+    const data   = entries.map(e=>e[1]);
+    const colors = labels.map(l => STROKE_COLORS[l] || STROKE_COLORS.Other);
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    if(strokeChart) strokeChart.destroy();
+    strokeChart = new Chart(host, {
+      type: 'doughnut',
+      data: { labels, datasets:[{ data, backgroundColor: colors, borderColor: isLight ? '#fff' : '#102849', borderWidth: 3 }] },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '62%',
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor:'rgba(11,29,58,.95)', titleColor:'#fff', bodyColor:'#cbd6e8',
+            callbacks: { label: ctx => `${ctx.label}: ${ctx.parsed} race${ctx.parsed===1?'':'s'}` }
+          }
+        }
+      }
+    });
+    const total = data.reduce((s,n)=>s+n,0);
+    const legend = document.getElementById('strokeLegend');
+    legend.innerHTML = entries.map(([label, count]) => {
+      const pct = total ? Math.round(count/total*100) : 0;
+      return `
+        <div class="stroke-leg-row">
+          <span class="stroke-leg-dot" style="background:${STROKE_COLORS[label]||STROKE_COLORS.Other}"></span>
+          <span class="stroke-leg-name">${escapeHtml(label)}</span>
+          <span class="stroke-leg-count">${count} race${count===1?'':'s'}</span>
+          <span class="stroke-leg-pct">${pct}%</span>
+        </div>`;
+    }).join('');
+  }
+
+  function initMeetHistory(sw){
     const tbody = document.querySelector('#meetTable tbody');
-    const history = (sw.results||[]).slice().sort((a,b)=>{
+    const allRaces = (sw.results||[]).slice().sort((a,b)=>{
       const da = new Date(a.date).getTime() || 0;
       const db = new Date(b.date).getTime() || 0;
       return db - da;
     });
-    if(history.length === 0){
-      tbody.innerHTML = `<tr><td colspan="5"><div class="empty">No race results uploaded yet.</div></td></tr>`;
-    } else {
-      tbody.innerHTML = history.map(r => `
-        <tr>
-          <td>${fmtDate(r.date)}</td>
-          <td>${r.meet || '—'}</td>
-          <td>${r.event}</td>
-          <td style="font-family:'Fraunces',serif;font-weight:700;color:var(--accent)">${r.time}</td>
-          <td>${r.place || '—'}</td>
-        </tr>
-      `).join('');
+
+    // Fill filter dropdowns
+    const meetSel = document.getElementById('meetFilter');
+    const strokeSel = document.getElementById('strokeFilter');
+    const meets = Array.from(new Set(allRaces.map(r => r.meet).filter(Boolean)));
+    meets.forEach(m => meetSel.insertAdjacentHTML('beforeend', `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`));
+    const strokes = Array.from(new Set(allRaces.map(r => r.stroke || HHST.extractStroke(r.event)).filter(Boolean)));
+    strokes.forEach(s => strokeSel.insertAdjacentHTML('beforeend', `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`));
+
+    function render(){
+      const m = meetSel.value;
+      const s = strokeSel.value;
+      const rows = allRaces.filter(r => {
+        if(m && r.meet !== m) return false;
+        if(s && (r.stroke || HHST.extractStroke(r.event)) !== s) return false;
+        return true;
+      });
+      document.getElementById('meetCounter').textContent =
+        rows.length ? `${rows.length} race${rows.length===1?'':'s'}` : '';
+
+      // For each event, what was this swimmer's PR in the full history? Mark matching row.
+      const prByEvent = {};
+      allRaces.forEach(r => {
+        if(!isFinite(r.seconds)) return;
+        if(!(r.event in prByEvent) || r.seconds < prByEvent[r.event].sec){
+          prByEvent[r.event] = { sec: r.seconds, date: r.date, meet: r.meet };
+        }
+      });
+
+      if(rows.length === 0){
+        tbody.innerHTML = `<tr><td colspan="6"><div class="empty">${allRaces.length === 0 ? 'No race results uploaded yet.' : 'No races match these filters.'}</div></td></tr>`;
+        return;
+      }
+      tbody.innerHTML = rows.map(r => {
+        const isPR = prByEvent[r.event] && prByEvent[r.event].sec === r.seconds && prByEvent[r.event].date === r.date && prByEvent[r.event].meet === r.meet;
+        const place = parseInt(r.place,10);
+        let placeCell = r.place || '—';
+        if(place === 1) placeCell = `<span class="place-pill place-1">🥇 1st</span>`;
+        else if(place === 2) placeCell = `<span class="place-pill place-2">🥈 2nd</span>`;
+        else if(place === 3) placeCell = `<span class="place-pill place-3">🥉 3rd</span>`;
+        else if(isFinite(place) && place > 0) placeCell = `<span class="place-pill">${ordinal(place)}</span>`;
+        const notes = [];
+        if(isPR) notes.push('<span class="note-pr">PR</span>');
+        if(r.split) notes.push(`<span class="note-split">Splits: ${escapeHtml(r.split)}</span>`);
+        return `
+          <tr>
+            <td>${fmtDate(r.date)}</td>
+            <td>${escapeHtml(r.meet || '—')}</td>
+            <td>${escapeHtml(r.event)}</td>
+            <td class="time-cell">${escapeHtml(r.time)}</td>
+            <td>${placeCell}</td>
+            <td>${notes.join(' ') || ''}</td>
+          </tr>`;
+      }).join('');
     }
+    meetSel.addEventListener('change', render);
+    strokeSel.addEventListener('change', render);
+    render();
   }
 
   let chart;
   function drawChart(eventData){
     const ctx = document.getElementById('progressChart').getContext('2d');
-    const sorted = eventData.history.slice().sort((a,b)=>{
+    const sorted = eventData.history.slice().filter(r=>isFinite(r.seconds)).sort((a,b)=>{
       const da = new Date(a.date).getTime() || 0;
       const db = new Date(b.date).getTime() || 0;
       return da - db;
     });
-    const labels = sorted.map(r => fmtDate(r.date) || r.meet);
+    const labels  = sorted.map(r => fmtDateShort(r.date) || r.meet);
     const seconds = sorted.map(r => r.seconds);
-    const times = sorted.map(r => r.time);
+    const times   = sorted.map(r => r.time);
+    const meets   = sorted.map(r => r.meet || '');
+    const bestSec = Math.min(...seconds);
+    const pointBg = seconds.map(s => s === bestSec ? '#fbbf24' : (document.documentElement.getAttribute('data-theme')==='light' ? '#2563eb' : '#60a5fa'));
+    const pointR  = seconds.map(s => s === bestSec ? 8 : 5);
 
     const isLight = document.documentElement.getAttribute('data-theme') === 'light';
     const textColor = isLight ? '#516a8a' : '#b2c5e0';
@@ -281,9 +670,9 @@
           data: seconds,
           borderColor: accentColor,
           borderWidth: 2.5,
-          pointRadius: 5,
-          pointHoverRadius: 7,
-          pointBackgroundColor: accentColor,
+          pointRadius: pointR,
+          pointHoverRadius: 9,
+          pointBackgroundColor: pointBg,
           pointBorderColor: '#fff',
           pointBorderWidth: 2,
           backgroundColor: grad,
@@ -304,7 +693,11 @@
             borderWidth:1,
             padding:12,
             callbacks:{
-              label: (ctx) => `Time: ${times[ctx.dataIndex]}`
+              title: (items) => meets[items[0].dataIndex] ? `${meets[items[0].dataIndex]} — ${labels[items[0].dataIndex]}` : labels[items[0].dataIndex],
+              label: (ctx) => {
+                const isPR = seconds[ctx.dataIndex] === bestSec;
+                return `Time: ${times[ctx.dataIndex]}${isPR ? '  ⭐ PR' : ''}`;
+              }
             }
           }
         },
@@ -321,6 +714,10 @@
         }
       }
     });
+  }
+
+  function escapeHtml(s){
+    return (s||'').toString().replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
 </script>
 
