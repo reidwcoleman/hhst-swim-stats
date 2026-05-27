@@ -93,6 +93,8 @@
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap">
         <button class="btn ghost" id="downloadSampleBtn">Download sample CSV</button>
+        <button class="btn ghost" id="clearRosterBtn">Clear roster only</button>
+        <button class="btn ghost" id="clearTimesBtn">Clear meet times only</button>
         <button class="btn danger" id="resetDataBtn">Reset all data</button>
       </div>
     </div>
@@ -463,6 +465,30 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
     }
   });
 
+  document.getElementById('clearRosterBtn').addEventListener('click', async ()=>{
+    if(!confirm('Delete the entire roster (swimmers, parents, emails)? Meet times will be kept but won\'t be linked to anyone.')) return;
+    try{
+      await HHST.clearRoster();
+      await refreshAll();
+      setStatus('ok','Roster cleared.');
+    } catch(err){
+      console.error(err);
+      setStatus('err','Clear failed: ' + (err.message || err));
+    }
+  });
+
+  document.getElementById('clearTimesBtn').addEventListener('click', async ()=>{
+    if(!confirm('Delete all meet times? Swimmers and roster info will be kept.')) return;
+    try{
+      await HHST.clearMeetTimes();
+      await refreshAll();
+      setStatus('ok','Meet times cleared.');
+    } catch(err){
+      console.error(err);
+      setStatus('err','Clear failed: ' + (err.message || err));
+    }
+  });
+
   // SAMPLE CSV
   document.getElementById('downloadSampleBtn').addEventListener('click', ()=>{
     const sample = `Athlete,Account Name,Parent 1 Email,Event,Time,Meet,Date,Age,Group,Place
@@ -553,9 +579,9 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
       </div>`;
       return;
     }
-    wrap.innerHTML = `<table>
-      <thead><tr><th>Name</th><th>Age</th><th>Group</th><th>Parents</th><th>Emails</th><th>Races</th><th></th></tr></thead>
-      <tbody>${swimmers.map(s=>{
+    const buckets = HHST.groupByBracket(swimmers);
+    function rowsFor(list){
+      return list.map(s=>{
         const emails = (s.emails||[]).filter(Boolean);
         const emailCell = emails.length
           ? emails.slice(0,2).map(escapeHtml).join('<br>') + (emails.length > 2 ? `<br><span class="email-more">+${emails.length-2} more</span>` : '')
@@ -574,9 +600,20 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
             <button class="danger" data-del="${s.key}">Delete</button>
           </td>
         </tr>`;
-      }).join('')}
-      </tbody>
-    </table>`;
+      }).join('');
+    }
+    const sections = HHST.AGE_GROUP_ORDER.filter(g => (buckets[g]||[]).length).map(g => {
+      const list = buckets[g];
+      return `
+        <h3 class="age-group-h" style="margin:24px 0 8px;font-family:Fraunces,serif;font-weight:700;font-size:1.15em">
+          ${escapeHtml(g)} <span style="color:var(--text-subtle);font-weight:500;font-size:0.85em">— ${list.length} swimmer${list.length===1?'':'s'}</span>
+        </h3>
+        <table>
+          <thead><tr><th>Name</th><th>Age</th><th>Group</th><th>Parents</th><th>Emails</th><th>Races</th><th></th></tr></thead>
+          <tbody>${rowsFor(list)}</tbody>
+        </table>`;
+    }).join('');
+    wrap.innerHTML = sections;
     wrap.querySelectorAll('button[data-edit]').forEach(b => b.addEventListener('click', ()=>{
       openEditModal(b.dataset.edit);
     }));

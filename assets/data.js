@@ -15,6 +15,14 @@
   function swimmerKey(name){
     return norm(name).replace(/\s+/g,'-');
   }
+  function slugify(s){
+    return (s||'').toString().toLowerCase()
+      .replace(/[^a-z0-9]+/g,'-')
+      .replace(/^-+|-+$/g,'') || 'x';
+  }
+  function meetTimeDocId(swimmerKey, eventLabel){
+    return `${swimmerKey}__${slugify(eventLabel)}`;
+  }
   function fmtTime(t){
     if(t==null) return '';
     let s = t.toString().trim();
@@ -329,6 +337,7 @@
 
     const skippedSwimmers = new Set();
     const writtenKeys = new Set();
+    const meetTimeWrites = [];
     for(const rec of records){
       const key = rec.__key;
       const name = rec.__name;
@@ -396,24 +405,52 @@
           touched = true;
         }
       }
+      // Auto-assigned bracket from numeric age (6 & Under / 7-8 / 9-10 / 11-12 / 13 & Up).
+      // Kept distinct from sw.ageGroup (Swimtopia raw label) so existing leaderboard
+      // grouping stays intact while the new collections always have a clean bracket.
+      const computedBracket = getAgeGroup(sw.age);
+      if(sw.bracket !== computedBracket){
+        sw.bracket = computedBracket;
+        touched = true;
+      }
       if(touched) profileUpdated.add(key);
       if(rec.event && rec.time){
         const eventLabel = normalizeEventLabel(rec);
         const distance = (rec.distance||'').toString().trim() || extractDistance(rec.event);
         const stroke = extractStroke(rec.event);
-        sw.results.push({
+        const timeStr = fmtTime(rec.time);
+        const result = {
           event: eventLabel,
           distance,
           stroke,
-          time: fmtTime(rec.time),
-          seconds: timeToSeconds(fmtTime(rec.time)),
+          time: timeStr,
+          seconds: timeToSeconds(timeStr),
           meet: rec.meet || 'Unknown Meet',
           date: rec.date || '',
           place: rec.place || '',
           split: rec.split || ''
-        });
+        };
+        sw.results.push(result);
         added++;
         if(rec.meet) meetNames.add(rec.meet);
+        // Stage a mirror write to hhst_meet_times. Doc id = swimmer + event, so
+        // re-uploading the same (swimmer, event) overwrites instead of duplicating.
+        meetTimeWrites.push({
+          id: meetTimeDocId(key, eventLabel),
+          data: {
+            swimmerKey: key,
+            swimmerName: name,
+            event: eventLabel,
+            distance,
+            stroke,
+            time: timeStr,
+            seconds: result.seconds,
+            meet: result.meet,
+            date: result.date,
+            place: result.place,
+            ageGroup: computedBracket
+          }
+        });
       }
     }
 
@@ -426,6 +463,41 @@
       chunk.forEach(k => {
         const ref = FB.db.collection('swimmers').doc(k);
         batch.set(ref, { ...updates[k], updatedAt: FB.FieldValue.serverTimestamp() }, { merge: true });
+      });
+      await batch.commit();
+    }
+
+    // Mirror to hhst_rosters/{key} — slim doc for the simple view requested
+    // by the new feature. Lives alongside swimmers/{key} so the existing
+    // dashboards/leaderboards keep working off the rich schema.
+    const rosterChunks = [];
+    for(let i=0;i<keys.length;i+=400) rosterChunks.push(keys.slice(i, i+400));
+    for(const chunk of rosterChunks){
+      const batch = FB.db.batch();
+      chunk.forEach(k => {
+        const sw = updates[k];
+        const ref = FB.db.collection('hhst_rosters').doc(k);
+        batch.set(ref, {
+          swimmerKey: k,
+          name: sw.name,
+          age: sw.age || '',
+          ageGroup: sw.bracket || getAgeGroup(sw.age),
+          group: sw.group || '',
+          uploadedAt: FB.FieldValue.serverTimestamp()
+        }, { merge: true });
+      });
+      await batch.commit();
+    }
+
+    // Mirror to hhst_meet_times/{swimmerKey__event} — one doc per swimmer+event,
+    // so re-uploading the same combo updates rather than appending.
+    const mtChunks = [];
+    for(let i=0;i<meetTimeWrites.length;i+=400) mtChunks.push(meetTimeWrites.slice(i, i+400));
+    for(const chunk of mtChunks){
+      const batch = FB.db.batch();
+      chunk.forEach(w => {
+        const ref = FB.db.collection('hhst_meet_times').doc(w.id);
+        batch.set(ref, { ...w.data, uploadedAt: FB.FieldValue.serverTimestamp() }, { merge: true });
       });
       await batch.commit();
     }
@@ -557,6 +629,18 @@
   // -------- Admin ops (require auth) --------
   async function deleteSwimmer(key){
     await FB.db.collection('swimmers').doc(key).delete();
+    try{ await FB.db.collection('hhst_rosters').doc(key).delete(); }catch(e){}
+    // Best-effort: also wipe this swimmer's meet-time mirror docs
+    try{
+      const mt = await FB.db.collection('hhst_meet_times').where('swimmerKey','==',key).get();
+      const refs = [];
+      mt.forEach(d => refs.push(d.ref));
+      while(refs.length){
+        const batch = FB.db.batch();
+        refs.splice(0,400).forEach(ref => batch.delete(ref));
+        await batch.commit();
+      }
+    }catch(e){}
   }
   async function addSwimmerManual({name, address, email, parent, age, group}){
     const key = swimmerKey(fixNameOrder(name));
@@ -595,9 +679,8 @@
     }, { merge: true });
     return next;
   }
-  async function clearAll(){
-    // Delete every swimmer doc + the meta/stats doc.
-    const snap = await FB.db.collection('swimmers').get();
+  async function clearCollection(name){
+    const snap = await FB.db.collection(name).get();
     const docs = [];
     snap.forEach(d => docs.push(d.ref));
     while(docs.length){
@@ -605,8 +688,32 @@
       docs.splice(0,400).forEach(ref => batch.delete(ref));
       await batch.commit();
     }
-    try{ await FB.db.collection('meta').doc('stats').delete(); }catch(e){}
   }
+  async function clearAll(opts){
+    opts = opts || { roster:true, meetTimes:true };
+    if(opts.roster !== false){
+      // Roster wipe also drops the embedded results in swimmers/{key}.
+      await clearCollection('swimmers');
+      await clearCollection('hhst_rosters');
+      await clearCollection('hhst_meet_times');
+    } else if(opts.meetTimes !== false){
+      // Times-only wipe: keep swimmer docs, but null out the embedded results.
+      const snap = await FB.db.collection('swimmers').get();
+      const refs = [];
+      snap.forEach(d => refs.push(d.ref));
+      while(refs.length){
+        const batch = FB.db.batch();
+        refs.splice(0,400).forEach(ref => batch.set(ref, { results: [] }, { merge: true }));
+        await batch.commit();
+      }
+      await clearCollection('hhst_meet_times');
+    }
+    if(opts.roster !== false && opts.meetTimes !== false){
+      try{ await FB.db.collection('meta').doc('stats').delete(); }catch(e){}
+    }
+  }
+  async function clearRoster(){ return clearAll({ roster:true, meetTimes:false }); }
+  async function clearMeetTimes(){ return clearAll({ roster:false, meetTimes:true }); }
 
   // -------- Auth --------
   // Login form labels say "Email" & "Password" so they create
@@ -632,16 +739,16 @@
   function isAdminLoggedIn(){ return !!FB.auth.currentUser; }
 
   // -------- Stats helpers --------
-  // Standard summer-league age groups
-  const AGE_GROUP_ORDER = ['8 & Under','9-10','11-12','13-14','15-18','Unknown'];
+  // HHST age groups
+  const AGE_GROUP_ORDER = ['6 & Under','7-8','9-10','11-12','13 & Up','Unknown'];
   function getAgeGroup(age){
     const n = parseInt(age, 10);
     if(!isFinite(n) || n <= 0) return 'Unknown';
-    if(n <= 8) return '8 & Under';
+    if(n <= 6) return '6 & Under';
+    if(n <= 8) return '7-8';
     if(n <= 10) return '9-10';
     if(n <= 12) return '11-12';
-    if(n <= 14) return '13-14';
-    return '15-18';
+    return '13 & Up';
   }
 
   // Stroke order for grouping / sorting
@@ -864,18 +971,34 @@
     localStorage.setItem('hhst.theme', next);
   }
 
+  // Group an array of swimmers into the canonical HHST age brackets,
+  // preserving AGE_GROUP_ORDER. Useful for pages that want to render the
+  // roster split into bracket sections.
+  function groupByBracket(swimmers){
+    const buckets = {};
+    AGE_GROUP_ORDER.forEach(g => { buckets[g] = []; });
+    (swimmers||[]).forEach(sw => {
+      const b = sw.bracket || getAgeGroup(sw.age);
+      (buckets[b] || buckets['Unknown']).push(sw);
+    });
+    Object.values(buckets).forEach(list => list.sort((a,b)=> (a.name||'').localeCompare(b.name||'')));
+    return buckets;
+  }
+
   global.HHST = {
     readAll, getSwimmer,
     parseCSV, ingestCSV,
     findSwimmer,
-    deleteSwimmer, addSwimmerManual, updateSwimmer, clearAll,
+    deleteSwimmer, addSwimmerManual, updateSwimmer,
+    clearAll, clearRoster, clearMeetTimes,
     isAdminLoggedIn, loginAdmin, logoutAdmin, onAuthChanged,
     statsForSwimmer, rankSwimmerInAgeGroup, buildLeaderboards, teamStats,
     getAgeGroup, AGE_GROUP_ORDER, STROKE_ORDER, extractStroke, extractDistance, distanceNum, compareEventLabel,
-    fmtTime, timeToSeconds, swimmerKey, norm,
+    fmtTime, timeToSeconds, swimmerKey, slugify, meetTimeDocId, norm,
     fixNameOrder, isValidEmail, ageFromDob,
     normalizeEventLabel,
     leaderboardsByEvent, sortAgeGroups,
+    groupByBracket,
     initTheme, toggleTheme
   };
 })(window);
