@@ -1411,6 +1411,187 @@ table tr:hover td{background:rgba(96,165,250,.05)}
 /* Awards look the same in dark mode — they're cards meant to be printed,
    not blended into the page chrome. */
 
+/* ============ ROSTER TABLE — polished ============ */
+.roster-table{
+  width:100%;border-collapse:separate;border-spacing:0;
+  font-size:14px;background:var(--surface);
+}
+.roster-table thead th{
+  text-align:left;padding:11px 14px;
+  background:var(--bg-alt);color:var(--text-muted);
+  font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.08em;
+  border-bottom:1px solid var(--border);
+  white-space:nowrap;
+}
+.roster-table thead th:first-child{border-top-left-radius:12px}
+.roster-table thead th:last-child{border-top-right-radius:12px}
+.roster-table thead th.th-races{text-align:center}
+.roster-table tbody td{
+  padding:13px 14px;color:var(--text);
+  border-bottom:1px solid var(--border);
+  vertical-align:middle;
+  white-space:nowrap;          /* never wrap labels like "Group" */
+  background:transparent;
+}
+.roster-table tbody tr:last-child td{border-bottom:none}
+.roster-table tbody tr:hover td{background:rgba(96,165,250,.05)}
+.roster-table tbody tr:nth-child(even) td{background:rgba(255,255,255,.012)}
+[data-theme="light"] .roster-table tbody tr:nth-child(even) td{background:rgba(15,23,42,.015)}
+.roster-table tbody tr:nth-child(even):hover td{background:rgba(96,165,250,.06)}
+
+/* Swimmer name cell — name + small training-group chip stacked */
+.cell-name{min-width:170px}
+.swimmer-name-cell{display:flex;align-items:center;gap:8px;flex-wrap:nowrap;min-width:0}
+.swimmer-name-cell strong{
+  font-weight:600;font-size:14.5px;color:var(--text);
+  letter-spacing:-.005em;white-space:nowrap;
+}
+.training-chip{
+  display:inline-flex;align-items:center;
+  padding:2px 8px;border-radius:999px;
+  background:var(--bg-alt);
+  border:1px solid var(--border);
+  color:var(--text-muted);font-size:11px;font-weight:600;
+  letter-spacing:.02em;white-space:nowrap;flex-shrink:0;
+}
+
+/* Age column */
+.cell-age{
+  font-family:'Fraunces',serif;font-weight:600;
+  color:var(--text);font-variant-numeric:tabular-nums;
+  width:60px;
+}
+
+/* Age-Group bracket pill — color-coded per bracket */
+.cell-bracket{width:1%}
+.bracket-pill{
+  display:inline-flex;align-items:center;justify-content:center;
+  padding:4px 11px;border-radius:999px;
+  font-family:'Inter',sans-serif;font-weight:600;font-size:12px;
+  letter-spacing:.01em;white-space:nowrap;
+  border:1px solid transparent;
+}
+.bracket-pill-lg{
+  padding:6px 14px;font-size:13.5px;letter-spacing:.005em;
+}
+.bracket-6-under{
+  background:rgba(244,114,182,.14);color:#f9a8d4;
+  border-color:rgba(244,114,182,.3);
+}
+.bracket-7-8{
+  background:rgba(167,139,250,.14);color:#c4b5fd;
+  border-color:rgba(167,139,250,.3);
+}
+.bracket-9-10{
+  background:rgba(96,165,250,.14);color:#93c5fd;
+  border-color:rgba(96,165,250,.3);
+}
+.bracket-11-12{
+  background:rgba(52,211,153,.14);color:#86efac;
+  border-color:rgba(52,211,153,.3);
+}
+.bracket-13-14{
+  background:rgba(251,191,36,.14);color:#fcd34d;
+  border-color:rgba(251,191,36,.3);
+}
+.bracket-15-18{
+  background:rgba(248,113,113,.14);color:#fca5a5;
+  border-color:rgba(248,113,113,.3);
+}
+.bracket-unknown{
+  background:var(--bg-alt);color:var(--text-subtle);
+  border-color:var(--border);
+}
+[data-theme="light"] .bracket-6-under{color:#be185d}
+[data-theme="light"] .bracket-7-8{color:#6d28d9}
+[data-theme="light"] .bracket-9-10{color:#1d4ed8}
+[data-theme="light"] .bracket-11-12{color:#047857}
+[data-theme="light"] .bracket-13-14{color:#b45309}
+[data-theme="light"] .bracket-15-18{color:#b91c1c}
+
+/* Parent / Email cells — show primary, +N for overflow, full list in tooltip */
+.cell-parents, .cell-email{
+  max-width:220px;overflow:hidden;text-overflow:ellipsis;
+}
+.parents-cell, .email-primary{
+  overflow:hidden;text-overflow:ellipsis;
+  display:inline-block;max-width:100%;vertical-align:middle;
+  color:var(--text);font-size:13.5px;
+}
+.email-primary{
+  font-family:'Inter',sans-serif;color:var(--text-muted);font-size:13px;
+}
+.email-more{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-width:22px;padding:1px 6px;margin-left:6px;
+  border-radius:999px;background:var(--bg-alt);
+  color:var(--text-subtle);font-size:11px;font-weight:600;
+  border:1px solid var(--border);
+  vertical-align:middle;
+}
+
+/* Races count chip */
+.cell-races{text-align:center;width:80px}
+.race-count{
+  display:inline-grid;place-items:center;
+  min-width:30px;height:26px;padding:0 9px;
+  border-radius:999px;
+  background:rgba(96,165,250,.1);
+  color:var(--accent);border:1px solid rgba(96,165,250,.22);
+  font-family:'Fraunces',serif;font-weight:700;font-size:13.5px;
+  font-variant-numeric:tabular-nums;
+}
+
+/* Actions cell */
+.cell-actions{width:1%;white-space:nowrap}
+.roster-table .row-actions{
+  display:inline-flex;gap:4px;flex-wrap:nowrap;
+}
+.roster-table .row-actions button{
+  background:transparent;border:1px solid var(--border-strong);
+  color:var(--text-muted);padding:6px 11px;
+  font-size:12px;font-weight:600;border-radius:7px;cursor:pointer;
+  transition:all .15s;white-space:nowrap;
+}
+.roster-table .row-actions button:hover{
+  color:var(--accent);border-color:var(--accent);
+  background:rgba(96,165,250,.06);
+}
+.roster-table .row-actions button.danger:hover{
+  color:var(--red-light);border-color:var(--red);
+  background:rgba(239,68,68,.06);
+}
+
+/* Section header — bracket pill + count */
+.age-group-h{
+  display:flex;align-items:center;gap:12px;
+  margin:28px 0 12px;
+}
+.age-group-h:first-of-type{margin-top:8px}
+.age-group-h .age-group-count{
+  font-family:'Inter',sans-serif;font-weight:500;font-size:13px;
+  color:var(--text-subtle);letter-spacing:0;
+}
+
+/* Mobile — keep table on its own horizontal scroll but make rows compact.
+   Each cell stays single-line; user scrolls horizontally to see all columns. */
+@media (max-width:768px){
+  .roster-table{font-size:13px}
+  .roster-table thead th, .roster-table tbody td{padding:10px 12px}
+  .cell-name{min-width:150px}
+  .cell-parents, .cell-email{max-width:160px}
+  .roster-table .row-actions button{padding:6px 9px;font-size:11.5px}
+}
+@media (max-width:480px){
+  .roster-table{font-size:12.5px;min-width:680px}
+  .roster-table thead th, .roster-table tbody td{padding:9px 10px}
+  .training-chip{font-size:10.5px;padding:1px 6px}
+  .bracket-pill{font-size:11px;padding:3px 9px}
+  .bracket-pill-lg{font-size:12.5px;padding:5px 11px}
+  .age-group-h{margin:20px 0 8px;gap:8px;flex-wrap:wrap}
+  .age-group-h .age-group-count{font-size:12px}
+}
+
 /* ============ COLLAPSIBLE CARD (Importing from Swimtopia, etc) ============ */
 details.collapsible-card{
   padding:0;overflow:hidden;
@@ -1747,12 +1928,10 @@ details[open].collapsible-card > summary{
   }
 }
 
-/* Long-name protection: roster table cells never burst past the row */
-table td, table th{word-break:break-word}
-.email-cell{max-width:200px;word-break:break-all}
-@media (max-width:480px){
-  .email-cell{max-width:140px}
-}
+/* Generic table cells: allow word-break for non-roster tables that might
+   have long content. The polished .roster-table sets its own white-space
+   rules and wins via more-specific selectors. */
+table:not(.roster-table) td, table:not(.roster-table) th{word-break:break-word}
 
 /* ============ PRINT RULES ============ */
 @media print {
