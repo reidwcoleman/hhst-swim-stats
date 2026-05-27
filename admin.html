@@ -103,11 +103,78 @@
       <div class="kpi"><div class="label">Last Upload</div><div class="value" id="kLast">—</div><div class="delta" id="dLast">No CSV uploaded yet</div></div>
     </div>
 
+    <!-- SWIMTOPIA EXPORT GUIDE -->
+    <div class="card">
+      <h2>Exporting Times from Swimtopia</h2>
+      <p class="lead">Follow these steps to download swimmer times from Swimtopia, then drop the CSV in the upload zone below. Every row is saved to Firebase, so families instantly see the new times on the public site.</p>
+
+      <ol class="steps">
+        <li>
+          <span class="step-num">1</span>
+          <div class="step-body">
+            <h3>Sign in to Swimtopia</h3>
+            <p>Go to <a href="https://www.swimtopia.com" target="_blank" rel="noopener">swimtopia.com</a> (or your team's <em>.swimtopia.com</em> subdomain) and sign in with your coach / admin account.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">2</span>
+          <div class="step-body">
+            <h3>Open the team site → Meets</h3>
+            <p>From your team dashboard, click <strong>Meets</strong> in the side navigation. You'll see every meet your team has competed in.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">3</span>
+          <div class="step-body">
+            <h3>Pick the meet you want to import</h3>
+            <p>Click the meet name. If results have been finalized in Meet Maestro, you'll see the <strong>Results</strong> tab become available.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">4</span>
+          <div class="step-body">
+            <h3>Open Results → Reports</h3>
+            <p>On the meet page, click <strong>Results</strong>, then <strong>Reports</strong>. Choose <strong>Individual Results</strong> (or <strong>Athlete Results</strong>) to get one row per swimmer per event.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">5</span>
+          <div class="step-body">
+            <h3>Export as CSV</h3>
+            <p>Click the <strong>Export</strong> button (or the download icon in the top right) and pick <strong>CSV (.csv)</strong>. Save the file somewhere you can find it — your Downloads folder is fine.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">6</span>
+          <div class="step-body">
+            <h3>Drop it in the upload zone below</h3>
+            <p>Drag the CSV into the dashed box below, or click to browse. Times will be merged into matching swimmers and saved to Firebase automatically.</p>
+          </div>
+        </li>
+      </ol>
+
+      <div class="tips-box">
+        <div class="tips-head">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.2 1 2v.3h6v-.3c0-.8.4-1.5 1-2A7 7 0 0 0 12 2z"/></svg>
+          <h4>Tips for the cleanest import</h4>
+        </div>
+        <ul>
+          <li><strong>Keep swimmer names consistent</strong> across meets. "Riley Carter" and "riley carter" will merge, but "Riley J. Carter" creates a separate swimmer.</li>
+          <li><strong>Include at least <code>name</code>, <code>event</code>, <code>time</code>, <code>meet</code>, and <code>date</code></strong>. <code>age</code>, <code>group</code>, and <code>place</code> are optional and just make the family dashboard richer.</li>
+          <li>If Swimtopia exports <code>first name</code> and <code>last name</code> as separate columns, that's fine — they're auto-combined.</li>
+          <li>Times can be <code>SS.HH</code> (<code>28.42</code>) or <code>M:SS.HH</code> (<code>1:02.18</code>). Both work — the seconds format is also stored for ranking.</li>
+          <li><strong>Swimtopia exports don't include home addresses.</strong> After uploading, click <strong>Edit</strong> next to each swimmer below to add their address so families can look them up.</li>
+          <li>Re-uploading the same meet is safe. Matching swimmers merge; new races append.</li>
+          <li>Use the <strong>Download sample CSV</strong> button above to see the exact column layout the importer is happiest with.</li>
+        </ul>
+      </div>
+    </div>
+
     <!-- UPLOAD CARD -->
     <div class="card">
       <h2>Upload Meet Results</h2>
       <p class="lead">
-        Drop a CSV (or Google Sheets → File → Download → CSV). Required columns: <code>name</code>, <code>event</code>, <code>time</code>, <code>meet</code>. Optional: <code>address</code>, <code>parent</code>, <code>date</code>, <code>distance</code>, <code>age</code>, <code>group</code>, <code>place</code>.
+        Drop the Swimtopia CSV here (or any Google Sheets → File → Download → CSV). Required columns: <code>name</code>, <code>event</code>, <code>time</code>, <code>meet</code>. Optional: <code>address</code>, <code>parent</code>, <code>date</code>, <code>distance</code>, <code>age</code>, <code>group</code>, <code>place</code>.
       </p>
 
       <label class="drop-zone" id="dropZone" for="csvFile">
@@ -147,7 +214,7 @@ Mateo Rivera,82 Pine Ridge Lane,Sofia Rivera,50 Free,30.10,Spring Invitational,2
     <!-- ROSTER TABLE -->
     <div class="card">
       <h2>Roster</h2>
-      <p class="lead">Click a swimmer to see what families see when they look them up.</p>
+      <p class="lead">Click <strong>Edit</strong> next to any swimmer to add or update their home address — Swimtopia exports don't include addresses, so this is how families' lookups stay accurate.</p>
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">
         <input type="text" id="searchInput" placeholder="Search swimmers, parents, or addresses…" style="flex:1;min-width:240px;padding:12px 14px;border-radius:10px;background:var(--surface);color:var(--text);border:1px solid var(--border-strong);font-size:14px"/>
       </div>
@@ -155,6 +222,46 @@ Mateo Rivera,82 Pine Ridge Lane,Sofia Rivera,50 Free,30.10,Spring Invitational,2
     </div>
 
   </main>
+</div>
+
+<!-- ============ EDIT SWIMMER MODAL ============ -->
+<div id="editModal" class="modal-backdrop" style="display:none">
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="editTitle">
+    <button class="modal-close" id="editClose" aria-label="Close">&times;</button>
+    <h2 id="editTitle">Edit Swimmer</h2>
+    <p class="lead" id="editSwimmerName" style="margin-bottom:18px">—</p>
+    <form id="editForm" autocomplete="off">
+      <div class="field">
+        <label for="eAddress">Home address</label>
+        <input type="text" id="eAddress" placeholder="123 Coastline Drive"/>
+      </div>
+
+      <div class="field">
+        <label>Parents / Guardians</label>
+        <div class="chip-list" id="eParentChips" aria-live="polite"></div>
+        <div class="chip-add">
+          <input type="text" id="eParentInput" placeholder="Type a name and press Enter or Add"/>
+          <button type="button" class="btn ghost btn-sm-inline" id="eParentAdd">Add</button>
+        </div>
+        <p class="field-hint">Add as many as you need. Families can use any one of these names to verify their swimmer.</p>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div class="field">
+          <label for="eAge">Age</label>
+          <input type="text" id="eAge"/>
+        </div>
+        <div class="field">
+          <label for="eGroup">Training group</label>
+          <input type="text" id="eGroup" placeholder="Bronze · Silver · Gold"/>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn ghost" id="editCancel">Cancel</button>
+        <button type="submit" class="btn">Save to Firebase</button>
+      </div>
+    </form>
+  </div>
 </div>
 
 <script src="assets/data.js"></script>
@@ -381,17 +488,23 @@ Lila Chen,308 Cypress Way,David Chen,200 Free,2:22.55,League Championships,2026-
           <td>${escapeHtml(s.age||'—')}</td>
           <td>${escapeHtml(s.group||'—')}</td>
           <td>${(s.parents||[]).map(escapeHtml).join(', ') || '—'}</td>
-          <td>${escapeHtml(s.address||'—')}</td>
+          <td>${s.address ? escapeHtml(s.address) : '<span class="addr-missing">Add address</span>'}</td>
           <td>${(s.results||[]).length}</td>
           <td class="row-actions">
+            <button data-edit="${s.key}">Edit</button>
             <button onclick="window.open('dashboard.html?s=${encodeURIComponent(s.key)}','_blank')">View</button>
             <button class="danger" data-del="${s.key}">Delete</button>
           </td>
         </tr>`).join('')}
       </tbody>
     </table>`;
+    wrap.querySelectorAll('button[data-edit]').forEach(b => b.addEventListener('click', ()=>{
+      openEditModal(b.dataset.edit);
+    }));
     wrap.querySelectorAll('button[data-del]').forEach(b => b.addEventListener('click', async ()=>{
-      if(!confirm(`Remove "${b.dataset.del.replace(/-/g,' ')}" and all their results?`)) return;
+      const sw = cachedData.swimmers[b.dataset.del];
+      const label = sw ? sw.name : b.dataset.del.replace(/-/g,' ');
+      if(!confirm(`Remove "${label}" and all their results?`)) return;
       try {
         await HHST.deleteSwimmer(b.dataset.del);
         await refreshAll();
@@ -401,6 +514,106 @@ Lila Chen,308 Cypress Way,David Chen,200 Free,2:22.55,League Championships,2026-
       }
     }));
   }
+
+  // ============ EDIT SWIMMER MODAL ============
+  const editModal = document.getElementById('editModal');
+  const editForm  = document.getElementById('editForm');
+  const parentChips = document.getElementById('eParentChips');
+  const parentInput = document.getElementById('eParentInput');
+  const parentAddBtn = document.getElementById('eParentAdd');
+  let editingKey = null;
+  let editingParents = []; // local list while modal is open
+
+  function renderParentChips(){
+    if(!editingParents.length){
+      parentChips.innerHTML = '<span class="chip-empty">No parents on file yet — add one below.</span>';
+      return;
+    }
+    parentChips.innerHTML = editingParents.map((p, i) => `
+      <span class="chip">
+        <span class="chip-text">${escapeHtml(p)}</span>
+        <button type="button" class="chip-x" data-idx="${i}" aria-label="Remove ${escapeHtml(p)}">&times;</button>
+      </span>
+    `).join('');
+    parentChips.querySelectorAll('.chip-x').forEach(b => b.addEventListener('click', () => {
+      const idx = parseInt(b.dataset.idx, 10);
+      editingParents.splice(idx, 1);
+      renderParentChips();
+    }));
+  }
+  function addParentFromInput(){
+    const v = parentInput.value.trim();
+    if(!v) return;
+    const lower = v.toLowerCase();
+    if(editingParents.some(p => p.toLowerCase() === lower)){
+      parentInput.value = '';
+      return;
+    }
+    editingParents.push(v);
+    parentInput.value = '';
+    renderParentChips();
+    parentInput.focus();
+  }
+  parentAddBtn.addEventListener('click', addParentFromInput);
+  parentInput.addEventListener('keydown', e => {
+    if(e.key === 'Enter'){ e.preventDefault(); addParentFromInput(); }
+  });
+
+  function openEditModal(key){
+    const sw = cachedData.swimmers[key];
+    if(!sw) return;
+    editingKey = key;
+    editingParents = (sw.parents||[]).filter(Boolean).slice();
+    document.getElementById('editSwimmerName').textContent = sw.name;
+    document.getElementById('eAddress').value = sw.address || '';
+    parentInput.value = '';
+    document.getElementById('eAge').value     = sw.age || '';
+    document.getElementById('eGroup').value   = sw.group || '';
+    renderParentChips();
+    editModal.style.display = 'flex';
+    setTimeout(()=> document.getElementById('eAddress').focus(), 30);
+  }
+  function closeEditModal(){
+    editModal.style.display = 'none';
+    editingKey = null;
+    editingParents = [];
+  }
+  document.getElementById('editClose').addEventListener('click', closeEditModal);
+  document.getElementById('editCancel').addEventListener('click', closeEditModal);
+  editModal.addEventListener('click', e => { if(e.target === editModal) closeEditModal(); });
+  document.addEventListener('keydown', e => {
+    if(e.key === 'Escape' && editModal.style.display !== 'none') closeEditModal();
+  });
+
+  editForm.addEventListener('submit', async e => {
+    e.preventDefault();
+    if(!editingKey) return;
+    const sw = cachedData.swimmers[editingKey];
+    if(!sw) return;
+    // Roll any unsubmitted text in the parent input into the list
+    if(parentInput.value.trim()) addParentFromInput();
+    const submitBtn = editForm.querySelector('button[type=submit]');
+    submitBtn.disabled = true;
+    const original = submitBtn.textContent;
+    submitBtn.textContent = 'Saving…';
+    try {
+      await HHST.updateSwimmer(editingKey, {
+        address: document.getElementById('eAddress').value.trim(),
+        parents: editingParents.slice(),
+        age:     document.getElementById('eAge').value.trim(),
+        group:   document.getElementById('eGroup').value.trim()
+      });
+      closeEditModal();
+      await refreshAll();
+      setStatus('ok', `Saved updates for ${sw.name} to Firebase.`);
+    } catch(err){
+      console.error(err);
+      setStatus('err','Update failed: ' + (err.message || err));
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = original;
+    }
+  });
 
   function escapeHtml(s){
     return (s||'').toString().replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));

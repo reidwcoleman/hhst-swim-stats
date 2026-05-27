@@ -10,7 +10,7 @@
    ============================================================= */
 (function(){
   const firebaseConfig = {
-    apiKey: "AIzaSyDeoVYOe8cIQt-VaroU5QxKpMgkScXprg",
+    apiKey: "AIzaSyDeoVYOe8cTQtL-VaroU5QxKpMgkScXprg",
     authDomain: "hhst-website.firebaseapp.com",
     projectId: "hhst-website",
     storageBucket: "hhst-website.firebasestorage.app",

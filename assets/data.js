@@ -286,6 +286,21 @@
     }, { merge: true });
     return next;
   }
+  async function updateSwimmer(key, fields){
+    const existing = await getSwimmer(key);
+    if(!existing) throw new Error('Swimmer not found');
+    const next = { ...existing };
+    if(fields.address !== undefined) next.address = fields.address;
+    if(fields.parents !== undefined) next.parents = fields.parents;
+    if(fields.age !== undefined) next.age = fields.age;
+    if(fields.group !== undefined) next.group = fields.group;
+    next.parents = next.parents || [];
+    next.results = next.results || [];
+    await FB.db.collection('swimmers').doc(key).set({
+      ...next, updatedAt: FB.FieldValue.serverTimestamp()
+    }, { merge: true });
+    return next;
+  }
   async function clearAll(){
     // Delete every swimmer doc + the meta/stats doc.
     const snap = await FB.db.collection('swimmers').get();
@@ -374,7 +389,7 @@
     readAll, getSwimmer,
     parseCSV, ingestCSV,
     findSwimmer,
-    deleteSwimmer, addSwimmerManual, clearAll,
+    deleteSwimmer, addSwimmerManual, updateSwimmer, clearAll,
     isAdminLoggedIn, loginAdmin, logoutAdmin, onAuthChanged,
     statsForSwimmer,
     fmtTime, timeToSeconds, swimmerKey, norm,

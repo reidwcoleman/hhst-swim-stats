@@ -537,6 +537,197 @@ table tr:hover td{background:rgba(96,165,250,.05)}
 }
 .empty svg{width:48px;height:48px;color:var(--text-subtle);margin-bottom:12px;opacity:.5}
 
+/* ============ STEPS (Swimtopia export guide) ============ */
+.steps{
+  list-style:none;
+  display:flex;flex-direction:column;gap:14px;
+  margin:8px 0 24px;
+}
+.steps > li{
+  display:flex;gap:16px;align-items:flex-start;
+  padding:16px 18px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  transition:border-color .2s, transform .2s;
+}
+.steps > li:hover{
+  border-color:var(--border-strong);
+  transform:translateY(-1px);
+}
+.step-num{
+  flex-shrink:0;
+  width:34px;height:34px;border-radius:50%;
+  background:linear-gradient(135deg,var(--accent),var(--brand-500,#3b82f6));
+  color:#fff;font-weight:700;font-size:15px;
+  display:grid;place-items:center;
+  box-shadow:0 6px 16px -6px var(--accent);
+}
+.step-body{flex:1;min-width:0}
+.step-body h3{
+  font-family:'Inter',sans-serif;font-weight:600;font-size:15px;
+  color:var(--text);margin:2px 0 4px;letter-spacing:-.01em;
+}
+.step-body p{
+  color:var(--text-muted);font-size:13.5px;line-height:1.55;margin:0;
+}
+.step-body a{color:var(--accent);text-decoration:underline;text-underline-offset:2px}
+.step-body strong{color:var(--text);font-weight:600}
+.step-body em{font-style:italic;color:var(--text)}
+
+/* ============ TIPS BOX ============ */
+.tips-box{
+  margin-top:8px;
+  padding:18px 20px 20px;
+  background:rgba(96,165,250,.06);
+  border:1px solid var(--border-strong);
+  border-left:3px solid var(--accent);
+  border-radius:var(--radius);
+}
+.tips-head{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.tips-head svg{width:20px;height:20px;color:var(--accent);flex-shrink:0}
+.tips-head h4{
+  font-family:'Inter',sans-serif;font-weight:600;font-size:14px;
+  color:var(--text);letter-spacing:.02em;text-transform:uppercase;margin:0;
+}
+.tips-box ul{
+  list-style:none;display:flex;flex-direction:column;gap:8px;padding:0;margin:0;
+}
+.tips-box li{
+  position:relative;padding-left:20px;
+  color:var(--text-muted);font-size:13.5px;line-height:1.6;
+}
+.tips-box li::before{
+  content:'';position:absolute;left:4px;top:9px;
+  width:6px;height:6px;border-radius:50%;
+  background:var(--accent);
+}
+.tips-box li strong{color:var(--text);font-weight:600}
+.tips-box code{
+  background:var(--bg-alt);color:var(--text);
+  padding:1px 6px;border-radius:5px;font-size:12.5px;
+  border:1px solid var(--border);
+}
+
+/* ============ ADDRESS MISSING TAG ============ */
+.addr-missing{
+  display:inline-block;font-size:12px;
+  color:var(--text-subtle);font-style:italic;
+  padding:3px 9px;border-radius:999px;
+  background:var(--bg-alt);
+  border:1px dashed var(--border-strong);
+}
+
+/* ============ MODAL ============ */
+.modal-backdrop{
+  position:fixed;inset:0;z-index:999;
+  background:rgba(8,18,38,.66);
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  display:flex;align-items:center;justify-content:center;
+  padding:24px;
+  animation:fadeIn .2s ease-out;
+}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal-card{
+  width:100%;max-width:480px;
+  background:var(--card-grad);
+  border:1px solid var(--border-strong);
+  border-radius:var(--radius-lg);
+  padding:28px 28px 24px;
+  position:relative;
+  box-shadow:0 24px 60px -20px rgba(0,0,0,.45);
+  animation:popIn .25s cubic-bezier(.2,.9,.3,1.2);
+}
+@keyframes popIn{
+  from{opacity:0;transform:translateY(8px) scale(.97)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+.modal-card h2{
+  font-family:'Fraunces',serif;font-weight:700;font-size:22px;
+  color:var(--text);margin-bottom:4px;letter-spacing:-.02em;
+}
+.modal-card .lead{
+  color:var(--text-muted);font-size:14px;margin:0;
+}
+.modal-close{
+  position:absolute;top:14px;right:14px;
+  background:transparent;border:none;cursor:pointer;
+  width:32px;height:32px;border-radius:8px;
+  color:var(--text-muted);font-size:22px;line-height:1;
+  display:grid;place-items:center;
+  transition:all .15s;
+}
+.modal-close:hover{background:var(--bg-alt);color:var(--text)}
+.modal-actions{
+  display:flex;gap:10px;justify-content:flex-end;
+  margin-top:18px;
+}
+.modal-meta{
+  margin-top:14px;padding-top:14px;
+  border-top:1px solid var(--border);
+  color:var(--text-subtle);font-size:12.5px;
+}
+.field-hint{
+  margin-top:6px;font-size:12px;color:var(--text-subtle);line-height:1.5;
+}
+
+/* ============ CHIP LIST (parents in modal) ============ */
+.chip-list{
+  display:flex;flex-wrap:wrap;gap:8px;
+  padding:10px 12px;min-height:44px;
+  background:var(--surface);
+  border:1px solid var(--border-strong);
+  border-radius:10px;
+  margin-bottom:10px;
+  align-items:center;
+}
+.chip{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:5px 6px 5px 12px;
+  background:rgba(96,165,250,.12);
+  border:1px solid var(--border-strong);
+  border-radius:999px;
+  color:var(--text);font-size:13px;font-weight:500;
+  animation:chipIn .18s ease-out;
+}
+@keyframes chipIn{
+  from{opacity:0;transform:scale(.85)}
+  to{opacity:1;transform:scale(1)}
+}
+.chip-text{line-height:1}
+.chip-x{
+  background:transparent;border:none;cursor:pointer;
+  width:20px;height:20px;border-radius:50%;
+  color:var(--text-muted);font-size:18px;line-height:1;
+  display:grid;place-items:center;
+  transition:all .15s;
+}
+.chip-x:hover{background:var(--red);color:#fff}
+.chip-empty{
+  color:var(--text-subtle);font-size:13px;font-style:italic;
+}
+.chip-add{
+  display:flex;gap:8px;align-items:stretch;
+}
+.chip-add input{
+  flex:1;
+  padding:10px 12px;
+  background:var(--surface);
+  border:1px solid var(--border-strong);
+  border-radius:10px;
+  color:var(--text);font-size:14px;
+  transition:border-color .15s, box-shadow .15s;
+}
+.chip-add input:focus{
+  outline:none;
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px var(--ring);
+}
+.btn-sm-inline{
+  padding:8px 16px;font-size:13px;border-radius:10px;
+  flex-shrink:0;
+}
+
 /* ============ DASHBOARD (parent-facing) ============ */
 .dash-hero{
   background:var(--premium-grad);color:#fff;
