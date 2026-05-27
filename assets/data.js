@@ -66,29 +66,55 @@
     return rows.filter(r => r.length && r.some(x => x !== ''));
   }
 
-  const HEADER_MAP = {
-    'swimmer':'name','name':'name','full name':'name','swimmer name':'name',
-    'athlete':'name','athlete name':'name','athlete full name':'name',
-    'first':'first','first name':'first','athlete first name':'first','athlete first':'first','given name':'first',
-    'last':'last','last name':'last','surname':'last','athlete last name':'last','athlete last':'last','family name':'last',
-    'address':'address','street':'address','home address':'address','address 1':'address','address line 1':'address',
-    'email':'email','email address':'email','primary email':'email','athlete email':'email',
-    'parent':'parent','parent name':'parent','parent 1':'parent','guardian':'parent','parent/guardian':'parent',
-    'account name':'parent','household name':'parent','primary contact':'parent','contact name':'parent',
-    'event':'event','stroke':'event','event name':'event',
+  // Header alias -> normalized internal field name. Keys are matched after stripping
+  // every non-alphanumeric char, so "Athlete Last Name", "AthleteLastName", and
+  // "athlete_last_name" all collapse to the same key.
+  const HEADER_ALIASES = {
+    // Name
+    'name':'name','fullname':'name','swimmer':'name','swimmername':'name',
+    'athlete':'name','athletename':'name','athletefullname':'name',
+    'athletedisplayname':'name','displayname':'name',
+    'first':'first','firstname':'first','givenname':'first',
+    'athletefirst':'first','athletefirstname':'first',
+    'last':'last','lastname':'last','surname':'last','familyname':'last',
+    'athletelast':'last','athletelastname':'last',
+    'middle':'middle','middlename':'middle','athletemiddle':'middle','athletemiddlename':'middle',
+    'preferredname':'preferredname','nickname':'preferredname',
+    'athletepreferredname':'preferredname','athletenickname':'preferredname',
+    // Address (Swimtopia splits across columns)
+    'address':'address','street':'address','homeaddress':'address',
+    'address1':'address','addressline1':'address','streetaddress':'address',
+    'address2':'address2','addressline2':'address2',
+    'city':'city','state':'state',
+    'zip':'zip','zipcode':'zip','postalcode':'zip','postcode':'zip',
+    // Contact
+    'email':'email','emailaddress':'email','primaryemail':'email','athleteemail':'email',
+    // Parent (single-column form — pair columns are handled separately below)
+    'parent':'parent','parentname':'parent','parent1':'parent','guardian':'parent','parentguardian':'parent',
+    'accountname':'parent','householdname':'parent','primarycontact':'parent','contactname':'parent',
+    // Event / time / meet
+    'event':'event','stroke':'event','eventname':'event',
     'distance':'distance',
-    'time':'time','final time':'time','result':'time','swim time':'time','seed time':'time',
-    'meet':'meet','meet name':'meet','competition':'meet',
-    'date':'date','meet date':'date','session date':'date',
-    'age':'age','swimmer age':'age','athlete age':'age',
-    'group':'group','training group':'group','squad':'group','group name':'group','team group':'group',
-    'place':'place','finish':'place','rank':'place','finish place':'place',
-    'split':'split','splits':'split',
-    'dob':'dob','date of birth':'dob','birthdate':'dob','birth date':'dob','birthday':'dob'
+    'time':'time','finaltime':'time','result':'time','swimtime':'time','seedtime':'time',
+    'meet':'meet','meetname':'meet','competition':'meet',
+    'date':'date','meetdate':'date','sessiondate':'date',
+    // Age / DOB
+    'age':'age','swimmerage':'age','athleteage':'age',
+    'dob':'dob','dateofbirth':'dob','birthdate':'dob','birthday':'dob','athletebirthdate':'dob',
+    // Group (Swimtopia exports both — RosterGroup is the team's training group, AgeGroup is the age class)
+    'group':'group','traininggroup':'group','squad':'group','groupname':'group','teamgroup':'group',
+    'rostergroup':'rostergroup',
+    'agegroup':'agegroup',
+    // Result-line extras
+    'place':'place','finish':'place','rank':'place','finishplace':'place',
+    'split':'split','splits':'split'
   };
+  function normHeaderKey(h){
+    return (h||'').toString().toLowerCase().replace(/[^a-z0-9]+/g,'');
+  }
   function mapHeader(h){
-    const key = (h||'').toString().trim().toLowerCase();
-    return HEADER_MAP[key] || key.replace(/[^a-z0-9]+/g,'_');
+    const key = normHeaderKey(h);
+    return HEADER_ALIASES[key] || key || '_';
   }
 
   // "Carter, Riley" -> "Riley Carter".  Plain "Riley Carter" untouched.
@@ -112,6 +138,17 @@
   }
   function isValidEmail(s){
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((s||'').trim());
+  }
+  // Build a full address from Swimtopia's split columns: "804 Landuff Court, Cary, NC 27519"
+  function composeAddress(rec){
+    if(!rec.address && !rec.city && !rec.state && !rec.zip) return '';
+    const parts = [];
+    if(rec.address) parts.push(rec.address);
+    if(rec.address2) parts.push(rec.address2);
+    if(rec.city) parts.push(rec.city);
+    const tail = [rec.state, rec.zip].filter(Boolean).join(' ').trim();
+    if(tail) parts.push(tail);
+    return parts.join(', ');
   }
 
   function buildEventLabel(rec){
@@ -162,6 +199,19 @@
     for(let i=0;i<rawHeaders.length;i++){
       if(/email/i.test(rawHeaders[i] || '')) emailColIdxs.push(i);
     }
+    // Detect Parent1_FirstName / Parent1_LastName pairs (and Parent2_*, Parent3_*, Guardian_*)
+    const parentNamePairs = [];
+    for(let i=0; i<rawHeaders.length; i++){
+      const h = normHeaderKey(rawHeaders[i]);
+      const m = h.match(/^(parent|guardian)(\d*)firstname$/);
+      if(!m) continue;
+      const lastKey = `${m[1]}${m[2]}lastname`;
+      let lastIdx = -1;
+      for(let j=0;j<rawHeaders.length;j++){
+        if(normHeaderKey(rawHeaders[j]) === lastKey){ lastIdx = j; break; }
+      }
+      parentNamePairs.push({firstIdx: i, lastIdx});
+    }
 
     // Stage updates per swimmer (so we batch writes)
     const updates = {}; // key -> swimmer object
@@ -192,7 +242,20 @@
       }
       rec.__emails = emails;
 
-      // Resolve name. Prefer first+last columns; fall back to single name column.
+      // Combine parent first/last column pairs into full names. Also keep the
+      // single 'parent' column if it had a value.
+      const parents = [];
+      if(rec.parent) parents.push(rec.parent);
+      for(const pair of parentNamePairs){
+        const first = (cells[pair.firstIdx]||'').trim();
+        const last = pair.lastIdx >= 0 ? (cells[pair.lastIdx]||'').trim() : '';
+        const full = `${first} ${last}`.replace(/\s+/g,' ').trim();
+        if(full) parents.push(full);
+      }
+      rec.__parents = parents;
+
+      // Resolve name. Prefer first+last columns; fall back to single name column
+      // (which may be in "Last, First" form — fixNameOrder flips it).
       let name = '';
       if(rec.first || rec.last) name = `${rec.first||''} ${rec.last||''}`.trim();
       else if(rec.name) name = fixNameOrder(rec.name);
@@ -230,16 +293,32 @@
       }
       const sw = updates[key];
       let touched = false;
-      if(rec.address && !sw.address){ sw.address = rec.address; touched = true; }
-      if(rec.age && !sw.age){ sw.age = rec.age; touched = true; }
-      else if(rec.dob && !sw.age){
+      // Compose address from line1 + city + state + zip when available
+      if(!sw.address){
+        const composed = composeAddress(rec);
+        if(composed){ sw.address = composed; touched = true; }
+      }
+      // Age: only accept a plain numeric value (so a misaligned date doesn't get stored as age)
+      if(rec.age && /^\d{1,3}$/.test(rec.age.trim()) && !sw.age){
+        sw.age = rec.age.trim(); touched = true;
+      } else if(rec.dob && !sw.age){
         const a = ageFromDob(rec.dob);
         if(a){ sw.age = a; touched = true; }
       }
-      if(rec.group && !sw.group){ sw.group = rec.group; touched = true; }
-      if(rec.parent){
-        const p = rec.parent.trim();
-        if(p && !sw.parents.map(norm).includes(norm(p))){ sw.parents.push(p); touched = true; }
+      // Group: prefer the team's training group (RosterGroup), fall back to age class
+      if(!sw.group){
+        const g = (rec.rostergroup && rec.rostergroup.trim()) || (rec.group && rec.group.trim()) || (rec.agegroup && rec.agegroup.trim()) || '';
+        if(g){ sw.group = g; touched = true; }
+      }
+      // Preferred name (skip values that look like a full "Last, First" — Swimtopia sometimes mis-fills this)
+      if(rec.preferredname && rec.preferredname.indexOf(',') === -1 && !sw.preferredName){
+        sw.preferredName = rec.preferredname; touched = true;
+      }
+      // Parents — single column + all parent_firstname/lastname pair columns
+      for(const p of rec.__parents){
+        if(p && !sw.parents.map(norm).includes(norm(p))){
+          sw.parents.push(p); touched = true;
+        }
       }
       for(const e of rec.__emails){
         const lower = e.toLowerCase();
@@ -311,10 +390,18 @@
       if(match) return;
       const sw = doc.data();
       const swName = norm(sw.name);
-      if(swName === targetName || swName.includes(targetName) || targetName.includes(swName)){
-        match = sw;
-      } else if(swapped && swName === swapped){
-        match = sw;
+      // Build the preferred-name variant (e.g. "Maddy Cakerice" when sw.name is "Madelyn Cakerice")
+      let swPref = '';
+      if(sw.preferredName){
+        const lastWord = (sw.name||'').split(' ').filter(Boolean).pop() || '';
+        swPref = norm(`${sw.preferredName} ${lastWord}`);
+      }
+      const candidates = [swName, swPref].filter(Boolean);
+      const targetsToCheck = [targetName, swapped].filter(Boolean);
+      for(const cand of candidates){
+        for(const t of targetsToCheck){
+          if(cand === t || cand.includes(t) || t.includes(cand)){ match = sw; return; }
+        }
       }
     });
     if(!match) return { ok:false, reason:'We couldn\'t find a swimmer with that name. Double-check the spelling.' };
