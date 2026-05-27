@@ -11,13 +11,16 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="assets/styles.css?v=2"/>
+<link rel="stylesheet" href="assets/styles.css?v=3"/>
 
 <!-- Firebase compat SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="assets/firebase-init.js"></script>
+
+<!-- SheetJS — lets the importer read .xlsx / .xls in addition to .csv -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -107,8 +110,13 @@
     </div>
 
     <!-- SWIMTOPIA EXPORT GUIDE -->
-    <div class="card">
-      <h2>Importing from Swimtopia</h2>
+    <details class="card collapsible-card">
+      <summary>
+        <span class="collapsible-title">Importing from Swimtopia</span>
+        <span class="collapsible-hint">Tap for step-by-step guide</span>
+        <svg class="collapsible-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+      </summary>
+      <div class="collapsible-body">
       <p class="lead">Two CSVs flow into this site: a <strong>roster</strong> (who's on the team, with parent emails) and <strong>meet results</strong> (the times). The importer auto-detects Swimtopia's column names — including "Athlete Last Name / Athlete First Name" and the "Last, First" name format used in result reports.</p>
 
       <h3 class="sub-h">Roster export (do this first)</h3>
@@ -183,24 +191,25 @@
           <li>Re-uploading the same file is safe — matching rows merge, new ones append.</li>
         </ul>
       </div>
-    </div>
+      </div>
+    </details>
 
     <!-- ROSTER UPLOAD CARD -->
     <div class="card">
       <h2>Upload Roster</h2>
       <p class="lead">
-        Drop your Swimtopia <strong>roster export</strong> here. Recognized columns include
+        Drop your Swimtopia <strong>roster export</strong> here — CSV or Excel (<code>.xlsx</code>, <code>.xls</code>). Recognized columns include
         <code>Athlete First Name</code>, <code>Athlete Last Name</code>,
         <code>Parent 1 Email</code> / <code>Account Email</code>,
         <code>Account Name</code> (parent), <code>Group Name</code>, and <code>Date of Birth</code> (used to compute age).
-        No times are required.
+        You can drop multiple files at once. No times are required.
       </p>
 
       <label class="drop-zone" id="rosterDrop" for="rosterFile">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        <h3>Drag &amp; drop your roster CSV here</h3>
-        <p>or click to browse · Swimtopia roster export</p>
-        <input type="file" id="rosterFile" accept=".csv,text/csv,text/plain"/>
+        <h3>Drag &amp; drop your roster file here</h3>
+        <p>or click to browse · CSV or Excel (.xlsx, .xls) · multiple files OK</p>
+        <input type="file" id="rosterFile" multiple accept=".csv,.xlsx,.xls,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"/>
       </label>
       <div class="upload-status" id="rosterStatus"></div>
 
@@ -217,14 +226,14 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
     <div class="card">
       <h2>Upload Meet Results</h2>
       <p class="lead">
-        Drop the Swimtopia <strong>meet results CSV</strong> here. Required: <code>Athlete</code> (or <code>Athlete First Name</code> + <code>Athlete Last Name</code>), <code>Event</code>, <code>Time</code>, <code>Meet</code>. Optional: <code>Date</code>, <code>Place</code>, <code>Age</code>, <code>Group</code>. Names in <em>"Last, First"</em> format are flipped automatically.
+        Drop one or more Swimtopia <strong>meet results files</strong> here — CSV or Excel (<code>.xlsx</code>, <code>.xls</code>). Required: <code>Athlete</code> (or <code>Athlete First Name</code> + <code>Athlete Last Name</code>), <code>Event</code>, <code>Time</code>, <code>Meet</code>. Optional: <code>Date</code>, <code>Place</code>, <code>Age</code>, <code>Group</code>. Names in <em>"Last, First"</em> format are flipped automatically. <strong>Heads up:</strong> after a times upload, any swimmer no longer on the current roster is removed automatically.
       </p>
 
       <label class="drop-zone" id="dropZone" for="csvFile">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        <h3>Drag &amp; drop your results CSV here</h3>
-        <p>or click to browse · Swimtopia individual / athlete results export</p>
-        <input type="file" id="csvFile" accept=".csv,text/csv,text/plain"/>
+        <h3>Drag &amp; drop your results file(s) here</h3>
+        <p>or click to browse · CSV or Excel (.xlsx, .xls) · drop several meets at once</p>
+        <input type="file" id="csvFile" multiple accept=".csv,.xlsx,.xls,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"/>
       </label>
       <div class="upload-status" id="uploadStatus"></div>
 

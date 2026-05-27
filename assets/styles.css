@@ -1411,6 +1411,55 @@ table tr:hover td{background:rgba(96,165,250,.05)}
 /* Awards look the same in dark mode — they're cards meant to be printed,
    not blended into the page chrome. */
 
+/* ============ COLLAPSIBLE CARD (Importing from Swimtopia, etc) ============ */
+details.collapsible-card{
+  padding:0;overflow:hidden;
+}
+.collapsible-card > summary{
+  list-style:none;cursor:pointer;
+  padding:22px 26px;
+  display:flex;align-items:center;gap:14px;
+  font-family:'Fraunces',serif;font-weight:700;font-size:22px;
+  color:var(--text);letter-spacing:-.02em;
+  transition:background .15s;
+  user-select:none;
+}
+.collapsible-card > summary::-webkit-details-marker{display:none}
+.collapsible-card > summary::marker{display:none;content:''}
+.collapsible-card > summary:hover{background:rgba(96,165,250,.04)}
+.collapsible-card > summary:focus-visible{
+  outline:none;box-shadow:inset 0 0 0 3px var(--ring);
+}
+.collapsible-title{flex:0 0 auto}
+.collapsible-hint{
+  font-family:'Inter',sans-serif;font-weight:500;font-size:13px;
+  color:var(--text-subtle);letter-spacing:0;
+  margin-left:auto;
+}
+.collapsible-chevron{
+  width:22px;height:22px;color:var(--text-muted);
+  flex-shrink:0;transition:transform .25s cubic-bezier(.2,.9,.3,1.2);
+}
+details[open].collapsible-card > summary .collapsible-chevron{
+  transform:rotate(180deg);color:var(--accent);
+}
+details[open].collapsible-card > summary{
+  border-bottom:1px solid var(--border);
+}
+.collapsible-body{
+  padding:20px 26px 26px;
+  animation:collapsibleIn .25s cubic-bezier(.2,.9,.3,1) both;
+}
+@keyframes collapsibleIn{
+  from{opacity:0;transform:translateY(-4px)}
+  to{opacity:1;transform:translateY(0)}
+}
+@media (max-width:480px){
+  .collapsible-card > summary{padding:18px 16px;font-size:18px;gap:10px}
+  .collapsible-hint{display:none}
+  .collapsible-body{padding:16px 14px 20px}
+}
+
 /* ============ ADMIN HEAD ACTION BUTTONS ============ */
 .admin-head-actions{
   display:flex;gap:10px;flex-wrap:wrap;

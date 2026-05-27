@@ -225,10 +225,16 @@
   //               and reported in result.skippedSwimmers (default for safety so meet
   //               uploads can't pollute the roster with phantom records)
   async function ingestCSV(text, opts){
+    return ingestRows(parseCSV(text), opts);
+  }
+
+  // ingestRows accepts already-parsed rows (array-of-arrays, headers in row 0).
+  // CSV and XLSX share this pipeline — the admin page does the file-type
+  // detection and hands us rows.
+  async function ingestRows(rows, opts){
     opts = opts || {};
     const mode = opts.mode === 'roster' ? 'roster' : 'results';
-    const rows = parseCSV(text);
-    if(rows.length < 2) return { added:0, swimmers:0, profileUpdates:0, skippedSwimmers:[], errors:['Empty CSV'] };
+    if(!rows || rows.length < 2) return { added:0, swimmers:0, profileUpdates:0, skippedSwimmers:[], errors:['Empty file'] };
     const rawHeaders = rows[0];
     const headers = rawHeaders.map(mapHeader);
     // Collect every column that LOOKS like an email column, regardless of mapping
@@ -642,6 +648,25 @@
       }
     }catch(e){}
   }
+  // Remove every swimmer that isn't on the current roster (i.e. has no
+  // matching doc in hhst_rosters). Called after a times upload so stale
+  // swimmers — anyone removed from the team roster — get cleaned up.
+  // Refuses to run if the roster collection is empty, so a first-ever
+  // times upload (before any roster has been imported) can't wipe the DB.
+  async function pruneNonRosterSwimmers(){
+    const rosterSnap = await FB.db.collection('hhst_rosters').get();
+    if(rosterSnap.empty) return [];
+    const rosterKeys = new Set();
+    rosterSnap.forEach(d => rosterKeys.add(d.id));
+    const swSnap = await FB.db.collection('swimmers').get();
+    const toDelete = [];
+    swSnap.forEach(d => { if(!rosterKeys.has(d.id)) toDelete.push(d.id); });
+    for(const key of toDelete){
+      try { await deleteSwimmer(key); } catch(e){ /* keep going */ }
+    }
+    return toDelete;
+  }
+
   async function addSwimmerManual({name, address, email, parent, age, group}){
     const key = swimmerKey(fixNameOrder(name));
     const existing = await getSwimmer(key);
@@ -988,9 +1013,9 @@
 
   global.HHST = {
     readAll, getSwimmer,
-    parseCSV, ingestCSV,
+    parseCSV, ingestCSV, ingestRows,
     findSwimmer,
-    deleteSwimmer, addSwimmerManual, updateSwimmer,
+    deleteSwimmer, pruneNonRosterSwimmers, addSwimmerManual, updateSwimmer,
     clearAll, clearRoster, clearMeetTimes,
     isAdminLoggedIn, loginAdmin, logoutAdmin, onAuthChanged,
     statsForSwimmer, rankSwimmerInAgeGroup, buildLeaderboards, teamStats,
