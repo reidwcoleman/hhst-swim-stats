@@ -2492,6 +2492,269 @@ details[open].collapsible-card > summary{
    rules and wins via more-specific selectors. */
 table:not(.roster-table) td, table:not(.roster-table) th{word-break:break-word}
 
+/* ============ EXTRA POLISH: POSTERS ============ */
+
+/* Card breathing room + cleaner shadow stack on hover */
+.award-card{
+  transition:transform .3s cubic-bezier(.16,1,.3,1),
+             box-shadow .3s cubic-bezier(.16,1,.3,1);
+}
+.award-card:hover{
+  transform:translateY(-4px);
+  box-shadow:
+    0 30px 70px -28px rgba(15,23,42,.55),
+    0 4px 16px -8px rgba(30,64,175,.35),
+    inset 0 0 0 6px rgba(255,255,255,.42);
+}
+
+/* Title gets a subtle moving shimmer line */
+.award-title{
+  position:relative;
+  /* keep clipped gradient fill from earlier rules */
+}
+.award-title-rule{
+  width:84px;height:3px;margin:10px 0 0;
+  background:linear-gradient(90deg,
+    rgba(251,191,36,0) 0%,
+    #fbbf24 25%,
+    #f59e0b 50%,
+    #fbbf24 75%,
+    rgba(251,191,36,0) 100%);
+  border-radius:2px;
+}
+
+/* #1 medal — bigger with a soft gold glow ring + a tiny star */
+.award-card .award-table tr:first-child .award-medal{
+  width:34px;height:34px;font-size:16px;
+  box-shadow:
+    0 0 0 3px rgba(251,191,36,.18),
+    0 5px 14px rgba(251,191,36,.45),
+    inset 0 2px 2px rgba(255,255,255,.65),
+    inset 0 -2px 2px rgba(0,0,0,.18);
+}
+.award-card .award-table tr:first-child .award-rank-cell{
+  position:relative;
+}
+.award-card .award-table tr:first-child .award-rank-cell::before{
+  content:'★';position:absolute;left:-2px;top:0;
+  font-size:10px;color:#f59e0b;
+  text-shadow:0 0 4px rgba(251,191,36,.6);
+}
+
+/* Row #1 in each column gets a faint gold left wash so the eye lands there */
+.award-col tbody tr:first-child td{
+  background:linear-gradient(90deg, rgba(251,191,36,.12) 0%, transparent 75%);
+}
+/* Row 2 — silver wash */
+.award-col tbody tr:nth-child(2) td{
+  background:linear-gradient(90deg, rgba(148,163,184,.08) 0%, transparent 70%);
+}
+/* Row 3 — bronze wash */
+.award-col tbody tr:nth-child(3) td{
+  background:linear-gradient(90deg, rgba(217,119,6,.08) 0%, transparent 70%);
+}
+.award-empty-row td, .award-col tbody tr:nth-child(n+4) td{
+  background:transparent;
+}
+
+/* Refined column header — add an ornament dot */
+.award-col-head{position:relative;padding-top:8px}
+.award-col-head::before{
+  content:'';position:absolute;left:50%;top:0;
+  width:6px;height:6px;border-radius:50%;
+  transform:translateX(-50%);
+}
+.award-col-head-girls::before{
+  background:#ec4899;box-shadow:0 0 0 3px rgba(244,114,182,.22);
+}
+.award-col-head-boys::before{
+  background:#2563eb;box-shadow:0 0 0 3px rgba(96,165,250,.22);
+}
+.award-col-head-top-5::before{
+  background:#2563eb;box-shadow:0 0 0 3px rgba(96,165,250,.22);
+}
+
+/* Bracket title gets serif decoration flourishes */
+.award-group{
+  display:inline-flex;align-items:center;gap:18px;
+  padding:0 18px;
+}
+.award-group::before, .award-group::after{
+  content:'';display:inline-block;width:36px;height:1.5px;
+  background:linear-gradient(90deg, transparent, rgba(30,64,175,.45), transparent);
+}
+.award-group::before{background:linear-gradient(90deg, transparent, rgba(30,64,175,.45))}
+.award-group::after{background:linear-gradient(90deg, rgba(30,64,175,.45), transparent)}
+
+/* Footer divider — keep the diamond but make it gold */
+.award-footer-divider{color:#d97706 !important;opacity:.9}
+
+/* Event pill — embossed plate look refined */
+.award-event{
+  position:relative;
+}
+.award-event::before{
+  content:'';position:absolute;left:8px;right:8px;top:0;height:1px;
+  background:linear-gradient(90deg, transparent, rgba(255,255,255,.95), transparent);
+  border-radius:1px;
+}
+
+/* ============ EXTRA POLISH: LEADERBOARDS ============ */
+
+/* Event card — stroke-tinted top accent band so the card type reads at a glance */
+.lb-card{
+  border:1px solid var(--border-strong);
+  box-shadow:0 2px 10px -6px rgba(15,23,42,.25);
+}
+.lb-card::after{
+  content:'';position:absolute;left:4px;right:0;top:0;height:3px;
+  pointer-events:none;
+}
+.lb-card.stroke-freestyle::after{background:linear-gradient(90deg,#60a5fa,#2563eb 70%,transparent)}
+.lb-card.stroke-backstroke::after{background:linear-gradient(90deg,#34d399,#059669 70%,transparent)}
+.lb-card.stroke-breaststroke::after{background:linear-gradient(90deg,#fbbf24,#d97706 70%,transparent)}
+.lb-card.stroke-butterfly::after{background:linear-gradient(90deg,#f472b6,#db2777 70%,transparent)}
+.lb-card.stroke-im::after{background:linear-gradient(90deg,#a78bfa,#7c3aed 70%,transparent)}
+
+/* Stroke-tinted hover glow */
+.lb-card.stroke-freestyle:hover{box-shadow:0 16px 36px -18px rgba(96,165,250,.55)}
+.lb-card.stroke-backstroke:hover{box-shadow:0 16px 36px -18px rgba(52,211,153,.55)}
+.lb-card.stroke-breaststroke:hover{box-shadow:0 16px 36px -18px rgba(251,191,36,.55)}
+.lb-card.stroke-butterfly:hover{box-shadow:0 16px 36px -18px rgba(244,114,182,.55)}
+.lb-card.stroke-im:hover{box-shadow:0 16px 36px -18px rgba(167,139,250,.55)}
+
+/* Card head — softer separator + bigger event name */
+.lb-card-head{
+  padding:18px 22px 14px;
+  background:linear-gradient(180deg, rgba(255,255,255,.025), transparent);
+}
+.lb-card-head h3{font-size:20px;font-weight:800}
+
+/* Stroke tag — refined embossed pill */
+.lb-stroke-tag{
+  padding:5px 11px;border-radius:8px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
+}
+
+/* #1 row gets a gold left chip + crown emoji in the rank cell */
+.lb-col tbody tr:first-child td{
+  background:linear-gradient(90deg, rgba(251,191,36,.10) 0%, transparent 75%);
+}
+.lb-col tbody tr:first-child .lb-rank{
+  color:#fbbf24;font-weight:900;
+  text-shadow:0 0 8px rgba(251,191,36,.35);
+}
+.lb-col tbody tr:nth-child(2) td{
+  background:linear-gradient(90deg, rgba(148,163,184,.06) 0%, transparent 70%);
+}
+.lb-col tbody tr:nth-child(3) td{
+  background:linear-gradient(90deg, rgba(217,119,6,.06) 0%, transparent 70%);
+}
+.lb-empty-row td{background:transparent !important}
+
+/* Column header ornament dot */
+.lb-col-head{position:relative}
+.lb-col-head::before{
+  content:'';position:absolute;left:50%;top:-2px;
+  width:5px;height:5px;border-radius:50%;
+  transform:translateX(-50%);
+}
+.lb-col-girls .lb-col-head::before{background:#ec4899;box-shadow:0 0 0 2.5px rgba(244,114,182,.22)}
+.lb-col-boys  .lb-col-head::before{background:#2563eb;box-shadow:0 0 0 2.5px rgba(96,165,250,.22)}
+.lb-col-mixed .lb-col-head::before{background:var(--accent);box-shadow:0 0 0 2.5px rgba(96,165,250,.22)}
+
+/* Section heading — bigger bracket pill + animated underline */
+.lb-age-section{margin-bottom:48px}
+.lb-age-head{
+  padding-bottom:18px;
+  border-bottom:2px solid var(--border);
+  position:relative;
+}
+.lb-age-head::after{
+  width:96px;height:3px;
+  background:linear-gradient(90deg, var(--accent), var(--ice-400));
+  border-radius:3px;
+}
+.lb-age-head h2{font-size:32px;letter-spacing:-.025em}
+.lb-age-head p{font-size:14px;color:var(--text-muted);margin-top:2px}
+.bracket-pill-lg{
+  font-size:15px;padding:8px 16px;
+  box-shadow:0 6px 14px -8px currentColor;
+}
+
+/* TOC pills — softer drop shadow + entry animation */
+.lb-toc{margin-bottom:30px}
+.lb-toc-pill{
+  padding:10px 16px;border-radius:12px;
+  font-size:14px;
+  background:var(--surface);
+  border:1px solid var(--border-strong);
+  box-shadow:0 4px 12px -8px rgba(15,23,42,.3);
+  transition:transform .2s cubic-bezier(.16,1,.3,1),
+             box-shadow .2s,
+             border-color .2s;
+}
+.lb-toc-pill:hover{
+  transform:translateY(-2px);
+  box-shadow:0 12px 24px -12px var(--accent);
+}
+.lb-toc-pill strong{font-size:14px}
+.lb-toc-pill span{font-size:12.5px}
+
+/* Hero stat tiles — subtle ascent on hover, finer typography */
+.lb-mini{
+  padding:16px 20px;border-radius:16px;
+  border:1px solid rgba(255,255,255,.1);
+  background:linear-gradient(180deg, rgba(255,255,255,.06) 0%, rgba(255,255,255,.025) 100%);
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+}
+.lb-mini:hover{
+  transform:translateY(-2px);
+  background:linear-gradient(180deg, rgba(255,255,255,.10) 0%, rgba(255,255,255,.045) 100%);
+  border-color:rgba(125,211,252,.4);
+  box-shadow:0 14px 28px -16px rgba(125,211,252,.5);
+}
+.lb-mini-val{font-size:30px}
+.lb-mini-lbl{
+  letter-spacing:.16em;font-size:11px;font-weight:800;
+  color:rgba(255,255,255,.78);
+}
+
+/* Filter card — premium feel with soft floating shadow */
+.lb-filters{
+  border-radius:18px;
+  padding:24px 26px;
+  box-shadow:
+    0 18px 40px -22px rgba(8,18,38,.55),
+    inset 0 1px 0 rgba(255,255,255,.04);
+}
+.lb-filters label{font-weight:800;letter-spacing:.14em}
+.seg{
+  padding:6px;border-radius:14px;
+  background:linear-gradient(180deg, var(--bg-alt), rgba(0,0,0,.04));
+  box-shadow:inset 0 1px 2px rgba(0,0,0,.08);
+}
+.seg button{
+  padding:9px 15px;border-radius:9px;font-size:13px;
+  transition:all .18s cubic-bezier(.16,1,.3,1);
+}
+.seg button.active{
+  background:linear-gradient(180deg, var(--accent) 0%, var(--brand-500) 100%);
+  box-shadow:
+    0 6px 14px -6px var(--accent),
+    inset 0 1px 0 rgba(255,255,255,.35);
+}
+
+/* Empty state styling */
+#lbBody .card.empty{
+  text-align:center;padding:60px 28px;
+  background:var(--card-grad);
+  border:1px dashed var(--border-strong);
+  border-radius:18px;
+  color:var(--text-muted);font-size:15px;
+}
+
 /* ============ PRINT RULES ============ */
 @media print {
   /* Landscape US Letter — the Fastest Five certificates have a swimmer-name

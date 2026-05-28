@@ -411,6 +411,18 @@
         skippedSwimmers.add(name);
         continue;
       }
+      // Per-season roster gate: when uploading times for a specific season,
+      // only match swimmers who were on THAT season's roster. Legacy
+      // (untagged, no seasons array) swimmers still match as a wildcard so
+      // pre-seasons data keeps working.
+      if(mode === 'results' && season && existing[key] && !updates[key]){
+        const sw = existing[key];
+        const sws = Array.isArray(sw.seasons) ? sw.seasons : [];
+        if(sws.length && !sws.includes(season)){
+          skippedSwimmers.add(`${name} (not on ${season} roster)`);
+          continue;
+        }
+      }
       if(!updates[key]){
         updates[key] = existing[key] || {
           key, name,
@@ -421,12 +433,14 @@
           group: '',
           ageGroup: '',
           gender: '',
+          seasons: [],
           results: []
         };
         // ensure shape
-        updates[key].emails = updates[key].emails || [];
+        updates[key].emails  = updates[key].emails  || [];
         updates[key].parents = updates[key].parents || [];
         updates[key].results = updates[key].results || [];
+        updates[key].seasons = updates[key].seasons || [];
       }
       writtenKeys.add(key);
       const sw = updates[key];
@@ -488,6 +502,18 @@
       if(sw.bracket !== computedBracket){
         sw.bracket = computedBracket;
         touched = true;
+      }
+      // Per-season roster membership: when this row came from a roster upload
+      // tagged with a season, record that the swimmer was on the team that
+      // season. Times uploads also append the season here as a side-effect —
+      // a swim that gets matched is implicit proof of roster membership.
+      // The seasons list is what the times-mode gate above checks against.
+      if(season){
+        if(!Array.isArray(sw.seasons)) sw.seasons = [];
+        if(!sw.seasons.includes(season)){
+          sw.seasons.push(season);
+          touched = true;
+        }
       }
       if(touched) profileUpdated.add(key);
       if(rec.event && rec.time){
@@ -573,6 +599,7 @@
           gender: sw.gender || '',
           competitionGroup: competitionGroup(sw),
           group: sw.group || '',
+          seasons: Array.isArray(sw.seasons) ? sw.seasons : [],
           uploadedAt: FB.FieldValue.serverTimestamp()
         }, { merge: true });
       });
@@ -745,11 +772,13 @@
       }
     }catch(e){}
   }
-  // Remove every swimmer that isn't on the current roster (i.e. has no
-  // matching doc in hhst_rosters). Called after a times upload so stale
-  // swimmers — anyone removed from the team roster — get cleaned up.
-  // Refuses to run if the roster collection is empty, so a first-ever
-  // times upload (before any roster has been imported) can't wipe the DB.
+  // Remove truly-orphan swimmer docs — entries with no roster membership
+  // for ANY season AND no race results. Per-season rosters mean a swimmer
+  // who's only on a past season's roster must be preserved (otherwise
+  // re-uploading old times would have nowhere to land), so the prune now
+  // ONLY catches swimmers that were never properly added: no seasons, no
+  // results, no hhst_rosters mirror. Refuses to run if the roster
+  // collection is empty so a first-ever times upload can't wipe the DB.
   async function pruneNonRosterSwimmers(){
     const rosterSnap = await FB.db.collection('hhst_rosters').get();
     if(rosterSnap.empty) return [];
@@ -757,7 +786,16 @@
     rosterSnap.forEach(d => rosterKeys.add(d.id));
     const swSnap = await FB.db.collection('swimmers').get();
     const toDelete = [];
-    swSnap.forEach(d => { if(!rosterKeys.has(d.id)) toDelete.push(d.id); });
+    swSnap.forEach(d => {
+      if(rosterKeys.has(d.id)) return;
+      const sw = d.data() || {};
+      const seasons = Array.isArray(sw.seasons) ? sw.seasons : [];
+      const results = Array.isArray(sw.results) ? sw.results : [];
+      // A swimmer who's been on any season's roster, or who has any race
+      // result on file, is real data — leave them alone.
+      if(seasons.length || results.length) return;
+      toDelete.push(d.id);
+    });
     for(const key of toDelete){
       try { await deleteSwimmer(key); } catch(e){ /* keep going */ }
     }
