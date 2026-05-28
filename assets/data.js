@@ -545,13 +545,16 @@
 
   // Top N best times per age group for a given event.
   // eventMatcher: { stroke: 'Freestyle', distance: '50' } (either can be omitted)
+  // Groups by the auto-computed HHST bracket first (6 & Under / 7-8 / 9-10
+  // / 11-12 / 13-14 / 15-18) — falling back to the legacy Swimtopia
+  // ageGroup label or the training group when no bracket is on file.
   function leaderboardsByEvent(swimmers, eventMatcher, opts){
     eventMatcher = eventMatcher || {};
     const limit = (opts && opts.limit) || 5;
     const byGroup = {};
     for(const sw of swimmers){
-      const group = sw.ageGroup || sw.group;
-      if(!group) continue;
+      const group = sw.bracket || getAgeGroup(sw.age) || sw.ageGroup || sw.group;
+      if(!group || group === 'Unknown') continue;
       const matching = (sw.results||[]).filter(r => {
         if(eventMatcher.stroke && r.stroke !== eventMatcher.stroke) return false;
         if(eventMatcher.distance && String(r.distance) !== String(eventMatcher.distance)) return false;
@@ -578,15 +581,19 @@
     }
     return out;
   }
-  // Order age-group labels in a natural age progression
+  // Order age-group labels in a natural age progression. Prefers the
+  // canonical AGE_GROUP_ORDER (6 & Under → 15-18) so HHST brackets sort
+  // exactly the way the rest of the UI does, then falls back to numeric
+  // age extraction for any Swimtopia gender-split labels.
   function sortAgeGroups(groups){
     function rank(g){
-      g = (g||'').toLowerCase();
-      const ageMatch = g.match(/(\d+)\s*[-&]/);
-      const lo = ageMatch ? parseInt(ageMatch[1],10) : (/under/.test(g) ? 0 : 99);
-      // Stable secondary sort: girls before boys at the same age tier
-      const isBoy = /boy|men/.test(g) ? 1 : 0;
-      return lo * 10 + isBoy;
+      const canonical = AGE_GROUP_ORDER.indexOf(g);
+      if(canonical >= 0) return canonical * 100;
+      const s = (g||'').toLowerCase();
+      const ageMatch = s.match(/(\d+)\s*[-&]/);
+      const lo = ageMatch ? parseInt(ageMatch[1],10) : (/under/.test(s) ? 0 : 99);
+      const isBoy = /boy|men/.test(s) ? 1 : 0;
+      return 1000 + lo * 10 + isBoy;
     }
     return groups.slice().sort((a,b) => rank(a) - rank(b));
   }

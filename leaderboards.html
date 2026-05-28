@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="assets/styles.css?v=5"/>
+<link rel="stylesheet" href="assets/styles.css?v=6"/>
 <style>
   /* Hide everything until auth check completes — admins only. */
   body:not(.auth-ready) > *{visibility:hidden}
@@ -156,7 +156,7 @@
   Highcroft Hurricanes Swim Team · <a href="index.html">Back to home</a> · <a href="admin.html">Admin</a>
 </footer>
 
-<script src="assets/data.js?v=3"></script>
+<script src="assets/data.js?v=4"></script>
 <script>
   HHST.initTheme();
   document.getElementById('themeToggle').addEventListener('click', HHST.toggleTheme);
@@ -217,11 +217,13 @@
   const printAllAwards = document.getElementById('printAllAwards');
 
   function displayName(sw){
+    // leaderboardsByEvent gives us .name; older callers passed .swimmerName.
+    const full = sw.name || sw.swimmerName || '';
     if(sw.preferredName){
-      const last = (sw.swimmerName||'').split(' ').filter(Boolean).pop() || '';
-      return `${sw.preferredName} ${last}`.trim() || sw.swimmerName;
+      const last = full.split(' ').filter(Boolean).pop() || '';
+      return `${sw.preferredName} ${last}`.trim() || full;
     }
-    return sw.swimmerName;
+    return full;
   }
   function medalColor(i){
     return i === 0 ? '#fbbf24' : i === 1 ? '#cbd5e1' : i === 2 ? '#d97706' : '';
@@ -367,23 +369,29 @@
       return;
     }
 
-    // Build table-of-contents pills
+    function bracketClass(ag){ return 'bracket-' + slug(ag); }
+    function tocClass(ag){ return 'toc-' + slug(ag); }
+
+    // Build table-of-contents pills (color-coded by bracket)
     const toc = orderedAges.map(ag => {
       const evCount = groups[ag].length;
-      return `<a href="#ag-${slug(ag)}" class="lb-toc-pill"><strong>${escapeHtml(ag)}</strong><span>${evCount} event${evCount===1?'':'s'}</span></a>`;
+      return `<a href="#ag-${slug(ag)}" class="lb-toc-pill ${tocClass(ag)}"><strong>${escapeHtml(ag)}</strong><span>${evCount} event${evCount===1?'':'s'}</span></a>`;
     }).join('');
     document.getElementById('lbToc').innerHTML = toc;
 
-    // Build body
+    // Build body — each section gets a colored bracket badge
     const html = orderedAges.map(ag => {
       const items = groups[ag];
       const cards = items.map(b => buildLeaderboardCard(b)).join('');
       return `
         <section class="lb-age-section" id="ag-${slug(ag)}">
           <div class="lb-age-head">
-            <div>
-              <h2>${escapeHtml(ag)}</h2>
-              <p>${items.length} event${items.length===1?'':'s'} ranked${state.stroke ? ' · ' + escapeHtml(state.stroke) : ''}</p>
+            <div class="lb-age-head-text">
+              <span class="bracket-pill bracket-pill-lg ${bracketClass(ag)}">${escapeHtml(ag)}</span>
+              <div>
+                <h2>Top times</h2>
+                <p>${items.length} event${items.length===1?'':'s'} ranked${state.stroke ? ' · ' + escapeHtml(state.stroke) : ''}</p>
+              </div>
             </div>
           </div>
           <div class="lb-grid">${cards}</div>
