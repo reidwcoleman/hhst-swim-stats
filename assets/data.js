@@ -122,6 +122,8 @@
     // Age / DOB
     'age':'age','swimmerage':'age','athleteage':'age',
     'dob':'dob','dateofbirth':'dob','birthdate':'dob','birthday':'dob','athletebirthdate':'dob',
+    // Gender (boys/girls swim separately — needed to split leaderboards correctly)
+    'gender':'gender','sex':'gender','athletegender':'gender','athletesex':'gender','genderidentity':'gender',
     // Group (Swimtopia exports both — RosterGroup is the team's training group, AgeGroup is the age class)
     'group':'group','traininggroup':'group','squad':'group','groupname':'group','teamgroup':'group',
     'rostergroup':'rostergroup',
@@ -159,6 +161,42 @@
   }
   function isValidEmail(s){
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((s||'').trim());
+  }
+  // Normalize any "M/F/Male/Female/Boy/Girl/Man/Woman" to canonical "M" or "F".
+  // Returns '' when the input doesn't clearly identify a gender.
+  function parseGender(s){
+    if(s == null) return '';
+    const t = s.toString().trim().toLowerCase();
+    if(!t) return '';
+    if(t === 'm' || t === 'man' || t.startsWith('male') || t.startsWith('boy')) return 'M';
+    if(t === 'f' || t === 'woman' || t.startsWith('female') || t.startsWith('girl')) return 'F';
+    return '';
+  }
+  // Pull a gender out of a Swimtopia / HHST age-group label such as
+  // "Boys 11-12", "Girls 6 & Under", "Mens 15-18". Returns '' if the
+  // label doesn't include a gender word.
+  function parseGenderFromAgeGroup(ag){
+    if(!ag) return '';
+    const t = ag.toString().toLowerCase();
+    if(/\b(boy|men|male)/.test(t)) return 'M';
+    if(/\b(girl|women|female)/.test(t)) return 'F';
+    return '';
+  }
+  // "Boys" / "Girls" / "" — used for UI labels and section headers.
+  function genderLabel(g){
+    if(g === 'M') return 'Boys';
+    if(g === 'F') return 'Girls';
+    return '';
+  }
+  // Combined competition bucket: "Boys 11-12" / "Girls 11-12" / "11-12" if
+  // gender isn't known. Falls back to the swimmer's bracket (or training
+  // group) when an age bracket can't be computed.
+  function competitionGroup(sw){
+    if(!sw) return 'Unknown';
+    const bracket = sw.bracket || getAgeGroup(sw.age) || sw.ageGroup || sw.group || 'Unknown';
+    const g = genderLabel(sw.gender);
+    if(!g || bracket === 'Unknown') return bracket;
+    return `${g} ${bracket}`;
   }
   // Build a full address from Swimtopia's split columns: "804 Landuff Court, Cary, NC 27519"
   function composeAddress(rec){
@@ -374,6 +412,7 @@
           age: '',
           group: '',
           ageGroup: '',
+          gender: '',
           results: []
         };
         // ensure shape
@@ -406,6 +445,16 @@
       if(!sw.ageGroup){
         const ag = (rec.agegroup && rec.agegroup.trim()) || '';
         if(ag){ sw.ageGroup = ag; touched = true; }
+      }
+      // Gender — explicit gender/sex column wins; if absent we parse it out of
+      // the Swimtopia ageGroup ("Boys 11-12" → M, "Girls 6 & Under" → F).
+      // Needed so leaderboards can split boys vs girls (kids don't race the
+      // other gender, so a combined leaderboard misrepresents the standings).
+      if(!sw.gender){
+        let g = parseGender(rec.gender);
+        if(!g) g = parseGenderFromAgeGroup(rec.agegroup);
+        if(!g) g = parseGenderFromAgeGroup(sw.ageGroup);
+        if(g){ sw.gender = g; touched = true; }
       }
       // Preferred name (skip values that look like a full "Last, First" — Swimtopia sometimes mis-fills this)
       if(rec.preferredname && rec.preferredname.indexOf(',') === -1 && !sw.preferredName){
@@ -467,7 +516,9 @@
             meet: result.meet,
             date: result.date,
             place: result.place,
-            ageGroup: computedBracket
+            ageGroup: computedBracket,
+            gender: sw.gender || '',
+            competitionGroup: competitionGroup(sw)
           }
         });
       }
@@ -501,6 +552,8 @@
           name: sw.name,
           age: sw.age || '',
           ageGroup: sw.bracket || getAgeGroup(sw.age),
+          gender: sw.gender || '',
+          competitionGroup: competitionGroup(sw),
           group: sw.group || '',
           uploadedAt: FB.FieldValue.serverTimestamp()
         }, { merge: true });
@@ -543,17 +596,20 @@
     };
   }
 
-  // Top N best times per age group for a given event.
+  // Top N best times per competition group for a given event.
   // eventMatcher: { stroke: 'Freestyle', distance: '50' } (either can be omitted)
-  // Groups by the auto-computed HHST bracket first (6 & Under / 7-8 / 9-10
-  // / 11-12 / 13-14 / 15-18) — falling back to the legacy Swimtopia
-  // ageGroup label or the training group when no bracket is on file.
+  // opts.splitByGender (default true) bucket Boys / Girls separately within
+  //   each age bracket — kids don't race the other gender at HHST, so a
+  //   combined leaderboard misrepresents who's actually fastest in their heat.
   function leaderboardsByEvent(swimmers, eventMatcher, opts){
     eventMatcher = eventMatcher || {};
     const limit = (opts && opts.limit) || 5;
+    const splitByGender = !opts || opts.splitByGender !== false;
     const byGroup = {};
     for(const sw of swimmers){
-      const group = sw.bracket || getAgeGroup(sw.age) || sw.ageGroup || sw.group;
+      const bracket = sw.bracket || getAgeGroup(sw.age) || sw.ageGroup || sw.group;
+      if(!bracket || bracket === 'Unknown') continue;
+      const group = splitByGender ? competitionGroup(sw) : bracket;
       if(!group || group === 'Unknown') continue;
       const matching = (sw.results||[]).filter(r => {
         if(eventMatcher.stroke && r.stroke !== eventMatcher.stroke) return false;
@@ -567,6 +623,7 @@
         key: sw.key,
         name: sw.name,
         preferredName: sw.preferredName || '',
+        gender: sw.gender || '',
         time: best.time,
         seconds: best.seconds,
         meet: best.meet,
@@ -687,16 +744,18 @@
     return toDelete;
   }
 
-  async function addSwimmerManual({name, address, email, parent, age, group}){
+  async function addSwimmerManual({name, address, email, parent, age, group, gender}){
     const key = swimmerKey(fixNameOrder(name));
     const existing = await getSwimmer(key);
-    const next = existing || { key, name: fixNameOrder(name), address:'', emails:[], parents:[], age:'', group:'', results:[] };
+    const next = existing || { key, name: fixNameOrder(name), address:'', emails:[], parents:[], age:'', group:'', gender:'', results:[] };
     next.emails = next.emails || [];
     next.parents = next.parents || [];
     next.results = next.results || [];
     if(address) next.address = address;
     if(age) next.age = age;
     if(group) next.group = group;
+    const g = parseGender(gender);
+    if(g) next.gender = g;
     if(parent && !next.parents.map(norm).includes(norm(parent))) next.parents.push(parent);
     if(email && isValidEmail(email)){
       const lower = email.toLowerCase();
@@ -716,6 +775,7 @@
     if(fields.parents !== undefined) next.parents = fields.parents;
     if(fields.age !== undefined) next.age = fields.age;
     if(fields.group !== undefined) next.group = fields.group;
+    if(fields.gender !== undefined) next.gender = parseGender(fields.gender) || '';
     next.emails = next.emails || [];
     next.parents = next.parents || [];
     next.results = next.results || [];
@@ -939,13 +999,18 @@
   }
 
   // Build leaderboards across the whole roster.
-  // Returns array of { ageGroup, event, stroke, distance, entries:[...] }
+  // Returns array of { ageGroup, bracket, gender, event, stroke, distance, entries:[...] }
+  // where ageGroup is the combined "Boys 11-12" / "Girls 11-12" label
+  // (unless opts.splitByGender === false), and `bracket` is the plain
+  // numeric bracket ("11-12") so callers can still color-code by age.
   function buildLeaderboards(allSwimmers, opts = {}){
     const stroke = opts.stroke || null;
     const top    = opts.top || 5;
+    const splitByGender = opts.splitByGender !== false;
     const buckets = {};
     Object.values(allSwimmers).forEach(sw => {
-      const ag = getAgeGroup(sw.age);
+      const bracket = getAgeGroup(sw.age);
+      const ag = splitByGender ? competitionGroup(sw) : bracket;
       const byEvent = {};
       (sw.results||[]).forEach(r => {
         if(!isFinite(r.seconds)) return;
@@ -957,7 +1022,7 @@
         const key = ag + '||' + event;
         if(!buckets[key]){
           buckets[key] = {
-            ageGroup: ag, event,
+            ageGroup: ag, bracket, gender: sw.gender || '', event,
             stroke: r.stroke || extractStroke(event) || 'Other',
             distance: r.distance || extractDistance(event),
             entries: []
@@ -966,6 +1031,7 @@
         buckets[key].entries.push({
           swimmerKey: sw.key,
           swimmerName: sw.name,
+          gender: sw.gender || '',
           time: r.time,
           seconds: r.seconds,
           meet: r.meet,
@@ -1046,6 +1112,7 @@
     normalizeEventLabel,
     leaderboardsByEvent, sortAgeGroups,
     groupByBracket,
+    parseGender, parseGenderFromAgeGroup, genderLabel, competitionGroup,
     initTheme, toggleTheme
   };
 })(window);

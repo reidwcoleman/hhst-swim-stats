@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="assets/styles.css?v=6"/>
+<link rel="stylesheet" href="assets/styles.css?v=7"/>
 
 <!-- Firebase compat SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
@@ -305,6 +305,13 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
         <div class="field"><label>Parent name *</label><input type="text" id="mParent" required/></div>
         <div class="field"><label>Age</label><input type="text" id="mAge"/></div>
         <div class="field"><label>Training group</label><input type="text" id="mGroup" placeholder="e.g. Bronze"/></div>
+        <div class="field"><label>Gender</label>
+          <select id="mGender">
+            <option value="">—</option>
+            <option value="M">Boys</option>
+            <option value="F">Girls</option>
+          </select>
+        </div>
         <div style="display:flex;align-items:flex-end">
           <button type="submit" class="btn lg block">Save Swimmer</button>
         </div>
@@ -381,7 +388,7 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
         <p class="field-hint">Add as many as you need. Any one of these names will verify a family.</p>
       </div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">
         <div class="field">
           <label for="eAge">Age</label>
           <input type="text" id="eAge"/>
@@ -389,6 +396,14 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
         <div class="field">
           <label for="eGroup">Training group</label>
           <input type="text" id="eGroup" placeholder="Bronze · Silver · Gold"/>
+        </div>
+        <div class="field">
+          <label for="eGender">Gender</label>
+          <select id="eGender">
+            <option value="">—</option>
+            <option value="M">Boys</option>
+            <option value="F">Girls</option>
+          </select>
         </div>
       </div>
       <div class="modal-actions">
@@ -399,7 +414,7 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
   </div>
 </div>
 
-<script src="assets/data.js?v=4"></script>
+<script src="assets/data.js?v=5"></script>
 <script>
   HHST.initTheme();
 
@@ -703,7 +718,8 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
         email: document.getElementById('mEmail').value,
         parent: document.getElementById('mParent').value,
         age: document.getElementById('mAge').value,
-        group: document.getElementById('mGroup').value
+        group: document.getElementById('mGroup').value,
+        gender: document.getElementById('mGender').value
       });
       e.target.reset();
       await refreshAll();
@@ -861,11 +877,17 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
         const trainingGroup = s.group
           ? `<span class="training-chip" title="Training group">${escapeHtml(s.group)}</span>`
           : '';
+        const genderChip = s.gender === 'M'
+          ? '<span class="training-chip" title="Boys" style="background:rgba(59,130,246,.18);color:#3b82f6;border-color:rgba(59,130,246,.35)">♂ Boy</span>'
+          : s.gender === 'F'
+          ? '<span class="training-chip" title="Girls" style="background:rgba(236,72,153,.18);color:#ec4899;border-color:rgba(236,72,153,.35)">♀ Girl</span>'
+          : '';
         return `
         <tr>
           <td class="cell-name">
             <div class="swimmer-name-cell">
               <strong>${escapeHtml(s.name)}</strong>
+              ${genderChip}
               ${trainingGroup}
             </div>
           </td>
@@ -987,8 +1009,9 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
     document.getElementById('editSwimmerName').textContent = sw.name;
     emailField.reset(sw.emails);
     parentField.reset(sw.parents);
-    document.getElementById('eAge').value   = sw.age || '';
-    document.getElementById('eGroup').value = sw.group || '';
+    document.getElementById('eAge').value    = sw.age || '';
+    document.getElementById('eGroup').value  = sw.group || '';
+    document.getElementById('eGender').value = sw.gender || '';
     editModal.style.display = 'flex';
     setTimeout(()=> document.getElementById('eEmailInput').focus(), 30);
   }
@@ -1020,7 +1043,8 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
         emails:  emailField.get(),
         parents: parentField.get(),
         age:     document.getElementById('eAge').value.trim(),
-        group:   document.getElementById('eGroup').value.trim()
+        group:   document.getElementById('eGroup').value.trim(),
+        gender:  document.getElementById('eGender').value
       });
       closeEditModal();
       await refreshAll();

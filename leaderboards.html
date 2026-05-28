@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="assets/styles.css?v=6"/>
+<link rel="stylesheet" href="assets/styles.css?v=7"/>
 <style>
   /* Hide everything until auth check completes — admins only. */
   body:not(.auth-ready) > *{visibility:hidden}
@@ -56,7 +56,7 @@
     <div class="leaderboard-hero-content">
       <div class="kicker"><span class="pulse"></span> Team Records · Coaches View</div>
       <h1>Hurricane Top Times</h1>
-      <p class="lb-sub">Fastest swims on the team, grouped by event and age group. Filter by stroke to focus the board, or change how many places to show.</p>
+      <p class="lb-sub">Fastest swims on the team, grouped by event, age group, and gender (boys and girls race separately). Filter by stroke, age, or gender to focus the board.</p>
       <div class="lb-team-row" id="lbTeamRow">
         <div class="lb-mini"><div class="lb-mini-val" id="tSwimmers">—</div><div class="lb-mini-lbl">Swimmers</div></div>
         <div class="lb-mini"><div class="lb-mini-val" id="tRaces">—</div><div class="lb-mini-lbl">Races logged</div></div>
@@ -93,6 +93,14 @@
           <button data-age="11-12">11–12</button>
           <button data-age="13-14">13–14</button>
           <button data-age="15-18">15–18</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Gender</label>
+        <div class="seg" id="genderSeg">
+          <button data-gender="" class="active">All</button>
+          <button data-gender="Boys">Boys</button>
+          <button data-gender="Girls">Girls</button>
         </div>
       </div>
       <div class="field" style="max-width:200px">
@@ -156,7 +164,7 @@
   Highcroft Hurricanes Swim Team · <a href="index.html">Back to home</a> · <a href="admin.html">Admin</a>
 </footer>
 
-<script src="assets/data.js?v=4"></script>
+<script src="assets/data.js?v=5"></script>
 <script>
   HHST.initTheme();
   document.getElementById('themeToggle').addEventListener('click', HHST.toggleTheme);
@@ -180,7 +188,7 @@
   })();
 
   let swimmers = {};
-  let state = { stroke: 'Freestyle', age: '', top: 5 };
+  let state = { stroke: 'Freestyle', age: '', gender: '', top: 5 };
 
   (async () => {
     // Wait for auth to confirm before fetching — keeps the page blank
@@ -232,12 +240,18 @@
   function renderAwards(){
     if(!awardsHost) return;
     const dist = awardsDist.value;
-    // Gender-split age groups (Boys 13-14, Girls 13-14, …) come from leaderboardsByEvent
-    // so each printable certificate covers a single Swimtopia age class.
+    // Gender-split age groups (Boys 13-14, Girls 13-14, …) come straight out
+    // of leaderboardsByEvent's competitionGroup bucketing, so each printable
+    // certificate covers a single Boys-X or Girls-X group.
     const boards = HHST.leaderboardsByEvent(Object.values(swimmers), { stroke: 'Freestyle', distance: dist }, { limit: 5 });
-    const groups = HHST.sortAgeGroups(Object.keys(boards));
+    // Apply the current Gender filter so coaches can print just Boys or
+    // just Girls certificates when they only need one stack.
+    let groupKeys = HHST.sortAgeGroups(Object.keys(boards));
+    if(state.gender === 'Boys') groupKeys = groupKeys.filter(g => /^Boys\s/i.test(g));
+    else if(state.gender === 'Girls') groupKeys = groupKeys.filter(g => /^Girls\s/i.test(g));
+    const groups = groupKeys;
     if(!groups.length){
-      awardsHost.innerHTML = `<div class="card empty no-print" style="margin-top:16px">No ${dist} Free times yet. Upload meet results from the Admin page and they'll appear here.</div>`;
+      awardsHost.innerHTML = `<div class="card empty no-print" style="margin-top:16px">No ${dist} Free times yet${state.gender ? ` for ${state.gender}` : ''}. Upload meet results from the Admin page and they'll appear here.</div>`;
       return;
     }
     const today = new Date().toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'});
@@ -333,6 +347,13 @@
     state.age = btn.dataset.age;
     render();
   }));
+  document.querySelectorAll('#genderSeg button').forEach(btn => btn.addEventListener('click', () => {
+    document.querySelectorAll('#genderSeg button').forEach(x => x.classList.remove('active'));
+    btn.classList.add('active');
+    state.gender = btn.dataset.gender;
+    render();
+    renderAwards();
+  }));
   document.getElementById('topN').addEventListener('change', (e) => {
     state.top = parseInt(e.target.value, 10);
     render();
@@ -350,10 +371,19 @@
   function render(){
     const boards = HHST.buildLeaderboards(swimmers, { stroke: state.stroke || null, top: state.top });
 
-    // Optional age filter
-    const filtered = state.age ? boards.filter(b => (b.ageGroup||'').includes(state.age)) : boards;
+    // Optional age + gender filters. Age matches against the plain bracket
+    // (which is preserved on every board so a "Boys 11-12" / "Girls 11-12"
+    // section both pass through the `state.age === "11-12"` filter).
+    const filtered = boards.filter(b => {
+      if(state.age && b.bracket !== state.age && !(b.ageGroup||'').includes(state.age)) return false;
+      if(state.gender){
+        const want = state.gender === 'Boys' ? 'M' : state.gender === 'Girls' ? 'F' : '';
+        if(want && b.gender !== want) return false;
+      }
+      return true;
+    });
 
-    // Group by age group, then sort events within
+    // Group by competition group ("Boys 11-12" / "Girls 11-12"), then sort events within.
     const groups = {};
     filtered.forEach(b => {
       if(!groups[b.ageGroup]) groups[b.ageGroup] = [];
@@ -361,7 +391,10 @@
     });
     Object.values(groups).forEach(arr => arr.sort((a,b)=> HHST.compareEventLabel(a.event, b.event)));
 
-    const orderedAges = HHST.AGE_GROUP_ORDER.filter(ag => groups[ag] && groups[ag].length);
+    // sortAgeGroups handles both the plain brackets and the gendered labels,
+    // putting Girls before Boys within each bracket — matches what most
+    // meet programs print.
+    const orderedAges = HHST.sortAgeGroups(Object.keys(groups));
 
     if(orderedAges.length === 0){
       document.getElementById('lbBody').innerHTML = '<div class="card empty">No times match these filters yet.</div>';
@@ -369,13 +402,22 @@
       return;
     }
 
-    function bracketClass(ag){ return 'bracket-' + slug(ag); }
-    function tocClass(ag){ return 'toc-' + slug(ag); }
+    // CSS bracket classes are keyed by the plain bracket (bracket-11-12),
+    // so strip a leading "Boys "/"Girls " to keep the color-coding consistent
+    // across both gender sections at the same age.
+    function bracketOnly(ag){ return ag.replace(/^(Boys|Girls)\s+/i, ''); }
+    function bracketClass(ag){ return 'bracket-' + slug(bracketOnly(ag)); }
+    function tocClass(ag){ return 'toc-' + slug(bracketOnly(ag)); }
+    function genderTag(ag){
+      if(/^Boys\s/i.test(ag)) return '<span class="lb-gender-tag lb-gender-boys" title="Boys">♂</span>';
+      if(/^Girls\s/i.test(ag)) return '<span class="lb-gender-tag lb-gender-girls" title="Girls">♀</span>';
+      return '';
+    }
 
     // Build table-of-contents pills (color-coded by bracket)
     const toc = orderedAges.map(ag => {
       const evCount = groups[ag].length;
-      return `<a href="#ag-${slug(ag)}" class="lb-toc-pill ${tocClass(ag)}"><strong>${escapeHtml(ag)}</strong><span>${evCount} event${evCount===1?'':'s'}</span></a>`;
+      return `<a href="#ag-${slug(ag)}" class="lb-toc-pill ${tocClass(ag)}">${genderTag(ag)}<strong>${escapeHtml(ag)}</strong><span>${evCount} event${evCount===1?'':'s'}</span></a>`;
     }).join('');
     document.getElementById('lbToc').innerHTML = toc;
 
