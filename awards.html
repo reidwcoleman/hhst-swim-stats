@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="assets/styles.css?v=16"/>
+<link rel="stylesheet" href="assets/styles.css?v=17"/>
 <style>
   /* Hide everything until auth check completes — admins only. */
   body:not(.auth-ready) > *{visibility:hidden}
@@ -267,24 +267,14 @@
     }
     awardsHost.innerHTML = cards;
 
-    // Wire single-card print buttons. Scopes to `printing-awards` so the
-    // print CSS hides the Most Improved section; `printing-one` plus
-    // `print-target` then narrows further to just the one card.
+    // Wire single-card print buttons via the centralized safePrint() helper.
+    // Scoping to `printing-awards` hides the Most Improved section; the
+    // helper handles class cleanup + error catching + timeout fallback.
     awardsHost.querySelectorAll('[data-print]').forEach(btn => btn.addEventListener('click', () => {
-      const group = btn.dataset.print;
-      document.body.classList.add('printing-one','printing-awards');
-      awardsHost.querySelectorAll('.award-card').forEach(c => {
-        c.classList.toggle('print-target', c.dataset.group === group);
+      safePrint({
+        scopes: ['printing-awards', 'printing-one'],
+        targetGroup: btn.dataset.group
       });
-      const cleanup = () => {
-        document.body.classList.remove('printing-one','printing-awards');
-        awardsHost.querySelectorAll('.award-card').forEach(c => c.classList.remove('print-target'));
-        window.removeEventListener('afterprint', cleanup);
-      };
-      window.addEventListener('afterprint', cleanup);
-      // requestAnimationFrame gives the browser a beat to apply the class
-      // before the print snapshot is taken — fixes blank previews on Chrome.
-      requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
     }));
   }
 
@@ -461,34 +451,91 @@
     improvedHost.innerHTML = cards;
 
     improvedHost.querySelectorAll('[data-print]').forEach(btn => btn.addEventListener('click', () => {
-      const group = btn.dataset.print;
-      document.body.classList.add('printing-one','printing-improved');
-      improvedHost.querySelectorAll('.award-card').forEach(c => {
-        c.classList.toggle('print-target', c.dataset.group === group);
+      safePrint({
+        scopes: ['printing-improved', 'printing-one'],
+        targetGroup: btn.dataset.group
       });
-      const cleanup = () => {
-        document.body.classList.remove('printing-one','printing-improved');
-        improvedHost.querySelectorAll('.award-card').forEach(c => c.classList.remove('print-target'));
-        window.removeEventListener('afterprint', cleanup);
-      };
-      window.addEventListener('afterprint', cleanup);
-      requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
     }));
   }
 
   printAllAwards?.addEventListener('click', () => {
     // Prints BOTH Fastest Five and Most Improved posters together — one
-    // certificate per age group, one poster per page. We don't add any
-    // scope class so the default print rules show every .award-card.
+    // poster per page. No scope class so all .award-card nodes are visible.
     const ff   = awardsHost.querySelectorAll('.award-card').length;
     const imp  = (improvedHost && improvedHost.querySelectorAll('.award-card').length) || 0;
     if(ff + imp === 0){
       alert('Nothing to print yet. Upload meet results from the Admin page first — Fastest Five and Most Improved posters generate automatically once times come in.');
       return;
     }
-    // Double-rAF so any pending layout finishes before the print snapshot is taken.
-    requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
+    safePrint({ scopes: [] });
   });
+
+  // ============ safePrint() — bulletproof print flow ============
+  // Centralized print helper that owns ALL scope-class management,
+  // target-marking, error handling, and afterprint cleanup. Solves:
+  //   - "Uncaught (in promise)" leaks from window.print() rejecting in
+  //     some Chromium contexts.
+  //   - Leftover .printing-* body classes if afterprint never fires.
+  //   - Listener accumulation when a coach prints multiple times.
+  //   - Cancelled print dialogs leaving .print-target classes stuck.
+  let __activePrintCleanup = null;
+  function safePrint({ scopes = [], targetGroup = '' } = {}){
+    // Tear down any prior print state before starting a new one
+    if(__activePrintCleanup){ try { __activePrintCleanup(); } catch(e){} }
+
+    // Apply scope classes (Set so dupes are no-op)
+    const applied = new Set(scopes.filter(Boolean));
+    applied.forEach(c => document.body.classList.add(c));
+
+    // Mark just one card if a targetGroup is provided
+    const targetSelector = targetGroup ? `.award-card[data-group="${cssEscape(targetGroup)}"]` : '';
+    if(targetGroup){
+      document.querySelectorAll('.award-card').forEach(c => c.classList.remove('print-target'));
+      const target = document.querySelector(targetSelector);
+      if(target) target.classList.add('print-target');
+    }
+
+    let cleaned = false;
+    let timeoutId = null;
+    const cleanup = () => {
+      if(cleaned) return;
+      cleaned = true;
+      applied.forEach(c => document.body.classList.remove(c));
+      if(targetGroup){
+        document.querySelectorAll('.print-target').forEach(c => c.classList.remove('print-target'));
+      }
+      window.removeEventListener('afterprint', onAfter);
+      if(timeoutId){ clearTimeout(timeoutId); timeoutId = null; }
+      __activePrintCleanup = null;
+    };
+    const onAfter = () => cleanup();
+    window.addEventListener('afterprint', onAfter);
+    // Belt-and-suspenders: some browsers/extensions swallow afterprint when
+    // the user cancels the dialog. Force-clean after 2 minutes either way.
+    timeoutId = setTimeout(cleanup, 120000);
+    __activePrintCleanup = cleanup;
+
+    // Try the actual print. window.print() can throw synchronously on
+    // detached contexts or when "Headless" / sandbox modes block it, and
+    // on a few Chromium versions it returns a Promise that may reject.
+    // Catch both forms so the UI never shows an unhandled error.
+    try {
+      const ret = window.print();
+      if(ret && typeof ret.then === 'function'){
+        ret.catch(() => { /* user cancel or sandbox — cleanup runs on afterprint or timeout */ });
+      }
+    } catch(err){
+      console.warn('Print dialog blocked:', err);
+      cleanup();
+    }
+  }
+
+  // Minimal CSS.escape polyfill — only the chars that appear in our group
+  // names (letters, digits, ampersand, space, dash). Safe-quotes everything.
+  function cssEscape(s){
+    if(window.CSS && typeof CSS.escape === 'function') return CSS.escape(s);
+    return String(s).replace(/[^a-zA-Z0-9_-]/g, ch => '\\' + ch);
+  }
 
   function escapeHtml(s){
     return (s||'').toString().replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));

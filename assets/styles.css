@@ -1521,10 +1521,10 @@ table tr:hover td{background:rgba(96,165,250,.05)}
     inset 0 0 0 6px rgba(255,255,255,.4);
   overflow:hidden;
   transition:transform .26s cubic-bezier(.16,1,.3,1), box-shadow .26s;
-  background-image:
-    radial-gradient(120% 80% at 50% 0%, rgba(125,211,252,.45) 0%, transparent 55%),
-    radial-gradient(140% 60% at 50% 100%, rgba(96,165,250,.28) 0%, transparent 55%),
-    linear-gradient(180deg,#dbeafe 0%, #e0f2fe 35%, #f0f9ff 100%);
+  /* Plain white poster background — keeps printer ink down and reads the
+     same on screen and on paper. Border, top accent bar, medals, and
+     gender-color headers still carry the color identity. */
+  background:#ffffff;
 }
 .award-card:hover{
   transform:translateY(-3px);
@@ -1546,6 +1546,11 @@ table tr:hover td{background:rgba(96,165,250,.05)}
    PDF export in every browser without bringing in raster assets.
    Each bubble has a soft outer ring + bright highlight to read as glass. */
 .award-bubble-bg{
+  /* Bubbles, waves, and lane lines are hidden against the white poster
+     background — the white-on-white made them invisible anyway, and on
+     screen they don't read well over plain white. Border + accent bar +
+     medals + gender headers carry the visual identity. */
+  display:none;
   position:absolute;inset:0;
   pointer-events:none;z-index:0;
   background-image:
@@ -1579,26 +1584,12 @@ table tr:hover td{background:rgba(96,165,250,.05)}
 .award-corner.bl{bottom:18px;left:18px;border-right:none;border-top:none;border-bottom-left-radius:6px}
 .award-corner.br{bottom:18px;right:18px;border-left:none;border-top:none;border-bottom-right-radius:6px}
 
-/* Decorative wave bands top + bottom of the card — subtle water rhythm */
-.award-wave-top, .award-wave-bottom{
-  position:absolute;left:0;right:0;width:100%;height:54px;
-  pointer-events:none;z-index:0;
-}
-.award-wave-top{top:6px}
-.award-wave-bottom{bottom:6px;transform:scaleY(-1)}
-
-/* Vertical pool-lane stripes inside the inset border on each side */
-.award-lane{
-  position:absolute;top:60px;bottom:60px;width:6px;
-  background:repeating-linear-gradient(
-    to bottom,
-    rgba(30,64,175,.28) 0 12px,
-    transparent 12px 22px
-  );
-  border-radius:3px;pointer-events:none;z-index:1;opacity:.55;
-}
-.award-lane.lane-left{left:32px}
-.award-lane.lane-right{right:32px}
+/* Decorative wave bands and pool-lane stripes are hidden on the white
+   poster — they were watery decorations meant for the blue gradient
+   background. The .display:none here also covers screen view; the print
+   rule still hides them too. */
+.award-wave-top, .award-wave-bottom,
+.award-lane{ display:none; }
 
 /* Logo sits directly on the watery background — no white pillow.
    A soft cyan halo behind it gives the logo lift without a hard plate,
@@ -2510,12 +2501,11 @@ table:not(.roster-table) td, table:not(.roster-table) th{word-break:break-word}
 .awards-intro-meet strong{color:var(--text);font-weight:700}
 .awards-intro-meet-date{margin-left:6px;color:var(--text-subtle);font-weight:500}
 
-/* Most Improved card chrome */
+/* Most Improved card chrome — white background, green border keeps the
+   visual distinction from the blue-bordered Fastest Five card. */
 .award-card-improved{
-  background-image:
-    radial-gradient(120% 80% at 50% 0%, rgba(52,211,153,.30) 0%, transparent 55%),
-    radial-gradient(140% 60% at 50% 100%, rgba(96,165,250,.22) 0%, transparent 55%),
-    linear-gradient(180deg,#d1fae5 0%, #e0f2fe 50%, #f0f9ff 100%);
+  background:#ffffff;
+  background-image:none;
   border-color:#047857;
 }
 .award-card-improved::after{
