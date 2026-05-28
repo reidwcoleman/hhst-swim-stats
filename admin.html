@@ -1021,86 +1021,25 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
         </tr>`;
       }).join('');
     }
-    // Build a flat list of all swimmers missing gender so we can show a banner
-    // at the top urging the coach to fix them (and clicking each name opens
-    // the edit modal so gender can be set in one step).
-    const needsGender = swimmers.filter(s => s.gender !== 'M' && s.gender !== 'F');
-    const needsGenderBanner = needsGender.length ? `
-      <div class="card" style="border-color:rgba(245,158,11,.55);background:rgba(245,158,11,.08);padding:14px 18px;margin-bottom:16px">
-        <div style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-          <div style="flex:1;min-width:260px">
-            <strong style="color:var(--text);font-size:14.5px">${needsGender.length} swimmer${needsGender.length===1?'':'s'} ${needsGender.length===1?'needs':'need'} a gender</strong>
-            <div style="margin-top:4px;font-size:13px;color:var(--text-muted)">
-              Boys and girls don't race each other — without a gender, these swimmers won't appear on the Boys/Girls leaderboards or Fastest Five certificates. Click any name to set their gender.
-            </div>
-            <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px">
-              ${needsGender.slice(0, 30).map(s =>
-                `<button class="training-chip" data-edit="${s.key}" title="Click to edit" style="cursor:pointer;background:rgba(245,158,11,.18);color:#f59e0b;border-color:rgba(245,158,11,.4)">${escapeHtml(s.name)}</button>`
-              ).join('')}
-              ${needsGender.length > 30 ? `<span style="font-size:12.5px;color:var(--text-muted);align-self:center;margin-left:4px">+${needsGender.length - 30} more in the table below</span>` : ''}
-            </div>
-          </div>
-        </div>
-      </div>` : '';
-
-    // Inside each age bracket, split swimmers by gender so coaches see the
-    // roster the same way the meet program groups it: Boys / Girls
-    // sub-sections under each bracket. An "Unassigned" subsection appears
-    // only when there are swimmers still missing gender.
-    function splitByGender(list){
-      const boys = [], girls = [], other = [];
-      list.forEach(s => {
-        if(s.gender === 'M') boys.push(s);
-        else if(s.gender === 'F') girls.push(s);
-        else other.push(s);
-      });
-      return { boys, girls, other };
-    }
-    function subSection(label, list, bracket, theme){
-      if(!list.length) return '';
-      // theme: 'boys' | 'girls' | 'other' — controls the colored pill on the sub-header
-      const themeStyle = theme === 'boys'
-        ? 'background:rgba(59,130,246,.16);color:#3b82f6;border:1px solid rgba(59,130,246,.32)'
-        : theme === 'girls'
-        ? 'background:rgba(236,72,153,.16);color:#ec4899;border:1px solid rgba(236,72,153,.32)'
-        : 'background:rgba(245,158,11,.16);color:#f59e0b;border:1px solid rgba(245,158,11,.32)';
-      const glyph = theme === 'boys' ? '♂' : theme === 'girls' ? '♀' : '?';
+    // Single combined table per age bracket — boys and girls in one list,
+    // sorted alphabetically by name. The gender chip next to each name
+    // (rendered in rowsFor) makes the categorization visible without
+    // splitting the table.
+    const sections = HHST.AGE_GROUP_ORDER.filter(g => (buckets[g]||[]).length).map(g => {
+      const list = buckets[g];
       return `
-        <div style="margin:14px 0 4px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-          <span style="padding:4px 11px;border-radius:8px;font-size:13px;font-weight:700;letter-spacing:.02em;${themeStyle}">${glyph} ${escapeHtml(label)}</span>
+        <h3 class="age-group-h">
+          <span class="${bracketPillClass(g)} bracket-pill-lg">${escapeHtml(g)}</span>
           <span class="age-group-count">${list.length} swimmer${list.length===1?'':'s'}</span>
-        </div>
+        </h3>
         <div class="table-wrap">
         <table class="roster-table">
           <thead><tr><th>Swimmer</th><th>Age</th><th>Age Group</th><th>Parent</th><th>Email</th><th class="th-races">Races</th><th></th></tr></thead>
-          <tbody>${rowsFor(list, bracket)}</tbody>
+          <tbody>${rowsFor(list, g)}</tbody>
         </table>
         </div>`;
-    }
-
-    const sections = HHST.AGE_GROUP_ORDER.filter(g => (buckets[g]||[]).length).map(g => {
-      const list = buckets[g];
-      const split = splitByGender(list);
-      // Header summary like "8 swimmers · 4 boys · 4 girls · 0 unassigned"
-      const summary = [
-        `${list.length} swimmer${list.length===1?'':'s'}`,
-        split.boys.length ? `${split.boys.length} ${split.boys.length===1?'boy':'boys'}` : '',
-        split.girls.length ? `${split.girls.length} ${split.girls.length===1?'girl':'girls'}` : '',
-        split.other.length ? `<span style="color:#f59e0b">${split.other.length} need${split.other.length===1?'s':''} gender</span>` : ''
-      ].filter(Boolean).join(' · ');
-      return `
-        <section class="bracket-section" style="margin-top:18px">
-          <h3 class="age-group-h">
-            <span class="${bracketPillClass(g)} bracket-pill-lg">${escapeHtml(g)}</span>
-            <span class="age-group-count">${summary}</span>
-          </h3>
-          ${subSection('Girls', split.girls, g, 'girls')}
-          ${subSection('Boys',  split.boys,  g, 'boys')}
-          ${subSection('Needs gender', split.other, g, 'other')}
-        </section>`;
     }).join('');
-    wrap.innerHTML = needsGenderBanner + sections;
+    wrap.innerHTML = sections;
     wrap.querySelectorAll('button[data-edit]').forEach(b => b.addEventListener('click', ()=>{
       openEditModal(b.dataset.edit);
     }));
