@@ -23,9 +23,16 @@
   function meetTimeDocId(swimmerKey, eventLabel){
     return `${swimmerKey}__${slugify(eventLabel)}`;
   }
+  // Some exports (HHST's Times sheet, USA Swimming) tag the time with the
+  // course code: "17.11Y" (yards), "1:07.94L" (long-course meters),
+  // "S" (short-course meters), "M" (meters). Strip a single trailing
+  // course-code letter before parsing so the time still parses.
+  function stripCourseCode(s){
+    return (s == null ? '' : s.toString()).trim().replace(/\s*[YSLM]\s*$/i, '').trim();
+  }
   function fmtTime(t){
     if(t==null) return '';
-    let s = t.toString().trim();
+    let s = stripCourseCode(t);
     if(!s) return '';
     if(/^\d{1,2}:\d{2}\.\d{1,2}$/.test(s)){
       const [m, rest] = s.split(':');
@@ -41,7 +48,7 @@
   }
   function timeToSeconds(t){
     if(t==null) return NaN;
-    const s = t.toString().trim();
+    const s = stripCourseCode(t);
     if(!s) return NaN;
     if(/^\d{1,2}:\d{2}\.\d{1,2}$/.test(s)){
       const [m, rest] = s.split(':');
@@ -101,11 +108,17 @@
     'parent':'parent','parentname':'parent','parent1':'parent','guardian':'parent','parentguardian':'parent',
     'accountname':'parent','householdname':'parent','primarycontact':'parent','contactname':'parent',
     // Event / time / meet
-    'event':'event','stroke':'event','eventname':'event',
-    'distance':'distance',
+    'event':'event','stroke':'event','eventname':'event','strokename':'event',
+    'distance':'distance','eventdistance':'distance',
     'time':'time','finaltime':'time','result':'time','swimtime':'time','seedtime':'time',
-    'meet':'meet','meetname':'meet','competition':'meet',
-    'date':'date','meetdate':'date','sessiondate':'date',
+    // HHST stats workbook columns — original_time wins (preserves the course code on display),
+    // converted_time is the same value in seconds; mapping both is safe because the first
+    // matching column wins (see `if(rec[k]) continue;` in ingestRows).
+    'originaltime':'time','convertedtime':'time',
+    'meet':'meet','meetname':'meet','competition':'meet','swimmeet':'meet','meettitle':'meet',
+    'date':'date','meetdate':'date','sessiondate':'date','eventdate':'date','swimdate':'date',
+    // Team columns (ignored for now — kept here so they don't get misinterpreted as something else)
+    'team':'team','teamname':'team','teamabbr':'team','teamabbreviation':'team',
     // Age / DOB
     'age':'age','swimmerage':'age','athleteage':'age',
     'dob':'dob','dateofbirth':'dob','birthdate':'dob','birthday':'dob','athletebirthdate':'dob',
@@ -1021,6 +1034,7 @@
     statsForSwimmer, rankSwimmerInAgeGroup, buildLeaderboards, teamStats,
     getAgeGroup, AGE_GROUP_ORDER, STROKE_ORDER, extractStroke, extractDistance, distanceNum, compareEventLabel,
     fmtTime, timeToSeconds, swimmerKey, slugify, meetTimeDocId, norm,
+    mapHeader, normHeaderKey,
     fixNameOrder, isValidEmail, ageFromDob,
     normalizeEventLabel,
     leaderboardsByEvent, sortAgeGroups,

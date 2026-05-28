@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="assets/styles.css?v=4"/>
+<link rel="stylesheet" href="assets/styles.css?v=5"/>
 
 <!-- Firebase compat SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
@@ -77,7 +77,6 @@
       Highcroft <em>Hurricanes</em><span class="admin-pill">Admin</span>
     </a>
     <div class="topbar-right">
-      <a href="leaderboards.html" class="btn-sm btn-site">Leaderboards</a>
       <a href="index.html" class="btn-sm btn-site">View Site</a>
       <button class="theme-toggle-sm" id="themeToggle" aria-label="Toggle theme">
         <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
@@ -90,23 +89,69 @@
   <main class="admin-shell">
 
     <div class="admin-page-head">
-      <div>
-        <h1>Team Roster & Results</h1>
+      <div class="admin-page-head-text">
+        <h1>Team Roster &amp; Results</h1>
         <p>Upload meet result CSVs, add swimmers, and review what families will see.</p>
-      </div>
-      <div class="admin-head-actions">
-        <button class="btn ghost" id="downloadSampleBtn">Download sample CSV</button>
-        <button class="btn ghost" id="clearRosterBtn">Clear roster only</button>
-        <button class="btn ghost" id="clearTimesBtn">Clear meet times only</button>
-        <button class="btn danger" id="resetDataBtn">Reset all data</button>
       </div>
     </div>
 
+    <!-- Primary coach-only navigation -->
+    <div class="admin-quick-nav">
+      <a href="leaderboards.html" class="quick-nav-card">
+        <span class="quick-nav-icon quick-nav-icon-trophy">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+        </span>
+        <span class="quick-nav-body">
+          <span class="quick-nav-title">Leaderboards</span>
+          <span class="quick-nav-sub">Top times by event &amp; age group</span>
+        </span>
+        <svg class="quick-nav-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+      <a href="leaderboards.html#awardsHost" class="quick-nav-card">
+        <span class="quick-nav-icon quick-nav-icon-printer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        </span>
+        <span class="quick-nav-body">
+          <span class="quick-nav-title">Fastest Five PDF</span>
+          <span class="quick-nav-sub">Printable awards certificate per age group</span>
+        </span>
+        <svg class="quick-nav-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+    </div>
+
     <div class="kpi-row">
-      <div class="kpi"><div class="label">Swimmers</div><div class="value" id="kSwimmers">0</div><div class="delta" id="dSwimmers">In the roster</div></div>
-      <div class="kpi"><div class="label">Races Logged</div><div class="value" id="kRaces">0</div><div class="delta">Across all meets</div></div>
-      <div class="kpi"><div class="label">Meets</div><div class="value" id="kMeets">0</div><div class="delta">Distinct competitions</div></div>
-      <div class="kpi"><div class="label">Last Upload</div><div class="value" id="kLast">—</div><div class="delta" id="dLast">No CSV uploaded yet</div></div>
+      <div class="kpi">
+        <div class="kpi-icon kpi-icon-people">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <div class="label">Swimmers</div>
+        <div class="value" id="kSwimmers">0</div>
+        <div class="delta" id="dSwimmers">In the roster</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-icon kpi-icon-stopwatch">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M9 2h6"/><path d="M19 4l-2 2"/></svg>
+        </div>
+        <div class="label">Races Logged</div>
+        <div class="value" id="kRaces">0</div>
+        <div class="delta">Across all meets</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-icon kpi-icon-calendar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        </div>
+        <div class="label">Meets</div>
+        <div class="value" id="kMeets">0</div>
+        <div class="delta">Distinct competitions</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-icon kpi-icon-upload">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        </div>
+        <div class="label">Last Upload</div>
+        <div class="value" id="kLast">—</div>
+        <div class="delta" id="dLast">No CSV uploaded yet</div>
+      </div>
     </div>
 
     <!-- SWIMTOPIA EXPORT GUIDE -->
@@ -270,11 +315,41 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
     <div class="card">
       <h2>Roster</h2>
       <p class="lead">Click <strong>Edit</strong> next to any swimmer to manage their emails, parents, age, or group. Families look up their swimmer using the swimmer's name + an email on this list.</p>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">
-        <input type="text" id="searchInput" placeholder="Search by name, parent, email, or group…" style="flex:1;min-width:240px;padding:12px 14px;border-radius:10px;background:var(--surface);color:var(--text);border:1px solid var(--border-strong);font-size:14px"/>
+      <div class="roster-search-row">
+        <input type="text" id="searchInput" placeholder="Search by name, parent, email, or group…" class="roster-search"/>
       </div>
       <div class="table-wrap" id="rosterWrap"></div>
     </div>
+
+    <!-- MAINTENANCE / DATA MANAGEMENT -->
+    <details class="card collapsible-card maintenance-card">
+      <summary>
+        <span class="collapsible-title">Data management</span>
+        <span class="collapsible-hint">Sample CSV · Clear data · Reset</span>
+        <svg class="collapsible-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+      </summary>
+      <div class="collapsible-body">
+        <p class="lead">Utilities for testing and emergency resets. Clear actions can't be undone — they wipe the matching Firestore collections immediately.</p>
+        <div class="maintenance-grid">
+          <button class="btn ghost maintenance-btn" id="downloadSampleBtn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download sample CSV
+          </button>
+          <button class="btn ghost maintenance-btn" id="clearRosterBtn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            Clear roster only
+          </button>
+          <button class="btn ghost maintenance-btn" id="clearTimesBtn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Clear meet times only
+          </button>
+          <button class="btn danger maintenance-btn" id="resetDataBtn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9"/><polyline points="3 4 3 12 11 12"/></svg>
+            Reset all data
+          </button>
+        </div>
+      </div>
+    </details>
 
   </main>
 </div>
@@ -344,9 +419,25 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
     adminView.style.display = 'none';
   }
 
+  // Honor ?next=<url> on successful auth — used by gated pages
+  // (e.g. leaderboards.html) to bounce the coach back where they started.
+  function getSafeNext(){
+    const raw = new URLSearchParams(location.search).get('next');
+    if(!raw) return null;
+    // Only allow relative, same-page navigation; no protocol/host hops.
+    if(/^[/\\]/.test(raw) || /:/.test(raw)) return null;
+    return raw;
+  }
+
   // React to Firebase Auth state (handles refresh / persisted session)
   HHST.onAuthChanged(user => {
-    if(user) showAdmin(); else showLogin();
+    if(user){
+      const next = getSafeNext();
+      if(next){ location.replace(next); return; }
+      showAdmin();
+    } else {
+      showLogin();
+    }
   });
 
   // LOGIN
@@ -385,7 +476,31 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
         || t.includes('spreadsheetml') || t.includes('ms-excel') || t.includes('excel');
   }
 
+  // Score a sheet's first row by how many cells map to recognized swim-import
+  // fields (name, time, event, meet, etc). Used to pick the right sheet in
+  // a multi-sheet workbook like HHST's stats file, which has 8 sheets but
+  // only one ("Import") that's actually a clean per-row results table.
+  const SCORED_FIELDS = new Set(['name','first','last','time','event','distance','meet','date','age','dob','place','group','agegroup','email','parent']);
+  function scoreSheetHeader(headerRow){
+    if(!headerRow || !headerRow.length) return 0;
+    const seen = new Set();
+    for(const h of headerRow){
+      if(!h) continue;
+      const field = HHST.mapHeader ? HHST.mapHeader(h) : '';
+      if(SCORED_FIELDS.has(field)) seen.add(field);
+    }
+    // Must have at least a name-ish field AND a time/event-ish field to count.
+    const hasName = seen.has('name') || seen.has('first') || seen.has('last');
+    const hasResultData = seen.has('time') || seen.has('event') || seen.has('distance');
+    if(!hasName || !hasResultData) return 0;
+    return seen.size;
+  }
+
   // Read a single file into the array-of-arrays shape that HHST.ingestRows expects.
+  // For .xlsx workbooks with multiple sheets, picks the best matching sheet
+  // (preferring one named "Import" / "Times" / "Roster") instead of blindly
+  // merging all of them — merging unrelated sheets (Meet Summary, Fastest 5,
+  // pivot tables) would corrupt the header detection.
   async function readFileToRows(f){
     const name = (f.name || '').toLowerCase();
     if(name.endsWith('.xlsx') || name.endsWith('.xls')){
@@ -393,31 +508,43 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
         throw new Error('Excel reader (SheetJS) failed to load. Check your network and reload.');
       }
       const buf = await f.arrayBuffer();
-      const wb  = XLSX.read(buf, { type:'array' });
-      // Walk every sheet so a workbook with separate sheets for Times / Roster /
-      // Meet Summary still imports everything in one pass.
-      const collected = [];
-      let headerLen = 0;
-      wb.SheetNames.forEach((sheetName, idx) => {
+      const wb  = XLSX.read(buf, { type:'array', cellDates: true });
+
+      function sheetToRows(sheetName){
         const sheet = wb.Sheets[sheetName];
-        if(!sheet) return;
-        const raw = XLSX.utils.sheet_to_json(sheet, { header:1, defval:'', raw:false, blankrows:false });
-        const cleaned = raw
+        if(!sheet) return [];
+        const raw = XLSX.utils.sheet_to_json(sheet, { header:1, defval:'', raw:false, blankrows:false, dateNF:'yyyy-mm-dd' });
+        return raw
           .map(row => (row || []).map(c => c == null ? '' : String(c).trim()))
           .filter(r => r.length && r.some(x => x !== ''));
-        if(!cleaned.length) return;
-        if(!collected.length){
-          collected.push(...cleaned);
-          headerLen = cleaned[0].length;
-        } else {
-          // Skip the header on additional sheets if it looks identical
-          const sameHeader = cleaned[0].length === headerLen
-            && cleaned[0].every((v,i) => v === collected[0][i]);
-          const body = sameHeader ? cleaned.slice(1) : cleaned;
-          collected.push(...body);
-        }
-      });
-      return collected;
+      }
+
+      // Score every sheet, then pick the highest-scoring one.
+      // Sheets named Import/Times/Roster/Results get a small bonus so they
+      // win ties — but a sheet with no matching headers (Meet Summary,
+      // Fastest 5, pivot tables) always scores 0 and is excluded.
+      const preferredNames = ['import', 'roster', 'results', 'times', 'meet results', 'individual results', 'athlete results'];
+      const scored = wb.SheetNames.map((sn, idx) => {
+        const rows = sheetToRows(sn);
+        let score = scoreSheetHeader(rows[0]);
+        const lname = sn.toLowerCase().trim();
+        if(score > 0 && preferredNames.includes(lname)) score += 10;
+        // Sheets with substantial body rows beat tiny summary sheets at the same score
+        if(score > 0) score += Math.min(5, Math.floor(Math.log10(Math.max(1, rows.length))));
+        return { sheetName: sn, rows, score, idx };
+      }).filter(s => s.score > 0);
+
+      if(!scored.length){
+        const tried = wb.SheetNames.join(', ');
+        throw new Error(`No sheet in this workbook looks like a swim import. Sheets tried: ${tried}. Expected columns like Athlete / Time / Event / Meet, or last_name / first_name / original_time / swim_meet.`);
+      }
+      scored.sort((a, b) => b.score - a.score || a.idx - b.idx);
+      const chosen = scored[0];
+      console.log(`[XLSX] ${f.name} → using sheet "${chosen.sheetName}" (${chosen.rows.length} rows, score ${chosen.score}). Other candidates:`,
+        scored.slice(1).map(s => `${s.sheetName}=${s.score}`).join(', ') || 'none');
+      // Stash the chosen sheet name so the upload handler can show it in status.
+      try { f.__chosenSheet = chosen.sheetName; } catch(_){}
+      return chosen.rows;
     }
     // CSV / text
     const text = await f.text();

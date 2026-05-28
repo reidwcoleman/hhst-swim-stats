@@ -11,7 +11,11 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="assets/styles.css?v=4"/>
+<link rel="stylesheet" href="assets/styles.css?v=5"/>
+<style>
+  /* Hide everything until auth check completes — admins only. */
+  body:not(.auth-ready) > *{visibility:hidden}
+</style>
 
 <!-- Firebase compat SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
@@ -157,10 +161,34 @@
   HHST.initTheme();
   document.getElementById('themeToggle').addEventListener('click', HHST.toggleTheme);
 
+  // ============ Admin-only gate ============
+  // Leaderboards expose every swimmer's times — that's coaches-only.
+  // If not signed in, bounce to the admin login and bring the user back
+  // here on success.
+  (function gateBehindAdmin(){
+    let resolved = false;
+    FB.auth.onAuthStateChanged(user => {
+      if(resolved) return;
+      resolved = true;
+      if(user){
+        document.body.classList.add('auth-ready');
+      } else {
+        const back = encodeURIComponent('leaderboards.html');
+        location.replace(`admin.html?next=${back}`);
+      }
+    });
+  })();
+
   let swimmers = {};
   let state = { stroke: 'Freestyle', age: '', top: 5 };
 
   (async () => {
+    // Wait for auth to confirm before fetching — keeps the page blank
+    // for unauthenticated visitors instead of flashing data on screen.
+    await new Promise(resolve => {
+      const unsub = FB.auth.onAuthStateChanged(u => { unsub(); resolve(u); });
+    });
+    if(!FB.auth.currentUser) return;
     const loading = document.getElementById('loadingState');
     const empty   = document.getElementById('emptyState');
     const content = document.getElementById('lbContent');
