@@ -2595,6 +2595,182 @@ table:not(.roster-table) td, table:not(.roster-table) th{word-break:break-word}
 
 .awards-host-improved{margin-top:18px}
 
+/* ============ LEADERBOARD: UNIFIED BOARD PER BRACKET ============
+   One elegant card per age group instead of N event cards. Every event
+   gets a single row inside that card: event label on the left, Girls
+   podium + Boys podium on the right. Rows separated by hairline. */
+.lb-board-section{margin-bottom:52px;scroll-margin-top:80px}
+.lb-board-head{
+  display:flex;align-items:center;gap:16px;
+  margin-bottom:20px;padding-bottom:16px;
+  border-bottom:2px solid var(--border);
+  position:relative;
+}
+.lb-board-head::after{
+  content:'';position:absolute;left:0;bottom:-2px;width:100px;height:3px;
+  background:linear-gradient(90deg, var(--accent), var(--ice-400));
+  border-radius:3px;
+}
+.lb-board-title{flex:1;min-width:0}
+.lb-board-title h2{
+  font-family:'Fraunces',serif;font-weight:800;
+  font-size:30px;letter-spacing:-.025em;color:var(--text);
+  margin:0;line-height:1.05;
+}
+.lb-board-title p{
+  color:var(--text-muted);font-size:14px;margin:3px 0 0;
+}
+
+.lb-board-card{
+  background:var(--card-grad);
+  border:1px solid var(--border-strong);
+  border-radius:20px;overflow:hidden;
+  box-shadow:0 18px 40px -24px rgba(8,18,38,.45);
+}
+.lb-board-cols-head{
+  display:grid;grid-template-columns:minmax(200px, 1.2fr) 1.3fr 1.3fr;
+  gap:0;
+  padding:14px 24px;
+  background:linear-gradient(180deg, rgba(255,255,255,.04), transparent);
+  border-bottom:1px solid var(--border);
+  font-family:'Inter',sans-serif;font-weight:800;font-size:11px;
+  text-transform:uppercase;letter-spacing:.22em;
+  color:var(--text-subtle);
+}
+.lb-board-head-gender{
+  text-align:center;position:relative;padding-bottom:4px;
+}
+.lb-board-head-gender::after{
+  content:'';position:absolute;left:50%;bottom:-1px;width:34px;height:2px;
+  transform:translateX(-50%);border-radius:2px;
+}
+.lb-board-head-girls{color:#f9a8d4}
+.lb-board-head-girls::after{background:linear-gradient(90deg,#f472b6,#ec4899)}
+.lb-board-head-boys{color:#93c5fd}
+.lb-board-head-boys::after{background:linear-gradient(90deg,#60a5fa,#2563eb)}
+[data-theme="light"] .lb-board-head-girls{color:#be185d}
+[data-theme="light"] .lb-board-head-boys{color:#1e40af}
+
+/* Each event = one row inside the big board */
+.lb-board-row{
+  display:grid;grid-template-columns:minmax(200px, 1.2fr) 1.3fr 1.3fr;
+  gap:0;
+  padding:20px 24px;
+  border-bottom:1px solid var(--border);
+  position:relative;
+  transition:background .18s;
+}
+.lb-board-row:last-child{border-bottom:none}
+.lb-board-row::before{
+  content:'';position:absolute;left:0;top:16px;bottom:16px;width:3px;border-radius:0 3px 3px 0;
+}
+.lb-board-row.stroke-freestyle::before{background:linear-gradient(180deg,#60a5fa,#2563eb)}
+.lb-board-row.stroke-backstroke::before{background:linear-gradient(180deg,#34d399,#059669)}
+.lb-board-row.stroke-breaststroke::before{background:linear-gradient(180deg,#fbbf24,#d97706)}
+.lb-board-row.stroke-butterfly::before{background:linear-gradient(180deg,#f472b6,#db2777)}
+.lb-board-row.stroke-im::before{background:linear-gradient(180deg,#a78bfa,#7c3aed)}
+.lb-board-row.stroke-freestyle:hover{background:rgba(96,165,250,.04)}
+.lb-board-row.stroke-backstroke:hover{background:rgba(52,211,153,.04)}
+.lb-board-row.stroke-breaststroke:hover{background:rgba(251,191,36,.04)}
+.lb-board-row.stroke-butterfly:hover{background:rgba(244,114,182,.04)}
+.lb-board-row.stroke-im:hover{background:rgba(167,139,250,.04)}
+
+.lb-board-event{
+  display:flex;flex-direction:column;gap:8px;justify-content:center;
+  padding-right:18px;
+}
+.lb-board-event h3{
+  font-family:'Fraunces',serif;font-weight:800;
+  font-size:22px;letter-spacing:-.02em;color:var(--text);
+  margin:0;line-height:1.05;
+}
+.lb-board-event .lb-stroke-tag{
+  align-self:flex-start;
+  font-size:10.5px;font-weight:700;letter-spacing:.14em;
+  padding:4px 10px;border-radius:7px;
+  background:var(--bg-alt);color:var(--text-muted);
+  border:1px solid var(--border);
+}
+.lb-board-row.stroke-freestyle .lb-stroke-tag{color:#93c5fd;border-color:rgba(96,165,250,.25);background:rgba(96,165,250,.08)}
+.lb-board-row.stroke-backstroke .lb-stroke-tag{color:#86efac;border-color:rgba(52,211,153,.25);background:rgba(52,211,153,.08)}
+.lb-board-row.stroke-breaststroke .lb-stroke-tag{color:#fcd34d;border-color:rgba(251,191,36,.28);background:rgba(251,191,36,.08)}
+.lb-board-row.stroke-butterfly .lb-stroke-tag{color:#f9a8d4;border-color:rgba(244,114,182,.25);background:rgba(244,114,182,.08)}
+.lb-board-row.stroke-im .lb-stroke-tag{color:#c4b5fd;border-color:rgba(167,139,250,.25);background:rgba(167,139,250,.08)}
+
+.lb-board-podium{padding:0 14px;min-width:0;border-left:1px solid var(--border)}
+.lb-board-podium-girls{
+  background:linear-gradient(180deg, rgba(244,114,182,.025), transparent 80%);
+}
+.lb-board-podium-boys{
+  background:linear-gradient(180deg, rgba(96,165,250,.025), transparent 80%);
+}
+
+.lb-entry-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:0}
+.lb-entry{
+  display:grid;grid-template-columns:30px 1fr auto;gap:10px;align-items:center;
+  padding:7px 8px;
+  font-size:14px;color:var(--text);
+  position:relative;border-radius:6px;
+  transition:background .15s;
+}
+.lb-entry + .lb-entry{margin-top:2px}
+.lb-entry-rank{
+  font-family:'Fraunces',serif;font-weight:800;font-size:14px;
+  color:var(--text-muted);text-align:center;
+  font-variant-numeric:tabular-nums;
+}
+.lb-entry-1 .lb-entry-rank, .lb-entry-2 .lb-entry-rank, .lb-entry-3 .lb-entry-rank{
+  font-size:18px;line-height:1;
+}
+.lb-entry-1 .lb-entry-rank{filter:drop-shadow(0 0 6px rgba(251,191,36,.6))}
+.lb-entry-name{
+  font-weight:600;color:var(--text)!important;
+  text-decoration:none;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  transition:color .15s;
+}
+a.lb-entry-name:hover{color:var(--accent)!important;text-decoration:underline;text-underline-offset:2px}
+.lb-entry-1 .lb-entry-name{font-weight:800;letter-spacing:-.01em;font-size:14.5px}
+.lb-entry-time{
+  font-family:'Fraunces',serif;font-weight:800;
+  font-variant-numeric:tabular-nums;white-space:nowrap;
+  font-size:15px;
+}
+.lb-board-row.stroke-freestyle .lb-entry-time{color:#60a5fa}
+.lb-board-row.stroke-backstroke .lb-entry-time{color:#34d399}
+.lb-board-row.stroke-breaststroke .lb-entry-time{color:#fbbf24}
+.lb-board-row.stroke-butterfly .lb-entry-time{color:#f472b6}
+.lb-board-row.stroke-im .lb-entry-time{color:#a78bfa}
+.lb-entry-1 .lb-entry-time{font-size:17px;letter-spacing:-.02em}
+.lb-entry-empty{opacity:.4}
+.lb-entry-empty .lb-entry-name, .lb-entry-empty .lb-entry-time{
+  color:var(--text-subtle);font-weight:500;
+}
+.lb-entry-1{background:linear-gradient(90deg, rgba(251,191,36,.12), transparent 75%)}
+.lb-entry-2{background:linear-gradient(90deg, rgba(148,163,184,.09), transparent 70%)}
+.lb-entry-3{background:linear-gradient(90deg, rgba(217,119,6,.08), transparent 70%)}
+
+/* Mobile — stack event label above the podiums */
+@media (max-width:760px){
+  .lb-board-title h2{font-size:24px}
+  .lb-board-cols-head{display:none}
+  .lb-board-row{grid-template-columns:1fr;gap:14px;padding:18px}
+  .lb-board-row::before{top:14px;bottom:auto;height:32px}
+  .lb-board-podium{
+    padding:0;border-left:none;
+    border-top:1px solid var(--border);padding-top:12px;
+    background:transparent !important;
+  }
+  .lb-board-podium-girls::before{
+    content:'GIRLS';display:block;font-size:10.5px;font-weight:800;
+    letter-spacing:.22em;color:#f472b6;margin-bottom:8px;
+  }
+  .lb-board-podium-boys::before{
+    content:'BOYS';display:block;font-size:10.5px;font-weight:800;
+    letter-spacing:.22em;color:#60a5fa;margin-bottom:8px;
+  }
+}
+
 /* ============ EXTRA POLISH: POSTERS ============ */
 
 /* Card breathing room + cleaner shadow stack on hover */

@@ -281,23 +281,19 @@
 
   function render(){
     // splitByGender:false gives ONE bucket per (bracket, event) with all
-    // swimmers — we then split entries into Girls/Boys columns inside each
-    // card so the screen shows the same age group side-by-side instead of
-    // separate sections.
+    // entries — we split them into Girls/Boys at render time.
     const boards = HHST.buildLeaderboards(swimmers, {
       stroke: state.stroke || null,
-      top: state.top * 2,           // pull enough entries to fill both columns
+      top: state.top * 2,
       season: state.season,
       splitByGender: false
     });
 
-    // Age filter (gender filter applied at column render time)
     const filtered = boards.filter(b => {
       if(state.age && b.bracket !== state.age && !(b.ageGroup||'').includes(state.age)) return false;
       return true;
     });
 
-    // Group by bracket, then sort events within
     const groups = {};
     filtered.forEach(b => {
       const key = b.bracket || b.ageGroup;
@@ -317,93 +313,96 @@
     function bracketClass(ag){ return 'bracket-' + slug(ag); }
     function tocClass(ag){ return 'toc-' + slug(ag); }
 
-    // Build table-of-contents pills (color-coded by bracket)
+    // TOC pills
     const toc = orderedAges.map(ag => {
       const evCount = groups[ag].length;
       return `<a href="#ag-${slug(ag)}" class="lb-toc-pill ${tocClass(ag)}"><strong>${escapeHtml(ag)}</strong><span>${evCount} event${evCount===1?'':'s'}</span></a>`;
     }).join('');
     document.getElementById('lbToc').innerHTML = toc;
 
-    // Build body — each section gets a colored bracket badge
+    // One big leaderboard PER bracket. Each bracket is a single elegant
+    // card; inside, every event is one "row" with the event title on the
+    // left and a Girls podium + Boys podium on the right.
     const html = orderedAges.map(ag => {
       const items = groups[ag];
-      const cards = items.map(b => buildLeaderboardCard(b)).join('');
+      const rows = items.map(b => buildEventRow(b)).join('');
+      const eventCount = items.length;
       return `
-        <section class="lb-age-section" id="ag-${slug(ag)}">
-          <div class="lb-age-head">
-            <div class="lb-age-head-text">
-              <span class="bracket-pill bracket-pill-lg ${bracketClass(ag)}">${escapeHtml(ag)}</span>
-              <div>
-                <h2>Top times</h2>
-                <p>${items.length} event${items.length===1?'':'s'} ranked${state.stroke ? ' · ' + escapeHtml(state.stroke) : ''}</p>
-              </div>
+        <section class="lb-board-section" id="ag-${slug(ag)}">
+          <div class="lb-board-head">
+            <span class="bracket-pill bracket-pill-lg ${bracketClass(ag)}">${escapeHtml(ag)}</span>
+            <div class="lb-board-title">
+              <h2>Top times</h2>
+              <p>${eventCount} event${eventCount===1?'':'s'} ranked${state.stroke ? ' · ' + escapeHtml(state.stroke) : ' · all strokes'}</p>
             </div>
           </div>
-          <div class="lb-grid">${cards}</div>
+          <div class="lb-board-card">
+            <div class="lb-board-cols-head">
+              <div class="lb-board-head-event">Event</div>
+              ${state.gender !== 'Boys' ? '<div class="lb-board-head-gender lb-board-head-girls">Girls</div>' : ''}
+              ${state.gender !== 'Girls' ? '<div class="lb-board-head-gender lb-board-head-boys">Boys</div>' : ''}
+            </div>
+            ${rows}
+          </div>
         </section>`;
     }).join('');
     document.getElementById('lbBody').innerHTML = html;
   }
 
-  // One card per (bracket, event) with Girls + Boys side-by-side. Each
-  // column is its own top-N list (limited by state.top); entries without
-  // gender on file fall into a single Top-N column.
-  function buildLeaderboardCard(b){
+  // One event row inside the big board — event label on left, plus a Girls
+  // and Boys podium (top N from state.top, default 5). When gender is on
+  // file the columns split; otherwise a single mixed list fills the row.
+  function buildEventRow(b){
     const strokeClass = (b.stroke||'Other').toLowerCase().replace(/\s+/g,'');
     const limit = state.top;
     const girls = b.entries.filter(e => e.gender === 'F').slice(0, limit);
     const boys  = b.entries.filter(e => e.gender === 'M').slice(0, limit);
     const mixed = b.entries.filter(e => !e.gender).slice(0, limit);
     const haveGendered = girls.length || boys.length;
-    const showGirls = state.gender !== 'Boys' && haveGendered;
-    const showBoys  = state.gender !== 'Girls' && haveGendered;
+    const showGirls = state.gender !== 'Boys';
+    const showBoys  = state.gender !== 'Girls';
 
-    function rowFor(e, i){
+    function entryHtml(e, i){
       const rank = i + 1;
-      const rankBadge = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : '';
-      const rankClass = rank === 1 ? 'lb-rank-1' : rank <= 3 ? 'lb-rank-top3' : '';
-      return `<tr class="${rankClass}">
-        <td class="lb-rank">${rankBadge || rank}</td>
-        <td class="lb-name">
-          <a href="dashboard.html?s=${encodeURIComponent(e.swimmerKey)}">${escapeHtml(e.swimmerName)}</a>
-          ${e.age ? `<span class="lb-age-tag">Age ${escapeHtml(e.age)}</span>` : ''}
-        </td>
-        <td class="lb-time">${escapeHtml(e.time)}</td>
-      </tr>`;
+      const rankClass = rank === 1 ? 'lb-entry-1' : rank === 2 ? 'lb-entry-2' : rank === 3 ? 'lb-entry-3' : '';
+      const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : '';
+      return `<li class="lb-entry ${rankClass}">
+        <span class="lb-entry-rank">${medal || rank}</span>
+        <a class="lb-entry-name" href="dashboard.html?s=${encodeURIComponent(e.swimmerKey)}">${escapeHtml(e.swimmerName)}</a>
+        <span class="lb-entry-time">${escapeHtml(e.time)}</span>
+      </li>`;
     }
-    function emptyRow(rank){
-      return `<tr class="lb-empty-row">
-        <td class="lb-rank">${rank}</td>
-        <td class="lb-name">—</td>
-        <td class="lb-time">—</td>
-      </tr>`;
+    function emptyEntry(rank){
+      return `<li class="lb-entry lb-entry-empty">
+        <span class="lb-entry-rank">${rank}</span>
+        <span class="lb-entry-name">—</span>
+        <span class="lb-entry-time">—</span>
+      </li>`;
     }
-    function columnHtml(entries, label, modifier){
+    function listHtml(entries){
       const fillerCount = Math.max(0, Math.min(limit, 5) - entries.length);
-      const rows = entries.map((e,i) => rowFor(e, i)).join('');
-      const filler = Array.from({length: fillerCount}, (_, i) => emptyRow(entries.length + i + 1)).join('');
-      return `<div class="lb-col lb-col-${modifier}">
-        <div class="lb-col-head">${label}</div>
-        <table class="lb-table">
-          <thead><tr><th></th><th>Swimmer</th><th>Time</th></tr></thead>
-          <tbody>${rows}${filler}</tbody>
-        </table>
-      </div>`;
+      const rows = entries.map((e, i) => entryHtml(e, i)).join('');
+      const filler = Array.from({length: fillerCount}, (_, i) => emptyEntry(entries.length + i + 1)).join('');
+      return `<ol class="lb-entry-list">${rows}${filler}</ol>`;
     }
 
-    const cols = haveGendered
-      ? `${showGirls ? columnHtml(girls, 'Girls', 'girls') : ''}${showBoys ? columnHtml(boys, 'Boys', 'boys') : ''}`
-      : columnHtml(mixed, 'Top ' + limit, 'mixed');
-    const colCount = haveGendered ? (showGirls && showBoys ? 2 : 1) : 1;
+    let girlsCol = '', boysCol = '';
+    if(haveGendered){
+      if(showGirls) girlsCol = `<div class="lb-board-podium lb-board-podium-girls">${listHtml(girls)}</div>`;
+      if(showBoys)  boysCol  = `<div class="lb-board-podium lb-board-podium-boys">${listHtml(boys)}</div>`;
+    } else {
+      // No gender data — span the full width with the mixed list
+      girlsCol = `<div class="lb-board-podium lb-board-podium-mixed" style="grid-column:2/-1">${listHtml(mixed)}</div>`;
+    }
 
-    return `
-      <div class="lb-card stroke-${strokeClass} lb-card-cols-${colCount}">
-        <div class="lb-card-head">
-          <span class="lb-stroke-tag">${escapeHtml(b.stroke || '—')}</span>
-          <h3>${escapeHtml(b.event)}</h3>
-        </div>
-        <div class="lb-card-body">${cols}</div>
-      </div>`;
+    return `<div class="lb-board-row stroke-${strokeClass}">
+      <div class="lb-board-event">
+        <span class="lb-stroke-tag">${escapeHtml(b.stroke || '—')}</span>
+        <h3>${escapeHtml(b.event)}</h3>
+      </div>
+      ${girlsCol}
+      ${boysCol}
+    </div>`;
   }
 
   function fmtDate(s){
