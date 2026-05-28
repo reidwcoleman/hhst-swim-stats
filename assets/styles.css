@@ -2933,4 +2933,18 @@ table:not(.roster-table) td, table:not(.roster-table) th{word-break:break-word}
   }
   /* Print only the targeted card when a single-card print is in progress */
   body.printing-one .award-card:not(.print-target){ display:none !important; }
+
+  /* Guard against any "hide everything until auth completes" overlay
+     (body:not(.auth-ready) > * { visibility:hidden }) leaking into print
+     mode — force the body and its children visible while printing. */
+  body, body > * { visibility: visible !important; }
+
+  /* Scope each Print-All button to its own section so the Fastest Five
+     button doesn't also print every Most Improved poster (and vice versa).
+     Set `printing-awards` for Fastest Five, `printing-improved` for the
+     Most Improved equivalent. Falling back to printing both is fine if
+     neither class is set (e.g. a coach hits Cmd-P directly). */
+  body.printing-awards #improvedHost,
+  body.printing-awards .awards-host-improved { display: none !important; }
+  body.printing-improved #awardsHost { display: none !important; }
 }

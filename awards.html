@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="assets/styles.css?v=13"/>
+<link rel="stylesheet" href="assets/styles.css?v=14"/>
 <style>
   /* Hide everything until auth check completes — admins only. */
   body:not(.auth-ready) > *{visibility:hidden}
@@ -256,20 +256,24 @@
     }
     awardsHost.innerHTML = cards;
 
-    // Wire single-card print buttons
+    // Wire single-card print buttons. Scopes to `printing-awards` so the
+    // print CSS hides the Most Improved section; `printing-one` plus
+    // `print-target` then narrows further to just the one card.
     awardsHost.querySelectorAll('[data-print]').forEach(btn => btn.addEventListener('click', () => {
       const group = btn.dataset.print;
-      document.body.classList.add('printing-one');
+      document.body.classList.add('printing-one','printing-awards');
       awardsHost.querySelectorAll('.award-card').forEach(c => {
         c.classList.toggle('print-target', c.dataset.group === group);
       });
       const cleanup = () => {
-        document.body.classList.remove('printing-one');
+        document.body.classList.remove('printing-one','printing-awards');
         awardsHost.querySelectorAll('.award-card').forEach(c => c.classList.remove('print-target'));
         window.removeEventListener('afterprint', cleanup);
       };
       window.addEventListener('afterprint', cleanup);
-      window.print();
+      // requestAnimationFrame gives the browser a beat to apply the class
+      // before the print snapshot is taken — fixes blank previews on Chrome.
+      requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
     }));
   }
 
@@ -447,28 +451,35 @@
 
     improvedHost.querySelectorAll('[data-print]').forEach(btn => btn.addEventListener('click', () => {
       const group = btn.dataset.print;
-      document.body.classList.add('printing-one');
-      document.querySelectorAll('.award-card').forEach(c => {
+      document.body.classList.add('printing-one','printing-improved');
+      improvedHost.querySelectorAll('.award-card').forEach(c => {
         c.classList.toggle('print-target', c.dataset.group === group);
       });
       const cleanup = () => {
-        document.body.classList.remove('printing-one');
-        document.querySelectorAll('.award-card').forEach(c => c.classList.remove('print-target'));
+        document.body.classList.remove('printing-one','printing-improved');
+        improvedHost.querySelectorAll('.award-card').forEach(c => c.classList.remove('print-target'));
         window.removeEventListener('afterprint', cleanup);
       };
       window.addEventListener('afterprint', cleanup);
-      window.print();
+      requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
     }));
   }
 
   printAllAwards?.addEventListener('click', () => {
+    // Guard: don't open a blank print preview if there's nothing to print.
+    const cards = awardsHost.querySelectorAll('.award-card');
+    if(!cards.length){
+      alert('No Fastest Five certificates to print yet. Upload meet results from the Admin page first — once times come in, the posters generate automatically.');
+      return;
+    }
     document.body.classList.add('printing-awards');
     const cleanup = () => {
       document.body.classList.remove('printing-awards');
       window.removeEventListener('afterprint', cleanup);
     };
     window.addEventListener('afterprint', cleanup);
-    window.print();
+    // Double-rAF so the class is applied before the print snapshot is taken.
+    requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
   });
 
   function escapeHtml(s){
