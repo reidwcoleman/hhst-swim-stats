@@ -2587,11 +2587,8 @@ table:not(.roster-table) td, table:not(.roster-table) th{word-break:break-word}
   background:linear-gradient(90deg, rgba(16,185,129,.05) 0%, transparent 65%);
 }
 
-/* Column header dot colors flip on Most Improved cards to green */
-.award-card-improved .award-col-head::before{
-  background:#10b981 !important;
-  box-shadow:0 0 0 3px rgba(16,185,129,.22) !important;
-}
+/* (Column header dot above BOYS/GIRLS removed by request — see
+   .award-col-head::before reset in the awards styling block.) */
 
 .awards-host-improved{margin-top:18px}
 
@@ -2836,22 +2833,9 @@ a.lb-entry-name:hover{color:var(--accent)!important;text-decoration:underline;te
   background:transparent;
 }
 
-/* Refined column header — add an ornament dot */
-.award-col-head{position:relative;padding-top:8px}
-.award-col-head::before{
-  content:'';position:absolute;left:50%;top:0;
-  width:6px;height:6px;border-radius:50%;
-  transform:translateX(-50%);
-}
-.award-col-head-girls::before{
-  background:#ec4899;box-shadow:0 0 0 3px rgba(244,114,182,.22);
-}
-.award-col-head-boys::before{
-  background:#2563eb;box-shadow:0 0 0 3px rgba(96,165,250,.22);
-}
-.award-col-head-top-5::before{
-  background:#2563eb;box-shadow:0 0 0 3px rgba(96,165,250,.22);
-}
+/* Column header — no ornament dot above the BOYS/GIRLS label */
+.award-col-head{position:relative;padding-top:0}
+.award-col-head::before{display:none !important;content:none !important}
 
 /* Bracket title gets serif decoration flourishes */
 .award-group{

@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="assets/styles.css?v=14"/>
+<link rel="stylesheet" href="assets/styles.css?v=15"/>
 <style>
   /* Hide everything until auth check completes — admins only. */
   body:not(.auth-ready) > *{visibility:hidden}
@@ -69,11 +69,14 @@
         <h2>Print &amp; Hang</h2>
         <p class="lead">Each age group gets its signature freestyle distance: 15-yard for 6 &amp; Under, 25-yard for 7&ndash;8 and 9&ndash;10, 50-yard for 11&ndash;12 and up. Save the lot as a single PDF, or print just one card from its corner button.</p>
       </div>
-      <div class="awards-controls">
+      <div class="awards-controls" style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
         <button class="btn" id="printAllAwards">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-          Print all · Save as PDF
+          Print all posters · Save as PDF
         </button>
+        <span style="font-size:12px;color:var(--text-muted);text-align:right;max-width:280px;line-height:1.4">
+          Prints <strong>both</strong> Fastest Five <strong>and</strong> Most Improved certificates for every age group, one per page.
+        </span>
       </div>
     </div>
   </div>
@@ -180,6 +183,14 @@
   function medalColor(i){
     return i === 0 ? '#fbbf24' : i === 1 ? '#cbd5e1' : i === 2 ? '#d97706' : '';
   }
+  // Coaches read "9-10" / "11-12" with a plural "s" out loud ("the nine-tens",
+  // "the eleven-twelves"), so the posters should match that. "6 & Under" is
+  // already plural — leave it alone.
+  function bracketLabel(b){
+    if(!b) return '';
+    if(/\d+\s*[-–&]\s*\d+/.test(b) && !b.endsWith('s')) return b + 's';
+    return b;
+  }
 
   function renderAwards(){
     if(!awardsHost) return;
@@ -236,7 +247,7 @@
             <div class="award-title-rule" aria-hidden="true"></div>
           </div>
         </div>
-        <div class="award-group">${escapeHtml(bracket)}</div>
+        <div class="award-group">${escapeHtml(bracketLabel(bracket))}</div>
         <div class="award-event">${escapeHtml(eventLabel)}</div>
         ${inner}
         <div class="award-footer">
@@ -433,7 +444,7 @@
             <div class="award-title-rule award-title-rule-green" aria-hidden="true"></div>
           </div>
         </div>
-        <div class="award-group">${escapeHtml(bracket)}</div>
+        <div class="award-group">${escapeHtml(bracketLabel(bracket))}</div>
         <div class="award-event award-event-improved">${escapeHtml(meet)}${date ? ' · ' + escapeHtml(fmtMeetDate(date)) : ''}</div>
         ${inner}
         <div class="award-footer">
@@ -466,19 +477,16 @@
   }
 
   printAllAwards?.addEventListener('click', () => {
-    // Guard: don't open a blank print preview if there's nothing to print.
-    const cards = awardsHost.querySelectorAll('.award-card');
-    if(!cards.length){
-      alert('No Fastest Five certificates to print yet. Upload meet results from the Admin page first — once times come in, the posters generate automatically.');
+    // Prints BOTH Fastest Five and Most Improved posters together — one
+    // certificate per age group, one poster per page. We don't add any
+    // scope class so the default print rules show every .award-card.
+    const ff   = awardsHost.querySelectorAll('.award-card').length;
+    const imp  = (improvedHost && improvedHost.querySelectorAll('.award-card').length) || 0;
+    if(ff + imp === 0){
+      alert('Nothing to print yet. Upload meet results from the Admin page first — Fastest Five and Most Improved posters generate automatically once times come in.');
       return;
     }
-    document.body.classList.add('printing-awards');
-    const cleanup = () => {
-      document.body.classList.remove('printing-awards');
-      window.removeEventListener('afterprint', cleanup);
-    };
-    window.addEventListener('afterprint', cleanup);
-    // Double-rAF so the class is applied before the print snapshot is taken.
+    // Double-rAF so any pending layout finishes before the print snapshot is taken.
     requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
   });
 
