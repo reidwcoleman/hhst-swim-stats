@@ -361,8 +361,11 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
     <div class="card">
       <h2>Roster</h2>
       <p class="lead">Click <strong>Edit</strong> next to any swimmer to manage their emails, parents, age, or group. Families look up their swimmer using the swimmer's name + an email on this list.</p>
-      <div class="roster-search-row">
-        <input type="text" id="searchInput" placeholder="Search by name, parent, email, or group…" class="roster-search"/>
+      <div class="roster-search-row" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <input type="text" id="searchInput" placeholder="Search by name, parent, email, or group…" class="roster-search" style="flex:1;min-width:240px"/>
+        <select id="rosterSeasonFilter" class="lb-select" style="min-width:200px" title="Show only the roster for a single season">
+          <option value="">All seasons</option>
+        </select>
       </div>
       <div class="table-wrap" id="rosterWrap"></div>
     </div>
@@ -864,6 +867,9 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
   // SEARCH BOX
   let cachedData = { swimmers:{}, lastUpload:null };
   document.getElementById('searchInput').addEventListener('input', e => renderRoster(e.target.value));
+  document.getElementById('rosterSeasonFilter').addEventListener('change', () => {
+    renderRoster(document.getElementById('searchInput').value);
+  });
 
   // KPI + roster refresh
   async function refreshAll(){
@@ -890,8 +896,11 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
       document.getElementById('kLast').textContent = '—';
       document.getElementById('dLast').textContent = 'No CSV uploaded yet';
     }
-    renderRoster(document.getElementById('searchInput').value);
+    // Populate the season UI (including the roster-table season filter)
+    // BEFORE renderRoster so the filter dropdown has its default value
+    // ("current season") when renderRoster reads it on the first paint.
     refreshSeasonUI();
+    renderRoster(document.getElementById('searchInput').value);
   }
 
   // Refresh the season <datalist> (autocomplete on the upload picker), default
@@ -911,6 +920,23 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
       const el = document.getElementById(id);
       if(el && !el.value) el.value = defaultSeason;
     });
+    // Populate the roster-table season filter. Default selection is the
+    // most recent season so the coach lands on the current season's
+    // roster, not a years-deep all-time list. "All seasons" stays as a
+    // fallback for legacy data review.
+    const rosterFilter = document.getElementById('rosterSeasonFilter');
+    if(rosterFilter){
+      const prev = rosterFilter.value;
+      rosterFilter.innerHTML =
+        allSeasons.map((s, i) => `<option value="${escapeHtml(s)}">${escapeHtml(s)}${i === 0 ? ' (current)' : ''}</option>`).join('') +
+        '<option value="">All seasons</option>';
+      // Restore prior selection if it still exists; otherwise pick the current season.
+      if(prev && (prev === '' || allSeasons.includes(prev))){
+        rosterFilter.value = prev;
+      } else {
+        rosterFilter.value = allSeasons[0] || '';
+      }
+    }
     renderSeasonStats();
   }
 
@@ -969,7 +995,15 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
 
   function renderRoster(filter){
     filter = (filter||'').trim().toLowerCase();
+    // Active season filter: defaults to the most recent season so coaches
+    // land on the current season's roster, not a years-deep all-time list.
+    // "" means "All seasons".
+    const seasonSel = document.getElementById('rosterSeasonFilter');
+    const seasonFilter = seasonSel ? (seasonSel.value || '') : '';
     let swimmers = Object.values(cachedData.swimmers);
+    if(seasonFilter){
+      swimmers = swimmers.filter(s => Array.isArray(s.seasons) && s.seasons.includes(seasonFilter));
+    }
     if(filter){
       swimmers = swimmers.filter(s => {
         const hay = (
@@ -986,9 +1020,12 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
 
     const wrap = document.getElementById('rosterWrap');
     if(swimmers.length === 0){
+      const reason = seasonFilter
+        ? `No swimmers on the <strong>${escapeHtml(seasonFilter)}</strong> roster yet. Upload a roster file tagged with "${escapeHtml(seasonFilter)}" — or pick "All seasons" above to see every swimmer ever uploaded.`
+        : 'No swimmers in the roster yet. Upload a roster CSV to get started.';
       wrap.innerHTML = `<div class="empty">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-        <div>No swimmers in the roster yet. Upload a roster CSV to get started.</div>
+        <div>${reason}</div>
       </div>`;
       return;
     }
