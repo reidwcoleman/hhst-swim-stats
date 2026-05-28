@@ -1024,6 +1024,33 @@
     const seasons = getAllSeasons(allSwimmers);
     return seasons[0] || '';
   }
+  // Return every distinct meet that's been imported, with its latest date
+  // and season tagged. Sorted most-recent-first so the leaderboards meet
+  // filter shows the freshest results at the top of the dropdown.
+  // opts.season — only return meets that have a race tagged with this season.
+  function getAllMeets(allSwimmers, opts){
+    const season = (opts && opts.season) || '';
+    const list = Array.isArray(allSwimmers) ? allSwimmers : Object.values(allSwimmers || {});
+    const byKey = new Map();
+    list.forEach(sw => (sw.results || []).forEach(r => {
+      if(!r || !r.meet) return;
+      if(season && r.season !== season) return;
+      const existing = byKey.get(r.meet);
+      const date = r.date || '';
+      if(!existing){
+        byKey.set(r.meet, { meet: r.meet, date, season: r.season || '' });
+      } else if(date && date > existing.date){
+        existing.date = date;
+        if(r.season) existing.season = r.season;
+      }
+    }));
+    return Array.from(byKey.values()).sort((a,b) => {
+      if(a.date && b.date) return b.date.localeCompare(a.date);
+      if(a.date) return -1;
+      if(b.date) return 1;
+      return a.meet.localeCompare(b.meet);
+    });
+  }
   // Return a swimmer with results filtered to a single season — used by the
   // season-aware leaderboard / stats helpers below. season === '' means "all
   // seasons" (no filter applied).
@@ -1188,6 +1215,7 @@
     const top    = opts.top || 5;
     const splitByGender = opts.splitByGender !== false;
     const season = opts.season || '';
+    const meet   = opts.meet || '';
     const buckets = {};
     Object.values(allSwimmers).forEach(sw => {
       const bracket = getAgeGroup(sw.age);
@@ -1196,6 +1224,7 @@
       (sw.results||[]).forEach(r => {
         if(!isFinite(r.seconds)) return;
         if(season && r.season !== season) return;
+        if(meet && r.meet !== meet) return;
         const evStroke = r.stroke || extractStroke(r.event);
         if(stroke && evStroke !== stroke) return;
         if(!byEvent[r.event] || r.seconds < byEvent[r.event].seconds) byEvent[r.event] = r;
@@ -1233,33 +1262,50 @@
   // time-dropped sum to a single season; omit for an all-time view.
   function teamStats(allSwimmers, opts){
     const season = (opts && opts.season) || '';
+    const meet   = (opts && opts.meet)   || '';
     const swimmers = Object.values(allSwimmers);
-    const filteredResults = sw => season
-      ? (sw.results||[]).filter(r => r && r.season === season)
-      : (sw.results||[]);
+    const filteredResults = sw => (sw.results||[]).filter(r => {
+      if(!r) return false;
+      if(season && r.season !== season) return false;
+      if(meet && r.meet !== meet) return false;
+      return true;
+    });
     const totalRaces = swimmers.reduce((s, x) => s + filteredResults(x).length, 0);
-    const meets = new Set();
+    const meetsSet = new Set();
     let gold=0, silver=0, bronze=0;
     let totalDropSec = 0;
     let prRaces = 0;
     let activeSwimmers = 0;
     swimmers.forEach(sw => {
-      const seasonResults = filteredResults(sw);
-      if(!seasonResults.length) return;
+      const filtered = filteredResults(sw);
+      if(!filtered.length) return;
       activeSwimmers++;
-      const s = statsForSwimmer(sw, { season });
-      gold += s.gold; silver += s.silver; bronze += s.bronze;
-      totalDropSec += s.totalTimeDropSec;
-      prRaces += s.prCount;
-      seasonResults.forEach(r => meets.add(r.meet));
+      // statsForSwimmer doesn't take a meet filter, so when we're scoped to
+      // a single meet just count podiums directly from the filtered rows.
+      if(meet){
+        filtered.forEach(r => {
+          const p = parseInt(r.place, 10);
+          if(!isFinite(p) || p <= 0) return;
+          if(p === 1) gold++;
+          else if(p === 2) silver++;
+          else if(p === 3) bronze++;
+        });
+      } else {
+        const s = statsForSwimmer(sw, { season });
+        gold += s.gold; silver += s.silver; bronze += s.bronze;
+        totalDropSec += s.totalTimeDropSec;
+        prRaces += s.prCount;
+      }
+      filtered.forEach(r => meetsSet.add(r.meet));
     });
     return {
-      swimmerCount: season ? activeSwimmers : swimmers.length,
-      totalRaces, meetCount: meets.size,
+      swimmerCount: (season || meet) ? activeSwimmers : swimmers.length,
+      totalRaces, meetCount: meetsSet.size,
       gold, silver, bronze,
       podium: gold + silver + bronze,
       totalDropSec, prRaces,
-      season: season || null
+      season: season || null,
+      meet: meet || null
     };
   }
 
@@ -1317,7 +1363,7 @@
     clearAll, clearRoster, clearMeetTimes,
     isAdminLoggedIn, loginAdmin, logoutAdmin, onAuthChanged,
     statsForSwimmer, rankSwimmerInAgeGroup, buildLeaderboards, teamStats, teamStatsBySeason,
-    getAllSeasons, currentSeason, filterSwimmerToSeason,
+    getAllSeasons, currentSeason, filterSwimmerToSeason, getAllMeets,
     getAgeGroup, AGE_GROUP_ORDER, STROKE_ORDER, extractStroke, extractDistance, distanceNum, compareEventLabel,
     fmtTime, timeToSeconds, swimmerKey, slugify, meetTimeDocId, norm,
     mapHeader, normHeaderKey,

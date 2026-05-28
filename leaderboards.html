@@ -164,7 +164,7 @@
   Highcroft Hurricanes Swim Team · <a href="index.html">Back to home</a> · <a href="admin.html">Admin</a>
 </footer>
 
-<script src="assets/data.js?v=7"></script>
+<script src="assets/data.js?v=8"></script>
 <script>
   HHST.initTheme();
   document.getElementById('themeToggle').addEventListener('click', HHST.toggleTheme);
@@ -190,7 +190,7 @@
   let swimmers = {};
   // season:'' means "all seasons"; populateSeasons() fills it with the most
   // recent season on first load so leaderboards default to the current season.
-  let state = { stroke: 'Freestyle', age: '', gender: '', season: '', top: 5 };
+  let state = { stroke: 'Freestyle', age: '', gender: '', season: '', meet: '', top: 5 };
 
   (async () => {
     // Wait for auth to confirm before fetching — keeps the page blank
@@ -213,6 +213,7 @@
       }
       content.style.display = 'block';
       populateSeasons();
+      populateMeets();
       renderTeamRow();
       render();
     } catch(err){
@@ -231,6 +232,26 @@
     sel.innerHTML = '<option value="">All seasons</option>' +
       seasons.map((s, i) => `<option value="${escapeHtml(s)}"${i===0 ? ' selected' : ''}>${escapeHtml(s)}${i===0 ? ' (current)' : ''}</option>`).join('');
     state.season = seasons[0] || '';
+  }
+
+  // Populate the meet dropdown. When a season is active, only meets from
+  // that season show; otherwise every meet appears, newest first.
+  function populateMeets(){
+    const sel = document.getElementById('meetSelect');
+    if(!sel) return;
+    const meets = HHST.getAllMeets(swimmers, { season: state.season });
+    // Preserve the selected meet if it's still in the list after a season change
+    const previousMeet = state.meet;
+    const fmt = (m) => m.date ? `${m.meet} · ${formatMeetDate(m.date)}` : m.meet;
+    sel.innerHTML = '<option value="">All meets</option>' +
+      meets.map(m => `<option value="${escapeHtml(m.meet)}"${m.meet === previousMeet ? ' selected' : ''}>${escapeHtml(fmt(m))}</option>`).join('');
+    if(!meets.some(m => m.meet === previousMeet)) state.meet = '';
+  }
+  function formatMeetDate(s){
+    if(!s) return '';
+    const d = new Date(s);
+    if(isNaN(d)) return s;
+    return d.toLocaleDateString(undefined, { month:'short', day:'numeric', year:'numeric' });
   }
 
   function displayName(sw){
@@ -272,12 +293,19 @@
   });
   document.getElementById('seasonSelect').addEventListener('change', (e) => {
     state.season = e.target.value;
+    // Repopulate meets — a season change narrows the visible meet list
+    populateMeets();
+    renderTeamRow();
+    render();
+  });
+  document.getElementById('meetSelect').addEventListener('change', (e) => {
+    state.meet = e.target.value;
     renderTeamRow();
     render();
   });
 
   function renderTeamRow(){
-    const t = HHST.teamStats(swimmers, { season: state.season });
+    const t = HHST.teamStats(swimmers, { season: state.season, meet: state.meet });
     document.getElementById('tSwimmers').textContent = t.swimmerCount;
     document.getElementById('tRaces').textContent    = t.totalRaces;
     document.getElementById('tMeets').textContent    = t.meetCount;
@@ -292,6 +320,7 @@
       stroke: state.stroke || null,
       top: state.top * 2,
       season: state.season,
+      meet: state.meet,
       splitByGender: false
     });
 
