@@ -708,6 +708,97 @@
   // Five printable certificates use leaderboardsByEvent above, which keeps
   // Swimtopia's gender-split age groups intact.)
 
+  // ---- Most Improved (per meet) ---------------------------------------
+  // Look at a single meet (defaults to the most recently dated one in the
+  // data) and rank swimmers by total seconds dropped across every event
+  // they raced. For each (swimmer, event), "drop" = best previous time in
+  // that event MINUS their meet-day time, only counted if the meet swim
+  // was actually faster. Returns { meet, date, boards } where boards is
+  // keyed by competitionGroup ("Boys 11-12" / "Girls 11-12" / bare bracket).
+  function mostImprovedAtMeet(allSwimmers, opts){
+    opts = opts || {};
+    const limit = opts.limit || 5;
+    const splitByGender = opts.splitByGender !== false;
+    const swimmers = Array.isArray(allSwimmers) ? allSwimmers : Object.values(allSwimmers);
+
+    // Resolve the target meet: explicit { meet, date } wins, otherwise pick
+    // whichever (meet, date) pair has the latest date across all results.
+    let target = (opts.meet && opts.date) ? { meet: opts.meet, date: opts.date } : null;
+    if(!target){
+      let latest = '';
+      let latestName = '';
+      swimmers.forEach(sw => {
+        (sw.results||[]).forEach(r => {
+          if(!r.meet) return;
+          const d = r.date || '';
+          if(d > latest){ latest = d; latestName = r.meet; }
+        });
+      });
+      if(latestName) target = { meet: latestName, date: latest };
+    }
+    if(!target) return { meet:'', date:'', boards:{} };
+
+    const drops = [];
+    swimmers.forEach(sw => {
+      const meetRaces = (sw.results||[]).filter(r =>
+        r.meet === target.meet && r.date === target.date && isFinite(r.seconds)
+      );
+      if(!meetRaces.length) return;
+
+      let totalDrop = 0;
+      const eventsDropped = [];
+      meetRaces.forEach(meetR => {
+        // Best prior time in this event (any prior race in any earlier
+        // meet, OR an earlier-dated race at the same meet).
+        let bestPrior = Infinity;
+        (sw.results||[]).forEach(r => {
+          if(r.event !== meetR.event) return;
+          if(!isFinite(r.seconds)) return;
+          if(r.date >= target.date && r.meet === target.meet) return; // same meet skip
+          if(r.date > target.date) return; // future swim — shouldn't exist but guard
+          if(r.seconds < bestPrior) bestPrior = r.seconds;
+        });
+        if(!isFinite(bestPrior)) return;            // no prior history → can't measure improvement
+        const drop = bestPrior - meetR.seconds;
+        if(drop > 0){
+          totalDrop += drop;
+          eventsDropped.push({ event: meetR.event, drop });
+        }
+      });
+
+      if(totalDrop > 0){
+        const bracket = sw.bracket || getAgeGroup(sw.age);
+        if(!bracket || bracket === 'Unknown') return;
+        drops.push({
+          key: sw.key,
+          name: sw.name,
+          preferredName: sw.preferredName || '',
+          gender: sw.gender || '',
+          age: sw.age || '',
+          bracket,
+          totalDrop,
+          eventsDropped,
+          eventCount: eventsDropped.length
+        });
+      }
+    });
+
+    // Group by competition group (Boys / Girls / mixed) and slice top N
+    const byGroup = {};
+    drops.forEach(d => {
+      const g = genderLabel(d.gender);
+      const key = (splitByGender && g) ? `${g} ${d.bracket}` : d.bracket;
+      if(!byGroup[key]) byGroup[key] = [];
+      byGroup[key].push(d);
+    });
+    Object.keys(byGroup).forEach(k => {
+      byGroup[k].sort((a,b) => b.totalDrop - a.totalDrop);
+      byGroup[k] = byGroup[k].slice(0, limit);
+    });
+
+    return { meet: target.meet, date: target.date, boards: byGroup };
+  }
+
   // -------- Lookup --------
   async function findSwimmer({ name, email, parent }){
     const targetName = norm(fixNameOrder(name));
