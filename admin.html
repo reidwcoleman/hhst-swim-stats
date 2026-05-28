@@ -399,7 +399,7 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
   </div>
 </div>
 
-<script src="assets/data.js?v=2"></script>
+<script src="assets/data.js?v=3"></script>
 <script>
   HHST.initTheme();
 
@@ -589,6 +589,8 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
         setStatus('ok', `Reading ${f.name} (${i+1}/${supported.length})…`);
         try {
           const rows = await readFileToRows(f);
+          const sheetTag = f.__chosenSheet ? ` (sheet "${f.__chosenSheet}")` : '';
+          setStatus('ok', `Importing ${f.name}${sheetTag} — ${rows.length} rows (${i+1}/${supported.length})…`);
           const result = await HHST.ingestRows(rows, { mode });
           totals.added         += result.added || 0;
           totals.profileUpdates += result.profileUpdates || 0;
