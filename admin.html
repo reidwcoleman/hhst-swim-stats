@@ -884,7 +884,21 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
     const totalRaces = swimmers.reduce((sum, s)=> sum + (s.results||[]).length, 0);
     const meets = new Set();
     swimmers.forEach(s => (s.results||[]).forEach(r => meets.add(r.meet)));
-    document.getElementById('kSwimmers').textContent = swimmers.length;
+    // Swimmer count in the KPI shows ONLY the current season's roster
+    // (matches the season-filtered roster table below). Falls back to the
+    // all-time total when no season has been used yet, so legacy data
+    // still shows a meaningful number.
+    const currentSeason = HHST.currentSeason(cachedData.swimmers || {});
+    const currentRosterCount = currentSeason
+      ? swimmers.filter(s => Array.isArray(s.seasons) && s.seasons.includes(currentSeason)).length
+      : swimmers.length;
+    document.getElementById('kSwimmers').textContent = currentRosterCount;
+    const dSwimmers = document.getElementById('dSwimmers');
+    if(dSwimmers){
+      dSwimmers.textContent = currentSeason
+        ? `On the ${currentSeason} roster`
+        : 'In the roster';
+    }
     document.getElementById('kRaces').textContent = totalRaces;
     document.getElementById('kMeets').textContent = meets.size;
     if(cachedData.lastUpload){
