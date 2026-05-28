@@ -2492,6 +2492,109 @@ details[open].collapsible-card > summary{
    rules and wins via more-specific selectors. */
 table:not(.roster-table) td, table:not(.roster-table) th{word-break:break-word}
 
+/* ============ MOST IMPROVED VARIANT ============
+   Same poster chrome, swap the gold accents out for a green-emerald
+   palette so a coach can scan a stack of posters and instantly tell
+   "Fastest Five" from "Most Improved". */
+.awards-intro-improved{
+  background:linear-gradient(135deg,
+    rgba(52,211,153,.08) 0%,
+    rgba(96,165,250,.06) 100%);
+}
+.awards-intro-improved h2.improved-h2::before{
+  background:linear-gradient(180deg,#10b981,#059669) !important;
+}
+.awards-intro-meet{
+  margin-top:10px;font-size:13.5px;color:var(--text-muted);
+}
+.awards-intro-meet strong{color:var(--text);font-weight:700}
+.awards-intro-meet-date{margin-left:6px;color:var(--text-subtle);font-weight:500}
+
+/* Most Improved card chrome */
+.award-card-improved{
+  background-image:
+    radial-gradient(120% 80% at 50% 0%, rgba(52,211,153,.30) 0%, transparent 55%),
+    radial-gradient(140% 60% at 50% 100%, rgba(96,165,250,.22) 0%, transparent 55%),
+    linear-gradient(180deg,#d1fae5 0%, #e0f2fe 50%, #f0f9ff 100%);
+  border-color:#047857;
+}
+.award-card-improved::after{
+  background:linear-gradient(90deg,#34d399 0%,#10b981 50%,#34d399 100%) !important;
+}
+.award-card-improved .award-corner{border-color:#047857}
+.award-card-improved .award-title-improved{
+  background:linear-gradient(135deg,#047857 0%,#10b981 35%,#0ea5e9 70%,#06b6d4 100%);
+  -webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;color:transparent;
+}
+.award-title-rule-green{
+  background:linear-gradient(90deg,
+    rgba(52,211,153,0) 0%,
+    #34d399 25%,
+    #10b981 50%,
+    #34d399 75%,
+    rgba(52,211,153,0) 100%) !important;
+}
+.award-card-improved .award-group{color:#047857}
+.award-card-improved .award-group::before,
+.award-card-improved .award-group::after{
+  background:linear-gradient(90deg, transparent, rgba(4,120,87,.45), transparent) !important;
+}
+.award-card-improved .award-event-improved{
+  color:#047857;
+  background:linear-gradient(180deg, rgba(255,255,255,.95) 0%, rgba(236,253,245,.85) 100%);
+  border-color:rgba(4,120,87,.32);
+}
+.award-card-improved .award-col{
+  background:linear-gradient(180deg, rgba(255,255,255,.92) 0%, rgba(255,255,255,.82) 100%);
+  border-color:rgba(4,120,87,.18);
+}
+
+/* Drop amount cell — gradient green so the eye lands on the improvement */
+.award-card .improved-drop{
+  color:#047857 !important;
+  font-size:17px;
+  letter-spacing:-.02em;
+}
+.improved-events-sub{
+  display:block;font-family:'Inter',sans-serif;font-weight:500;
+  font-size:11px;color:#64748b;letter-spacing:0;text-transform:none;
+  margin-top:2px;
+}
+.award-card-improved .award-name-cell{font-size:14px}
+
+/* Most Improved medal #1 glows green instead of gold */
+.award-card-improved .award-table tr:first-child .award-medal{
+  background:#10b981 !important;
+  box-shadow:
+    0 0 0 3px rgba(16,185,129,.22),
+    0 5px 14px rgba(16,185,129,.5),
+    inset 0 2px 2px rgba(255,255,255,.55),
+    inset 0 -2px 2px rgba(0,0,0,.18) !important;
+}
+.award-card-improved .award-table tr:first-child .award-rank-cell::before{
+  content:'↑';color:#10b981 !important;font-size:11px;
+  text-shadow:0 0 4px rgba(16,185,129,.55);
+}
+/* Row washes: green tints instead of gold/silver/bronze */
+.award-card-improved .award-col tbody tr:first-child td{
+  background:linear-gradient(90deg, rgba(16,185,129,.14) 0%, transparent 70%);
+}
+.award-card-improved .award-col tbody tr:nth-child(2) td{
+  background:linear-gradient(90deg, rgba(16,185,129,.08) 0%, transparent 65%);
+}
+.award-card-improved .award-col tbody tr:nth-child(3) td{
+  background:linear-gradient(90deg, rgba(16,185,129,.05) 0%, transparent 65%);
+}
+
+/* Column header dot colors flip on Most Improved cards to green */
+.award-card-improved .award-col-head::before{
+  background:#10b981 !important;
+  box-shadow:0 0 0 3px rgba(16,185,129,.22) !important;
+}
+
+.awards-host-improved{margin-top:18px}
+
 /* ============ EXTRA POLISH: POSTERS ============ */
 
 /* Card breathing room + cleaner shadow stack on hover */

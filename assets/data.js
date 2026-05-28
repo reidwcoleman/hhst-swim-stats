@@ -1323,7 +1323,7 @@
     mapHeader, normHeaderKey,
     fixNameOrder, isValidEmail, ageFromDob,
     normalizeEventLabel,
-    leaderboardsByEvent, sortAgeGroups,
+    leaderboardsByEvent, mostImprovedAtMeet, sortAgeGroups,
     groupByBracket,
     parseGender, parseGenderFromAgeGroup, genderLabel, competitionGroup,
     initTheme, toggleTheme

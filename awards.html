@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="assets/styles.css?v=12"/>
+<link rel="stylesheet" href="assets/styles.css?v=13"/>
 <style>
   /* Hide everything until auth check completes — admins only. */
   body:not(.auth-ready) > *{visibility:hidden}
@@ -92,13 +92,25 @@
 
   <section id="awardsHost" class="awards-host"></section>
 
+  <!-- ============ MOST IMPROVED POSTERS ============ -->
+  <div class="card no-print awards-intro awards-intro-improved" id="mostImprovedIntro" style="margin-top:48px;display:none">
+    <div class="awards-intro-head">
+      <div>
+        <h2 class="improved-h2">Most Improved</h2>
+        <p class="lead">Top time-droppers from the most recent meet — total seconds shaved across every event each swimmer raced. One poster per age group with Boys + Girls side-by-side.</p>
+        <p class="awards-intro-meet"><strong id="improvedMeetName">—</strong><span id="improvedMeetDate" class="awards-intro-meet-date"></span></p>
+      </div>
+    </div>
+  </div>
+  <section id="improvedHost" class="awards-host awards-host-improved"></section>
+
 </main>
 
 <footer>
   Highcroft Hurricanes Swim Team · <a href="leaderboards.html">Leaderboards</a> · <a href="admin.html">Admin</a>
 </footer>
 
-<script src="assets/data.js?v=6"></script>
+<script src="assets/data.js?v=7"></script>
 <script>
   HHST.initTheme();
   document.getElementById('themeToggle').addEventListener('click', HHST.toggleTheme);
@@ -134,6 +146,7 @@
       const total = Object.values(swimmers).reduce((s, sw) => s + ((sw.results||[]).length), 0);
       if(total === 0){ empty.style.display = 'block'; return; }
       renderAwards();
+      renderMostImproved();
     } catch(err){
       console.error(err);
       loading.innerHTML = '<p class="lead" style="color:var(--red-light);margin:0">Couldn\'t load team data. Try refreshing.</p>';
@@ -288,6 +301,164 @@
       <div class="award-col-head award-col-head-${gender.toLowerCase()}">${gender}</div>
       <table class="award-table"><tbody>${rows}${filler}</tbody></table>
     </div>`;
+  }
+
+  // ============ Most Improved posters ============
+  const improvedHost = document.getElementById('improvedHost');
+  const improvedIntro = document.getElementById('mostImprovedIntro');
+
+  function fmtDrop(sec){
+    if(!isFinite(sec) || sec <= 0) return '—';
+    if(sec >= 60){
+      const m = Math.floor(sec/60);
+      const s = (sec - m*60).toFixed(2);
+      return `−${m}:${s.padStart(5,'0')}`;
+    }
+    return `−${sec.toFixed(2)}s`;
+  }
+
+  function fmtMeetDate(s){
+    if(!s) return '';
+    const d = new Date(s);
+    if(isNaN(d)) return s;
+    return d.toLocaleDateString(undefined, { year:'numeric', month:'long', day:'numeric' });
+  }
+
+  function improvedColumnHtml(entries, gender){
+    if(!entries || !entries.length){
+      return `<div class="award-col award-col-empty">
+        <div class="award-col-head award-col-head-${gender.toLowerCase()}">${gender}</div>
+        <div class="award-col-empty-msg">No drops on board</div>
+      </div>`;
+    }
+    const rows = entries.map((e, i) => {
+      const color = medalColor(i);
+      const rankCell = color
+        ? `<span class="award-medal" style="background:${color}">${i+1}</span>`
+        : `<span class="award-rank">${i+1}</span>`;
+      const eventCount = e.eventCount || (e.eventsDropped ? e.eventsDropped.length : 0);
+      return `<tr>
+        <td class="award-rank-cell">${rankCell}</td>
+        <td class="award-name-cell">
+          ${escapeHtml(displayName(e))}
+          <span class="improved-events-sub">across ${eventCount} event${eventCount===1?'':'s'}</span>
+        </td>
+        <td class="award-time-cell improved-drop">${fmtDrop(e.totalDrop)}</td>
+      </tr>`;
+    }).join('');
+    const filler = Array.from({length: Math.max(0, 5 - entries.length)}, (_,i) => `
+      <tr class="award-empty-row">
+        <td class="award-rank-cell"><span class="award-rank">${entries.length + i + 1}</span></td>
+        <td class="award-name-cell">—</td>
+        <td class="award-time-cell">—</td>
+      </tr>`).join('');
+    return `<div class="award-col">
+      <div class="award-col-head award-col-head-${gender.toLowerCase()}">${gender}</div>
+      <table class="award-table"><tbody>${rows}${filler}</tbody></table>
+    </div>`;
+  }
+
+  function renderMostImproved(){
+    if(!improvedHost) return;
+    const { meet, date, boards } = HHST.mostImprovedAtMeet(Object.values(swimmers), { limit: 5 });
+    if(!meet){ improvedHost.innerHTML = ''; return; }
+
+    document.getElementById('improvedMeetName').textContent = meet;
+    document.getElementById('improvedMeetDate').textContent = date ? ` · ${fmtMeetDate(date)}` : '';
+    improvedIntro.style.display = '';
+
+    function bracketOf(key){ return key.replace(/^(Boys|Girls)\s+/i, ''); }
+    function genderOf(key){
+      if(/^Boys\s/i.test(key))  return 'Boys';
+      if(/^Girls\s/i.test(key)) return 'Girls';
+      return '';
+    }
+
+    const byBracket = {};
+    Object.keys(boards).forEach(k => {
+      const b = bracketOf(k);
+      const g = genderOf(k);
+      if(!byBracket[b]) byBracket[b] = { Boys: [], Girls: [], Mixed: [] };
+      if(g === 'Boys') byBracket[b].Boys = boards[k];
+      else if(g === 'Girls') byBracket[b].Girls = boards[k];
+      else byBracket[b].Mixed = boards[k];
+    });
+
+    const brackets = HHST.AGE_GROUP_ORDER.filter(b => byBracket[b]);
+    if(!brackets.length){
+      improvedHost.innerHTML = `<div class="card empty no-print" style="margin-top:16px">No improvements measurable at this meet yet — once swimmers have prior results, drops show up here.</div>`;
+      return;
+    }
+
+    const today = new Date().toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'});
+    const eventLabel = `${meet}`.toUpperCase();
+
+    const cards = brackets.map(bracket => {
+      const sets = byBracket[bracket];
+      const haveGendered = sets.Boys.length || sets.Girls.length;
+      const inner = haveGendered
+        ? `<div class="award-cols">
+             ${improvedColumnHtml(sets.Girls || [], 'Girls')}
+             ${improvedColumnHtml(sets.Boys  || [], 'Boys')}
+           </div>`
+        : `<div class="award-cols award-cols-single">${improvedColumnHtml(sets.Mixed || [], 'Top 5')}</div>`;
+
+      return `<article class="award-card award-card-improved" data-group="improved-${escapeHtml(bracket)}">
+        <div class="award-bubble-bg" aria-hidden="true"></div>
+        <svg class="award-wave-top" viewBox="0 0 1200 80" preserveAspectRatio="none" aria-hidden="true">
+          <path d="M0,40 C150,10 300,70 450,40 C600,10 750,70 900,40 C1050,10 1200,70 1200,40 L1200,80 L0,80 Z" fill="rgba(52,211,153,.22)"/>
+          <path d="M0,55 C150,25 300,75 450,55 C600,25 750,75 900,55 C1050,25 1200,75 1200,55 L1200,80 L0,80 Z" fill="rgba(125,211,252,.32)"/>
+        </svg>
+        <svg class="award-wave-bottom" viewBox="0 0 1200 80" preserveAspectRatio="none" aria-hidden="true">
+          <path d="M0,40 C150,70 300,10 450,40 C600,70 750,10 900,40 C1050,70 1200,10 1200,40 L1200,0 L0,0 Z" fill="rgba(52,211,153,.22)"/>
+          <path d="M0,25 C150,55 300,-5 450,25 C600,55 750,-5 900,25 C1050,55 1200,-5 1200,25 L1200,0 L0,0 Z" fill="rgba(125,211,252,.32)"/>
+        </svg>
+        <div class="award-lane lane-left" aria-hidden="true"></div>
+        <div class="award-lane lane-right" aria-hidden="true"></div>
+        <div class="award-corner tl"></div>
+        <div class="award-corner tr"></div>
+        <div class="award-corner bl"></div>
+        <div class="award-corner br"></div>
+        <div class="award-header">
+          <div class="award-logo-frame">
+            <img class="award-logo" src="assets/logo.png" alt="Highcroft Hurricanes" />
+          </div>
+          <div class="award-header-text">
+            <div class="award-kicker">Highcroft Hurricanes</div>
+            <h2 class="award-title award-title-improved">Most Improved</h2>
+            <div class="award-title-rule award-title-rule-green" aria-hidden="true"></div>
+          </div>
+        </div>
+        <div class="award-group">${escapeHtml(bracket)}</div>
+        <div class="award-event award-event-improved">${escapeHtml(meet)}${date ? ' · ' + escapeHtml(fmtMeetDate(date)) : ''}</div>
+        ${inner}
+        <div class="award-footer">
+          <span class="award-team">Hurricanes Swim Team</span>
+          <span class="award-footer-divider" aria-hidden="true">◆</span>
+          <span class="award-date">${today}</span>
+        </div>
+        <button class="award-print-one no-print" data-print="improved-${escapeHtml(bracket)}" title="Print just this card" aria-label="Print this card">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        </button>
+      </article>`;
+    }).filter(Boolean).join('');
+
+    improvedHost.innerHTML = cards;
+
+    improvedHost.querySelectorAll('[data-print]').forEach(btn => btn.addEventListener('click', () => {
+      const group = btn.dataset.print;
+      document.body.classList.add('printing-one');
+      document.querySelectorAll('.award-card').forEach(c => {
+        c.classList.toggle('print-target', c.dataset.group === group);
+      });
+      const cleanup = () => {
+        document.body.classList.remove('printing-one');
+        document.querySelectorAll('.award-card').forEach(c => c.classList.remove('print-target'));
+        window.removeEventListener('afterprint', cleanup);
+      };
+      window.addEventListener('afterprint', cleanup);
+      window.print();
+    }));
   }
 
   printAllAwards?.addEventListener('click', () => {
