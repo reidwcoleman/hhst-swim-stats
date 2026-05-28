@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="assets/styles.css?v=8"/>
+<link rel="stylesheet" href="assets/styles.css?v=9"/>
 
 <!-- Firebase compat SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
@@ -154,6 +154,17 @@
       </div>
     </div>
 
+    <!-- TIME DROPPED PER SEASON -->
+    <div class="card" id="seasonStatsCard" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:12px">
+        <div>
+          <h2 style="margin:0">Time dropped by season</h2>
+          <p class="lead" style="margin:4px 0 0">Total seconds shaved off PRs in each season, plus how many swimmers contributed.</p>
+        </div>
+      </div>
+      <div id="seasonStatsBody"></div>
+    </div>
+
     <!-- SWIMTOPIA EXPORT GUIDE -->
     <details class="card collapsible-card">
       <summary>
@@ -276,6 +287,20 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
       <p class="lead">
         Drop one or more Swimtopia <strong>meet results files</strong> here — CSV or Excel (<code>.xlsx</code>, <code>.xls</code>). Required: <code>Athlete</code> (or <code>Athlete First Name</code> + <code>Athlete Last Name</code>), <code>Event</code>, <code>Time</code>, <code>Meet</code>. Optional: <code>Date</code>, <code>Place</code>, <code>Age</code>, <code>Group</code>. Names in <em>"Last, First"</em> format are flipped automatically. <strong>Heads up:</strong> after a times upload, any swimmer no longer on the current roster is removed automatically.
       </p>
+
+      <!-- SEASON PICKER — required before upload. The datalist suggests every
+           season the system has seen so far; coaches can also type a new one. -->
+      <div class="season-picker" style="margin:0 0 14px;display:flex;flex-wrap:wrap;align-items:flex-end;gap:14px">
+        <div class="field" style="flex:1;min-width:220px;margin:0">
+          <label for="seasonInput" style="display:block;margin-bottom:6px;font-weight:600;color:var(--text)">Season for this upload <span style="color:var(--accent)">*</span></label>
+          <input type="text" id="seasonInput" list="seasonOptions" placeholder="e.g. 2025 Summer" autocomplete="off"
+                 style="width:100%;padding:12px 14px;border-radius:10px;background:var(--surface);color:var(--text);border:1px solid var(--border-strong);font-size:14.5px"/>
+          <datalist id="seasonOptions"></datalist>
+          <p class="field-hint" style="margin:6px 0 0;font-size:12.5px;color:var(--text-muted)">
+            Every race in the file gets tagged with this season so leaderboards, Fastest Five, and time-dropped can be filtered to a single season. Use a consistent format like <code>YYYY Summer</code> or <code>YYYY-YY Winter</code> so they sort newest-first.
+          </p>
+        </div>
+      </div>
 
       <label class="drop-zone" id="dropZone" for="csvFile">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
@@ -587,6 +612,26 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
       }
 
       const mode = label === 'roster' ? 'roster' : 'results';
+      // For meet results, require the coach to pick a season first so every
+      // race lands in a known bucket. (Roster uploads don't need a season —
+      // they're swimmer info, not races.)
+      let uploadSeason = '';
+      if(mode === 'results'){
+        const seasonInput = document.getElementById('seasonInput');
+        uploadSeason = (seasonInput.value || '').trim();
+        if(!uploadSeason){
+          setStatus('err','Pick a season first (e.g. "2025 Summer") above the drop zone, then upload again. Every race in the file will be tagged with that season.');
+          seasonInput.focus();
+          seasonInput.style.borderColor = 'var(--red, #ef4444)';
+          setTimeout(() => { seasonInput.style.borderColor = ''; }, 1800);
+          // Clear the file input so the same files can be re-selected after the season is filled in
+          const inp = document.getElementById('csvFile');
+          if(inp) inp.value = '';
+          return;
+        }
+        // Remember it for next time so coaches don't re-type for the same season
+        try { localStorage.setItem('hhst.lastSeason', uploadSeason); } catch(_){}
+      }
       const totals = {
         added: 0,
         racesPerFile: [],
@@ -606,7 +651,7 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
           const rows = await readFileToRows(f);
           const sheetTag = f.__chosenSheet ? ` (sheet "${f.__chosenSheet}")` : '';
           setStatus('ok', `Importing ${f.name}${sheetTag} — ${rows.length} rows (${i+1}/${supported.length})…`);
-          const result = await HHST.ingestRows(rows, { mode });
+          const result = await HHST.ingestRows(rows, { mode, season: uploadSeason });
           totals.added         += result.added || 0;
           totals.profileUpdates += result.profileUpdates || 0;
           totals.meets         += result.meets || 0;
@@ -657,7 +702,7 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
           + (totals.added ? `; added ${totals.added} race${totals.added===1?'':'s'}` : '')
           + '.';
       } else {
-        body = `Added ${totals.added} race${totals.added===1?'':'s'} across ${touchedSwimmers} swimmer${touchedSwimmers===1?'':'s'}.`;
+        body = `Added ${totals.added} race${totals.added===1?'':'s'} across ${touchedSwimmers} swimmer${touchedSwimmers===1?'':'s'} to season "${uploadSeason}".`;
         if(prunedNames.length){
           body += ` Removed ${prunedNames.length} swimmer${prunedNames.length===1?'':'s'} no longer on the roster.`;
         }
@@ -830,6 +875,67 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
       document.getElementById('dLast').textContent = 'No CSV uploaded yet';
     }
     renderRoster(document.getElementById('searchInput').value);
+    refreshSeasonUI();
+  }
+
+  // Refresh the season <datalist> (autocomplete on the upload picker), default
+  // the input to the most recently used season, and re-render the per-season
+  // Time Dropped card.
+  function refreshSeasonUI(){
+    const allSeasons = HHST.getAllSeasons(cachedData.swimmers || {});
+    const dataList = document.getElementById('seasonOptions');
+    if(dataList){
+      dataList.innerHTML = allSeasons.map(s => `<option value="${escapeHtml(s)}"></option>`).join('');
+    }
+    // Pre-fill the input: last-used season (localStorage) → most recent season → empty
+    const seasonInput = document.getElementById('seasonInput');
+    if(seasonInput && !seasonInput.value){
+      const remembered = (function(){ try { return localStorage.getItem('hhst.lastSeason') || ''; } catch(_){ return ''; } })();
+      seasonInput.value = remembered || allSeasons[0] || '';
+    }
+    renderSeasonStats();
+  }
+
+  function fmtDrop(sec){
+    if(!isFinite(sec) || sec <= 0) return '—';
+    if(sec >= 60){
+      const m = Math.floor(sec/60);
+      const s = (sec - m*60).toFixed(2);
+      return `${m}:${s.padStart(5,'0')}`;
+    }
+    return sec.toFixed(2) + 's';
+  }
+
+  function renderSeasonStats(){
+    const card = document.getElementById('seasonStatsCard');
+    const body = document.getElementById('seasonStatsBody');
+    if(!card || !body) return;
+    const bySeason = HHST.teamStatsBySeason(cachedData.swimmers || {});
+    const usable   = bySeason.filter(s => s.season !== '(Untagged)' || s.totalDropSec > 0 || s.totalRaces > 0);
+    if(!usable.length){
+      card.style.display = 'none';
+      return;
+    }
+    card.style.display = 'block';
+    body.innerHTML = `
+      <div class="table-wrap">
+        <table class="roster-table" style="min-width:560px">
+          <thead><tr>
+            <th>Season</th><th>Swimmers</th><th>Races</th><th>Meets</th><th>Time Dropped</th><th>PRs</th>
+          </tr></thead>
+          <tbody>
+            ${usable.map((s, i) => `
+              <tr>
+                <td><strong>${escapeHtml(s.season)}</strong>${i === 0 && s.season !== '(Untagged)' ? ' <span class="training-chip" title="Most recent season" style="background:rgba(34,197,94,.18);color:#22c55e;border-color:rgba(34,197,94,.35)">Current</span>' : ''}</td>
+                <td>${s.swimmerCount}</td>
+                <td>${s.totalRaces}</td>
+                <td>${s.meetCount}</td>
+                <td style="color:${s.totalDropSec > 0 ? '#22c55e' : 'var(--text-muted)'}">${s.totalDropSec > 0 ? '−' + fmtDrop(s.totalDropSec) : '—'}</td>
+                <td>${s.prRaces || 0}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
   }
 
   function renderRoster(filter){

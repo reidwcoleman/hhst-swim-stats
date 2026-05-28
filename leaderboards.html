@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="assets/styles.css?v=8"/>
+<link rel="stylesheet" href="assets/styles.css?v=9"/>
 <style>
   /* Hide everything until auth check completes — admins only. */
   body:not(.auth-ready) > *{visibility:hidden}
@@ -316,15 +316,28 @@
 
       return `<article class="award-card" data-group="${escapeHtml(bracket)}">
         <div class="award-bubble-bg" aria-hidden="true"></div>
+        <svg class="award-wave-top" viewBox="0 0 1200 80" preserveAspectRatio="none" aria-hidden="true">
+          <path d="M0,40 C150,10 300,70 450,40 C600,10 750,70 900,40 C1050,10 1200,70 1200,40 L1200,80 L0,80 Z" fill="rgba(96,165,250,.22)"/>
+          <path d="M0,55 C150,25 300,75 450,55 C600,25 750,75 900,55 C1050,25 1200,75 1200,55 L1200,80 L0,80 Z" fill="rgba(125,211,252,.32)"/>
+        </svg>
+        <svg class="award-wave-bottom" viewBox="0 0 1200 80" preserveAspectRatio="none" aria-hidden="true">
+          <path d="M0,40 C150,70 300,10 450,40 C600,70 750,10 900,40 C1050,70 1200,10 1200,40 L1200,0 L0,0 Z" fill="rgba(96,165,250,.22)"/>
+          <path d="M0,25 C150,55 300,-5 450,25 C600,55 750,-5 900,25 C1050,55 1200,-5 1200,25 L1200,0 L0,0 Z" fill="rgba(125,211,252,.32)"/>
+        </svg>
+        <div class="award-lane lane-left" aria-hidden="true"></div>
+        <div class="award-lane lane-right" aria-hidden="true"></div>
         <div class="award-corner tl"></div>
         <div class="award-corner tr"></div>
         <div class="award-corner bl"></div>
         <div class="award-corner br"></div>
         <div class="award-header">
-          <img class="award-logo" src="assets/logo.png" alt="Highcroft Hurricanes" />
+          <div class="award-logo-frame">
+            <img class="award-logo" src="assets/logo.png" alt="Highcroft Hurricanes" />
+          </div>
           <div class="award-header-text">
             <div class="award-kicker">Highcroft Hurricanes</div>
             <h2 class="award-title">Fastest Five</h2>
+            <div class="award-title-rule" aria-hidden="true"></div>
           </div>
         </div>
         <div class="award-group">${escapeHtml(bracket)}</div>
@@ -332,6 +345,7 @@
         ${inner}
         <div class="award-footer">
           <span class="award-team">Hurricanes Swim Team</span>
+          <span class="award-footer-divider" aria-hidden="true">◆</span>
           <span class="award-date">${today}</span>
         </div>
         <button class="award-print-one no-print" data-print="${escapeHtml(bracket)}" title="Print just this card" aria-label="Print this card">

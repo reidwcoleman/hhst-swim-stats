@@ -117,6 +117,8 @@
     'originaltime':'time','convertedtime':'time',
     'meet':'meet','meetname':'meet','competition':'meet','swimmeet':'meet','meettitle':'meet',
     'date':'date','meetdate':'date','sessiondate':'date','eventdate':'date','swimdate':'date',
+    // Season (per-row override; admin upload also sets a default season for the whole file)
+    'season':'season','swimseason':'season','seasonname':'season','meetseason':'season','year':'season',
     // Team columns (ignored for now — kept here so they don't get misinterpreted as something else)
     'team':'team','teamname':'team','teamabbr':'team','teamabbreviation':'team',
     // Age / DOB
@@ -275,6 +277,11 @@
   //   'results' — only update existing swimmers; rows for unknown swimmers are skipped
   //               and reported in result.skippedSwimmers (default for safety so meet
   //               uploads can't pollute the roster with phantom records)
+  // opts.season:
+  //   Free-form label (e.g. "2025 Summer"). Tags every imported result with
+  //   this season so leaderboards / time-dropped / records can be filtered to
+  //   a single season. If omitted, results are tagged with '' and behave like
+  //   legacy data (visible only when no season filter is applied).
   async function ingestCSV(text, opts){
     return ingestRows(parseCSV(text), opts);
   }
@@ -285,6 +292,7 @@
   async function ingestRows(rows, opts){
     opts = opts || {};
     const mode = opts.mode === 'roster' ? 'roster' : 'results';
+    const season = (opts.season || '').toString().trim();
     if(!rows || rows.length < 2) return { added:0, swimmers:0, profileUpdates:0, skippedSwimmers:[], errors:['Empty file'] };
     const rawHeaders = rows[0];
     const headers = rawHeaders.map(mapHeader);
@@ -487,6 +495,10 @@
         const distance = (rec.distance||'').toString().trim() || extractDistance(rec.event);
         const stroke = extractStroke(rec.event);
         const timeStr = fmtTime(rec.time);
+        // Per-row season can override the upload-level default — useful when
+        // the spreadsheet has a `season` column (rec.season is grabbed below
+        // from the header aliases).
+        const rowSeason = (rec.season || '').toString().trim() || season;
         const result = {
           event: eventLabel,
           distance,
@@ -496,15 +508,20 @@
           meet: rec.meet || 'Unknown Meet',
           date: rec.date || '',
           place: rec.place || '',
-          split: rec.split || ''
+          split: rec.split || '',
+          season: rowSeason
         };
         sw.results.push(result);
         added++;
         if(rec.meet) meetNames.add(rec.meet);
-        // Stage a mirror write to hhst_meet_times. Doc id = swimmer + event, so
-        // re-uploading the same (swimmer, event) overwrites instead of duplicating.
+        // Stage a mirror write to hhst_meet_times. Doc id = swimmer + event +
+        // season, so re-uploading the same combo into a different season
+        // creates a separate doc instead of overwriting last season's record.
+        const mirrorId = rowSeason
+          ? `${meetTimeDocId(key, eventLabel)}__${slugify(rowSeason)}`
+          : meetTimeDocId(key, eventLabel);
         meetTimeWrites.push({
-          id: meetTimeDocId(key, eventLabel),
+          id: mirrorId,
           data: {
             swimmerKey: key,
             swimmerName: name,
@@ -518,7 +535,8 @@
             place: result.place,
             ageGroup: computedBracket,
             gender: sw.gender || '',
-            competitionGroup: competitionGroup(sw)
+            competitionGroup: competitionGroup(sw),
+            season: rowSeason
           }
         });
       }
@@ -605,6 +623,7 @@
     eventMatcher = eventMatcher || {};
     const limit = (opts && opts.limit) || 5;
     const splitByGender = !opts || opts.splitByGender !== false;
+    const season = (opts && opts.season) || '';
     const byGroup = {};
     for(const sw of swimmers){
       const bracket = sw.bracket || getAgeGroup(sw.age) || sw.ageGroup || sw.group;
@@ -612,6 +631,7 @@
       const group = splitByGender ? competitionGroup(sw) : bracket;
       if(!group || group === 'Unknown') continue;
       const matching = (sw.results||[]).filter(r => {
+        if(season && r.season !== season) return false;
         if(eventMatcher.stroke && r.stroke !== eventMatcher.stroke) return false;
         if(eventMatcher.distance && String(r.distance) !== String(eventMatcher.distance)) return false;
         return isFinite(r.seconds);
@@ -857,6 +877,32 @@
     return '15-18';
   }
 
+  // -------- Season helpers --------
+  // A "season" is a free-form label the coach picks at upload time
+  // ("2025 Summer", "2024-25 Winter", etc.). It's tagged on every imported
+  // race, then leaderboards / time-dropped / records can be filtered to a
+  // single season. Sort order: lexicographic descending — picks year-prefixed
+  // labels like "2025 Summer" newest-first naturally.
+  function getAllSeasons(allSwimmers){
+    const seen = new Set();
+    const list = Array.isArray(allSwimmers) ? allSwimmers : Object.values(allSwimmers || {});
+    list.forEach(sw => (sw.results || []).forEach(r => {
+      if(r && r.season) seen.add(r.season);
+    }));
+    return Array.from(seen).sort((a,b) => b.localeCompare(a, undefined, { numeric:true, sensitivity:'base' }));
+  }
+  function currentSeason(allSwimmers){
+    const seasons = getAllSeasons(allSwimmers);
+    return seasons[0] || '';
+  }
+  // Return a swimmer with results filtered to a single season — used by the
+  // season-aware leaderboard / stats helpers below. season === '' means "all
+  // seasons" (no filter applied).
+  function filterSwimmerToSeason(sw, season){
+    if(!season) return sw;
+    return { ...sw, results: (sw.results || []).filter(r => r && r.season === season) };
+  }
+
   // Stroke order for grouping / sorting
   const STROKE_ORDER = ['Freestyle','Backstroke','Breaststroke','Butterfly','IM'];
   function distanceNum(ev){
@@ -873,8 +919,13 @@
     return distanceNum(a) - distanceNum(b);
   }
 
-  function statsForSwimmer(sw){
-    const results = sw.results||[];
+  // opts.season — when present, only results from that season are counted.
+  // Empty / omitted means "across all seasons" (legacy behavior).
+  function statsForSwimmer(sw, opts){
+    const season = (opts && opts.season) || '';
+    const results = season
+      ? (sw.results||[]).filter(r => r && r.season === season)
+      : (sw.results||[]);
     const total = results.length;
     const events = {};
     const meets = new Set();
@@ -1007,6 +1058,7 @@
     const stroke = opts.stroke || null;
     const top    = opts.top || 5;
     const splitByGender = opts.splitByGender !== false;
+    const season = opts.season || '';
     const buckets = {};
     Object.values(allSwimmers).forEach(sw => {
       const bracket = getAgeGroup(sw.age);
@@ -1014,6 +1066,7 @@
       const byEvent = {};
       (sw.results||[]).forEach(r => {
         if(!isFinite(r.seconds)) return;
+        if(season && r.season !== season) return;
         const evStroke = r.stroke || extractStroke(r.event);
         if(stroke && evStroke !== stroke) return;
         if(!byEvent[r.event] || r.seconds < byEvent[r.event].seconds) byEvent[r.event] = r;
@@ -1047,28 +1100,58 @@
     return Object.values(buckets);
   }
 
-  // Team-wide aggregate stats
-  function teamStats(allSwimmers){
+  // Team-wide aggregate stats. opts.season filters every count + the
+  // time-dropped sum to a single season; omit for an all-time view.
+  function teamStats(allSwimmers, opts){
+    const season = (opts && opts.season) || '';
     const swimmers = Object.values(allSwimmers);
-    const totalRaces = swimmers.reduce((s, x) => s + (x.results||[]).length, 0);
+    const filteredResults = sw => season
+      ? (sw.results||[]).filter(r => r && r.season === season)
+      : (sw.results||[]);
+    const totalRaces = swimmers.reduce((s, x) => s + filteredResults(x).length, 0);
     const meets = new Set();
     let gold=0, silver=0, bronze=0;
     let totalDropSec = 0;
     let prRaces = 0;
+    let activeSwimmers = 0;
     swimmers.forEach(sw => {
-      const s = statsForSwimmer(sw);
+      const seasonResults = filteredResults(sw);
+      if(!seasonResults.length) return;
+      activeSwimmers++;
+      const s = statsForSwimmer(sw, { season });
       gold += s.gold; silver += s.silver; bronze += s.bronze;
       totalDropSec += s.totalTimeDropSec;
       prRaces += s.prCount;
-      (sw.results||[]).forEach(r => meets.add(r.meet));
+      seasonResults.forEach(r => meets.add(r.meet));
     });
     return {
-      swimmerCount: swimmers.length,
+      swimmerCount: season ? activeSwimmers : swimmers.length,
       totalRaces, meetCount: meets.size,
       gold, silver, bronze,
       podium: gold + silver + bronze,
-      totalDropSec, prRaces
+      totalDropSec, prRaces,
+      season: season || null
     };
+  }
+
+  // Break stats out per season — used by the Admin "Time dropped by season"
+  // card so coaches can see at a glance how much time has been shaved off
+  // each season. Returns an array sorted newest-first.
+  function teamStatsBySeason(allSwimmers){
+    const seasons = getAllSeasons(allSwimmers);
+    const out = seasons.map(s => ({ ...teamStats(allSwimmers, { season: s }), season: s }));
+    // Also include an "Untagged" pseudo-season for legacy data with no season set,
+    // but only if any such results exist — keeps the card honest about coverage.
+    const hasUntagged = Object.values(allSwimmers).some(sw =>
+      (sw.results||[]).some(r => !r || !r.season));
+    if(hasUntagged){
+      const swPool = Object.fromEntries(Object.entries(allSwimmers).map(([k, sw]) => [
+        k, { ...sw, results: (sw.results||[]).filter(r => !r || !r.season).map(r => ({ ...r, season:'__untagged' })) }
+      ]));
+      const t = teamStats(swPool, { season: '__untagged' });
+      out.push({ ...t, season: '(Untagged)' });
+    }
+    return out;
   }
 
   // -------- Theme --------
@@ -1104,7 +1187,8 @@
     deleteSwimmer, pruneNonRosterSwimmers, addSwimmerManual, updateSwimmer,
     clearAll, clearRoster, clearMeetTimes,
     isAdminLoggedIn, loginAdmin, logoutAdmin, onAuthChanged,
-    statsForSwimmer, rankSwimmerInAgeGroup, buildLeaderboards, teamStats,
+    statsForSwimmer, rankSwimmerInAgeGroup, buildLeaderboards, teamStats, teamStatsBySeason,
+    getAllSeasons, currentSeason, filterSwimmerToSeason,
     getAgeGroup, AGE_GROUP_ORDER, STROKE_ORDER, extractStroke, extractDistance, distanceNum, compareEventLabel,
     fmtTime, timeToSeconds, swimmerKey, slugify, meetTimeDocId, norm,
     mapHeader, normHeaderKey,
