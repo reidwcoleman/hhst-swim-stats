@@ -1378,8 +1378,54 @@ table tr:hover td{background:rgba(96,165,250,.05)}
 }
 
 .lb-grid{
-  display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));
-  gap:16px;
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(440px,1fr));
+  gap:18px;
+}
+
+/* Event card now hosts Girls + Boys columns inside */
+.lb-card-body{
+  display:grid;gap:0;padding:0;
+}
+.lb-card-cols-2 .lb-card-body{grid-template-columns:1fr 1fr}
+.lb-card-cols-1 .lb-card-body{grid-template-columns:1fr}
+.lb-col{padding:12px 16px 10px;min-width:0}
+.lb-card-cols-2 .lb-col + .lb-col{border-left:1px solid var(--border)}
+.lb-col-head{
+  font-family:'Inter',sans-serif;font-weight:900;font-size:11.5px;
+  text-transform:uppercase;letter-spacing:.22em;
+  color:var(--text-muted);
+  padding:2px 0 8px;margin:0 0 6px;
+  border-bottom:1.5px solid var(--border);
+  text-align:center;position:relative;
+}
+.lb-col-head::after{
+  content:'';position:absolute;left:50%;bottom:-1.5px;width:32px;height:1.5px;
+  transform:translateX(-50%);border-radius:2px;
+}
+.lb-col-girls .lb-col-head{color:#f9a8d4}
+.lb-col-girls .lb-col-head::after{background:linear-gradient(90deg,#f472b6,#ec4899)}
+.lb-col-boys .lb-col-head{color:#93c5fd}
+.lb-col-boys .lb-col-head::after{background:linear-gradient(90deg,#60a5fa,#2563eb)}
+.lb-col-mixed .lb-col-head{color:var(--text-muted)}
+.lb-col-mixed .lb-col-head::after{background:var(--accent)}
+[data-theme="light"] .lb-col-girls .lb-col-head{color:#be185d}
+[data-theme="light"] .lb-col-boys .lb-col-head{color:#1e40af}
+
+.lb-col .lb-table{table-layout:auto}
+.lb-col .lb-table th, .lb-col .lb-table td{padding:7px 6px;font-size:13px}
+.lb-col .lb-table th{font-size:10px;padding:6px 6px 6px}
+.lb-col .lb-table th:first-child, .lb-col .lb-table td:first-child{width:30px;text-align:center}
+.lb-col .lb-table td:last-child, .lb-col .lb-table th:last-child{
+  text-align:right;white-space:nowrap;min-width:64px;
+}
+.lb-col .lb-name{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px}
+.lb-col .lb-name a{font-weight:600;font-size:13px}
+.lb-col .lb-time{font-size:14.5px;white-space:nowrap}
+.lb-col .lb-age-tag{font-size:10px;padding:1px 6px;margin-left:4px}
+.lb-empty-row td{color:var(--text-subtle);opacity:.5}
+@media (max-width:560px){
+  .lb-card-cols-2 .lb-card-body{grid-template-columns:1fr}
+  .lb-card-cols-2 .lb-col + .lb-col{border-left:none;border-top:1px solid var(--border)}
 }
 
 /* Empty state inside leaderboards */

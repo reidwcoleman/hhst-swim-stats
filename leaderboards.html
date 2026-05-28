@@ -138,31 +138,19 @@
     <div id="lbBody"></div>
   </div>
 
-  <!-- ============ FASTEST FIVE PRINTABLE AWARDS ============ -->
-  <div class="card no-print awards-intro">
-    <div class="awards-intro-head">
-      <div>
-        <h2>Printable Fastest Five Awards</h2>
-        <p class="lead">One certificate per age group, top 5 swimmers in a freestyle distance. Pick a distance, then print or save as PDF.</p>
-      </div>
-      <div class="awards-controls">
-        <label class="lb-select">Distance
-          <select id="awardsDist">
-            <option value="50" selected>50 Free</option>
-            <option value="100">100 Free</option>
-            <option value="200">200 Free</option>
-            <option value="500">500 Free</option>
-          </select>
-        </label>
-        <button class="btn ghost" id="printAllAwards">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-          Print all · Save as PDF
-        </button>
-      </div>
+  <!-- Fastest Five lives on its own page (awards.html) so this view stays
+       focused on rankings; the admin nav surfaces both. -->
+  <div class="card no-print" style="display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap">
+    <div>
+      <h2 style="margin:0 0 4px;font-family:Fraunces,serif;font-weight:700;font-size:22px">Looking for the printable awards?</h2>
+      <p class="lead" style="margin:0">Each age group gets its own Fastest Five certificate on the dedicated awards page.</p>
     </div>
+    <a href="awards.html" class="btn">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      Open Fastest Five
+    </a>
   </div>
 
-  <section id="awardsHost" class="awards-host"></section>
 
 </main>
 
@@ -221,7 +209,6 @@
       populateSeasons();
       renderTeamRow();
       render();
-      renderAwards();
     } catch(err){
       console.error(err);
       loading.innerHTML = '<p class="lead" style="color:var(--red-light);margin:0">Couldn\'t load team data. Try refreshing.</p>';
@@ -240,13 +227,7 @@
     state.season = seasons[0] || '';
   }
 
-  // ============ Printable Fastest Five awards ============
-  const awardsDist = document.getElementById('awardsDist');
-  const awardsHost = document.getElementById('awardsHost');
-  const printAllAwards = document.getElementById('printAllAwards');
-
   function displayName(sw){
-    // leaderboardsByEvent gives us .name; older callers passed .swimmerName.
     const full = sw.name || sw.swimmerName || '';
     if(sw.preferredName){
       const last = full.split(' ').filter(Boolean).pop() || '';
@@ -254,152 +235,8 @@
     }
     return full;
   }
-  function medalColor(i){
-    return i === 0 ? '#fbbf24' : i === 1 ? '#cbd5e1' : i === 2 ? '#d97706' : '';
-  }
 
-  function renderAwards(){
-    if(!awardsHost) return;
-    const dist = awardsDist.value;
-    // leaderboardsByEvent buckets each swimmer into "Boys 11-12" / "Girls 11-12" /
-    // bare bracket when gender is unknown. We then group those keys back into a
-    // single card per bracket so the printed poster shows Boys AND Girls side
-    // by side for the same age group.
-    const boards = HHST.leaderboardsByEvent(Object.values(swimmers), { stroke: 'Freestyle', distance: dist }, { limit: 5, season: state.season });
-    function bracketOf(key){ return key.replace(/^(Boys|Girls)\s+/i, ''); }
-    function genderOf(key){
-      if(/^Boys\s/i.test(key)) return 'Boys';
-      if(/^Girls\s/i.test(key)) return 'Girls';
-      return '';
-    }
-    // Pair Boys + Girls into one entry per bracket, respecting the current
-    // Gender filter so a Boys-only print only ships the Boys column.
-    const byBracket = {};
-    Object.keys(boards).forEach(k => {
-      const b = bracketOf(k);
-      const g = genderOf(k);
-      if(state.gender === 'Boys' && g !== 'Boys') return;
-      if(state.gender === 'Girls' && g !== 'Girls') return;
-      if(!byBracket[b]) byBracket[b] = { Boys: [], Girls: [], Mixed: [] };
-      if(g === 'Boys') byBracket[b].Boys = boards[k];
-      else if(g === 'Girls') byBracket[b].Girls = boards[k];
-      else byBracket[b].Mixed = boards[k];
-    });
-    const brackets = HHST.AGE_GROUP_ORDER.filter(b => byBracket[b]);
-    if(!brackets.length){
-      awardsHost.innerHTML = `<div class="card empty no-print" style="margin-top:16px">No ${dist} Free times yet${state.gender ? ` for ${state.gender}` : ''}. Upload meet results from the Admin page and they'll appear here.</div>`;
-      return;
-    }
-    const today = new Date().toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'});
-    const eventLabel = `${dist} Yard Freestyle`;
-
-    function columnHtml(entries, gender){
-      if(!entries || !entries.length){
-        return `<div class="award-col award-col-empty">
-          <div class="award-col-head award-col-head-${gender.toLowerCase()}">${gender}</div>
-          <div class="award-col-empty-msg">No ${gender.toLowerCase()} on board</div>
-        </div>`;
-      }
-      const rows = entries.map((e,i) => {
-        const color = medalColor(i);
-        const rankCell = color
-          ? `<span class="award-medal" style="background:${color}">${i+1}</span>`
-          : `<span class="award-rank">${i+1}</span>`;
-        return `<tr>
-          <td class="award-rank-cell">${rankCell}</td>
-          <td class="award-name-cell">${escapeHtml(displayName(e))}</td>
-          <td class="award-time-cell">${escapeHtml(e.time)}</td>
-        </tr>`;
-      }).join('');
-      const filler = Array.from({length: Math.max(0, 5 - entries.length)}, (_,i) => `
-        <tr class="award-empty-row">
-          <td class="award-rank-cell"><span class="award-rank">${entries.length + i + 1}</span></td>
-          <td class="award-name-cell">—</td>
-          <td class="award-time-cell">—</td>
-        </tr>`).join('');
-      return `<div class="award-col">
-        <div class="award-col-head award-col-head-${gender.toLowerCase()}">${gender}</div>
-        <table class="award-table"><tbody>${rows}${filler}</tbody></table>
-      </div>`;
-    }
-
-    awardsHost.innerHTML = brackets.map(bracket => {
-      const sets = byBracket[bracket];
-      // If we have any gendered data, render Girls | Boys side-by-side;
-      // otherwise fall back to a single mixed column.
-      const haveGendered = (sets.Boys && sets.Boys.length) || (sets.Girls && sets.Girls.length);
-      const inner = haveGendered
-        ? `<div class="award-cols">
-             ${(state.gender !== 'Boys') ? columnHtml(sets.Girls || [], 'Girls') : ''}
-             ${(state.gender !== 'Girls') ? columnHtml(sets.Boys || [], 'Boys') : ''}
-           </div>`
-        : `<div class="award-cols award-cols-single">${columnHtml(sets.Mixed || [], 'Top 5')}</div>`;
-
-      return `<article class="award-card" data-group="${escapeHtml(bracket)}">
-        <div class="award-bubble-bg" aria-hidden="true"></div>
-        <svg class="award-wave-top" viewBox="0 0 1200 80" preserveAspectRatio="none" aria-hidden="true">
-          <path d="M0,40 C150,10 300,70 450,40 C600,10 750,70 900,40 C1050,10 1200,70 1200,40 L1200,80 L0,80 Z" fill="rgba(96,165,250,.22)"/>
-          <path d="M0,55 C150,25 300,75 450,55 C600,25 750,75 900,55 C1050,25 1200,75 1200,55 L1200,80 L0,80 Z" fill="rgba(125,211,252,.32)"/>
-        </svg>
-        <svg class="award-wave-bottom" viewBox="0 0 1200 80" preserveAspectRatio="none" aria-hidden="true">
-          <path d="M0,40 C150,70 300,10 450,40 C600,70 750,10 900,40 C1050,70 1200,10 1200,40 L1200,0 L0,0 Z" fill="rgba(96,165,250,.22)"/>
-          <path d="M0,25 C150,55 300,-5 450,25 C600,55 750,-5 900,25 C1050,55 1200,-5 1200,25 L1200,0 L0,0 Z" fill="rgba(125,211,252,.32)"/>
-        </svg>
-        <div class="award-lane lane-left" aria-hidden="true"></div>
-        <div class="award-lane lane-right" aria-hidden="true"></div>
-        <div class="award-corner tl"></div>
-        <div class="award-corner tr"></div>
-        <div class="award-corner bl"></div>
-        <div class="award-corner br"></div>
-        <div class="award-header">
-          <div class="award-logo-frame">
-            <img class="award-logo" src="assets/logo.png" alt="Highcroft Hurricanes" />
-          </div>
-          <div class="award-header-text">
-            <div class="award-kicker">Highcroft Hurricanes</div>
-            <h2 class="award-title">Fastest Five</h2>
-            <div class="award-title-rule" aria-hidden="true"></div>
-          </div>
-        </div>
-        <div class="award-group">${escapeHtml(bracket)}</div>
-        <div class="award-event">${escapeHtml(eventLabel)}</div>
-        ${inner}
-        <div class="award-footer">
-          <span class="award-team">Hurricanes Swim Team</span>
-          <span class="award-footer-divider" aria-hidden="true">◆</span>
-          <span class="award-date">${today}</span>
-        </div>
-        <button class="award-print-one no-print" data-print="${escapeHtml(bracket)}" title="Print just this card" aria-label="Print this card">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-        </button>
-      </article>`;
-    }).join('');
-
-    awardsHost.querySelectorAll('[data-print]').forEach(btn => btn.addEventListener('click', () => {
-      const group = btn.dataset.print;
-      document.body.classList.add('printing-one');
-      awardsHost.querySelectorAll('.award-card').forEach(c => {
-        c.classList.toggle('print-target', c.dataset.group === group);
-      });
-      const cleanup = () => {
-        document.body.classList.remove('printing-one');
-        awardsHost.querySelectorAll('.award-card').forEach(c => c.classList.remove('print-target'));
-        window.removeEventListener('afterprint', cleanup);
-      };
-      window.addEventListener('afterprint', cleanup);
-      window.print();
-    }));
-  }
-  awardsDist?.addEventListener('change', renderAwards);
-  printAllAwards?.addEventListener('click', () => {
-    document.body.classList.add('printing-awards');
-    const cleanup = () => {
-      document.body.classList.remove('printing-awards');
-      window.removeEventListener('afterprint', cleanup);
-    };
-    window.addEventListener('afterprint', cleanup);
-    window.print();
-  });
+  // (Fastest Five awards live on awards.html — this page is leaderboards-only)
 
   // Wire up filter pills + dropdown
   document.querySelectorAll('#strokeSeg button').forEach(btn => btn.addEventListener('click', () => {
@@ -414,12 +251,14 @@
     state.age = btn.dataset.age;
     render();
   }));
+  // Gender pill is now purely visual / state-only because every event card
+  // already renders Girls + Boys side-by-side. We still wire it so filtering
+  // hides one column at a time when a coach wants the screen-condensed view.
   document.querySelectorAll('#genderSeg button').forEach(btn => btn.addEventListener('click', () => {
     document.querySelectorAll('#genderSeg button').forEach(x => x.classList.remove('active'));
     btn.classList.add('active');
     state.gender = btn.dataset.gender;
     render();
-    renderAwards();
   }));
   document.getElementById('topN').addEventListener('change', (e) => {
     state.top = parseInt(e.target.value, 10);
@@ -429,7 +268,6 @@
     state.season = e.target.value;
     renderTeamRow();
     render();
-    renderAwards();
   });
 
   function renderTeamRow(){
@@ -442,32 +280,33 @@
   }
 
   function render(){
-    const boards = HHST.buildLeaderboards(swimmers, { stroke: state.stroke || null, top: state.top, season: state.season });
+    // splitByGender:false gives ONE bucket per (bracket, event) with all
+    // swimmers — we then split entries into Girls/Boys columns inside each
+    // card so the screen shows the same age group side-by-side instead of
+    // separate sections.
+    const boards = HHST.buildLeaderboards(swimmers, {
+      stroke: state.stroke || null,
+      top: state.top * 2,           // pull enough entries to fill both columns
+      season: state.season,
+      splitByGender: false
+    });
 
-    // Optional age + gender filters. Age matches against the plain bracket
-    // (which is preserved on every board so a "Boys 11-12" / "Girls 11-12"
-    // section both pass through the `state.age === "11-12"` filter).
+    // Age filter (gender filter applied at column render time)
     const filtered = boards.filter(b => {
       if(state.age && b.bracket !== state.age && !(b.ageGroup||'').includes(state.age)) return false;
-      if(state.gender){
-        const want = state.gender === 'Boys' ? 'M' : state.gender === 'Girls' ? 'F' : '';
-        if(want && b.gender !== want) return false;
-      }
       return true;
     });
 
-    // Group by competition group ("Boys 11-12" / "Girls 11-12"), then sort events within.
+    // Group by bracket, then sort events within
     const groups = {};
     filtered.forEach(b => {
-      if(!groups[b.ageGroup]) groups[b.ageGroup] = [];
-      groups[b.ageGroup].push(b);
+      const key = b.bracket || b.ageGroup;
+      if(!groups[key]) groups[key] = [];
+      groups[key].push(b);
     });
     Object.values(groups).forEach(arr => arr.sort((a,b)=> HHST.compareEventLabel(a.event, b.event)));
 
-    // sortAgeGroups handles both the plain brackets and the gendered labels,
-    // putting Girls before Boys within each bracket — matches what most
-    // meet programs print.
-    const orderedAges = HHST.sortAgeGroups(Object.keys(groups));
+    const orderedAges = HHST.AGE_GROUP_ORDER.filter(ag => groups[ag] && groups[ag].length);
 
     if(orderedAges.length === 0){
       document.getElementById('lbBody').innerHTML = '<div class="card empty">No times match these filters yet.</div>';
@@ -475,22 +314,13 @@
       return;
     }
 
-    // CSS bracket classes are keyed by the plain bracket (bracket-11-12),
-    // so strip a leading "Boys "/"Girls " to keep the color-coding consistent
-    // across both gender sections at the same age.
-    function bracketOnly(ag){ return ag.replace(/^(Boys|Girls)\s+/i, ''); }
-    function bracketClass(ag){ return 'bracket-' + slug(bracketOnly(ag)); }
-    function tocClass(ag){ return 'toc-' + slug(bracketOnly(ag)); }
-    function genderTag(ag){
-      if(/^Boys\s/i.test(ag)) return '<span class="lb-gender-tag lb-gender-boys" title="Boys">♂</span>';
-      if(/^Girls\s/i.test(ag)) return '<span class="lb-gender-tag lb-gender-girls" title="Girls">♀</span>';
-      return '';
-    }
+    function bracketClass(ag){ return 'bracket-' + slug(ag); }
+    function tocClass(ag){ return 'toc-' + slug(ag); }
 
     // Build table-of-contents pills (color-coded by bracket)
     const toc = orderedAges.map(ag => {
       const evCount = groups[ag].length;
-      return `<a href="#ag-${slug(ag)}" class="lb-toc-pill ${tocClass(ag)}">${genderTag(ag)}<strong>${escapeHtml(ag)}</strong><span>${evCount} event${evCount===1?'':'s'}</span></a>`;
+      return `<a href="#ag-${slug(ag)}" class="lb-toc-pill ${tocClass(ag)}"><strong>${escapeHtml(ag)}</strong><span>${evCount} event${evCount===1?'':'s'}</span></a>`;
     }).join('');
     document.getElementById('lbToc').innerHTML = toc;
 
@@ -515,35 +345,64 @@
     document.getElementById('lbBody').innerHTML = html;
   }
 
+  // One card per (bracket, event) with Girls + Boys side-by-side. Each
+  // column is its own top-N list (limited by state.top); entries without
+  // gender on file fall into a single Top-N column.
   function buildLeaderboardCard(b){
     const strokeClass = (b.stroke||'Other').toLowerCase().replace(/\s+/g,'');
-    const rows = b.entries.map((e, i) => {
+    const limit = state.top;
+    const girls = b.entries.filter(e => e.gender === 'F').slice(0, limit);
+    const boys  = b.entries.filter(e => e.gender === 'M').slice(0, limit);
+    const mixed = b.entries.filter(e => !e.gender).slice(0, limit);
+    const haveGendered = girls.length || boys.length;
+    const showGirls = state.gender !== 'Boys' && haveGendered;
+    const showBoys  = state.gender !== 'Girls' && haveGendered;
+
+    function rowFor(e, i){
       const rank = i + 1;
       const rankBadge = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : '';
       const rankClass = rank === 1 ? 'lb-rank-1' : rank <= 3 ? 'lb-rank-top3' : '';
-      return `
-        <tr class="${rankClass}">
-          <td class="lb-rank">${rankBadge || rank}</td>
-          <td class="lb-name">
-            <a href="dashboard.html?s=${encodeURIComponent(e.swimmerKey)}">${escapeHtml(e.swimmerName)}</a>
-            ${e.age ? `<span class="lb-age-tag">Age ${escapeHtml(e.age)}</span>` : ''}
-          </td>
-          <td class="lb-time">${escapeHtml(e.time)}</td>
-          <td class="lb-meet">${escapeHtml(e.meet || '—')}<small>${e.date ? fmtDate(e.date) : ''}</small></td>
-        </tr>`;
-    }).join('');
+      return `<tr class="${rankClass}">
+        <td class="lb-rank">${rankBadge || rank}</td>
+        <td class="lb-name">
+          <a href="dashboard.html?s=${encodeURIComponent(e.swimmerKey)}">${escapeHtml(e.swimmerName)}</a>
+          ${e.age ? `<span class="lb-age-tag">Age ${escapeHtml(e.age)}</span>` : ''}
+        </td>
+        <td class="lb-time">${escapeHtml(e.time)}</td>
+      </tr>`;
+    }
+    function emptyRow(rank){
+      return `<tr class="lb-empty-row">
+        <td class="lb-rank">${rank}</td>
+        <td class="lb-name">—</td>
+        <td class="lb-time">—</td>
+      </tr>`;
+    }
+    function columnHtml(entries, label, modifier){
+      const fillerCount = Math.max(0, Math.min(limit, 5) - entries.length);
+      const rows = entries.map((e,i) => rowFor(e, i)).join('');
+      const filler = Array.from({length: fillerCount}, (_, i) => emptyRow(entries.length + i + 1)).join('');
+      return `<div class="lb-col lb-col-${modifier}">
+        <div class="lb-col-head">${label}</div>
+        <table class="lb-table">
+          <thead><tr><th></th><th>Swimmer</th><th>Time</th></tr></thead>
+          <tbody>${rows}${filler}</tbody>
+        </table>
+      </div>`;
+    }
+
+    const cols = haveGendered
+      ? `${showGirls ? columnHtml(girls, 'Girls', 'girls') : ''}${showBoys ? columnHtml(boys, 'Boys', 'boys') : ''}`
+      : columnHtml(mixed, 'Top ' + limit, 'mixed');
+    const colCount = haveGendered ? (showGirls && showBoys ? 2 : 1) : 1;
+
     return `
-      <div class="lb-card stroke-${strokeClass}">
+      <div class="lb-card stroke-${strokeClass} lb-card-cols-${colCount}">
         <div class="lb-card-head">
           <span class="lb-stroke-tag">${escapeHtml(b.stroke || '—')}</span>
           <h3>${escapeHtml(b.event)}</h3>
         </div>
-        <table class="lb-table">
-          <thead>
-            <tr><th></th><th>Swimmer</th><th>Time</th><th>Set at</th></tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>
+        <div class="lb-card-body">${cols}</div>
       </div>`;
   }
 
