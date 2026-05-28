@@ -2435,7 +2435,10 @@ table:not(.roster-table) td, table:not(.roster-table) th{word-break:break-word}
 
 /* ============ PRINT RULES ============ */
 @media print {
-  @page { size: letter; margin: 0.4in; }
+  /* Landscape US Letter — the Fastest Five certificates have a swimmer-name
+     column that wraps badly in portrait, so coaches asked for landscape
+     printing. 10in × 7.5in printable area after the 0.35in margins. */
+  @page { size: letter landscape; margin: 0.35in; }
   *, *::before, *::after{
     -webkit-print-color-adjust:exact !important;
     print-color-adjust:exact !important;
@@ -2455,7 +2458,7 @@ table:not(.roster-table) td, table:not(.roster-table) th{word-break:break-word}
     display:block !important;margin:0 !important;gap:0 !important;
     grid-template-columns:none !important;
   }
-  /* Each award fills a US Letter page */
+  /* Each award fills a landscape US Letter page (10in × 7.5in printable). */
   .award-card{
     page-break-after:always;
     break-after:page;
@@ -2464,8 +2467,8 @@ table:not(.roster-table) td, table:not(.roster-table) th{word-break:break-word}
     margin:0 auto !important;
     box-shadow:none !important;
     border-color:#1e3a8a !important;
-    width:7.5in !important;max-width:7.5in !important;
-    padding:48px 44px 28px !important;
+    width:10in !important;max-width:10in !important;
+    padding:36px 56px 24px !important;
     transform:none !important;
   }
   .award-card::after{

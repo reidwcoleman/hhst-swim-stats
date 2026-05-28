@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="assets/styles.css?v=9"/>
+<link rel="stylesheet" href="assets/styles.css?v=10"/>
 <style>
   /* Hide everything until auth check completes — admins only. */
   body:not(.auth-ready) > *{visibility:hidden}
@@ -103,6 +103,12 @@
           <button data-gender="Girls">Girls</button>
         </div>
       </div>
+      <div class="field" style="max-width:220px">
+        <label>Season</label>
+        <select id="seasonSelect" class="lb-select">
+          <option value="">All seasons</option>
+        </select>
+      </div>
       <div class="field" style="max-width:200px">
         <label>Show top</label>
         <select id="topN" class="lb-select">
@@ -164,7 +170,7 @@
   Highcroft Hurricanes Swim Team · <a href="index.html">Back to home</a> · <a href="admin.html">Admin</a>
 </footer>
 
-<script src="assets/data.js?v=5"></script>
+<script src="assets/data.js?v=6"></script>
 <script>
   HHST.initTheme();
   document.getElementById('themeToggle').addEventListener('click', HHST.toggleTheme);
@@ -188,7 +194,9 @@
   })();
 
   let swimmers = {};
-  let state = { stroke: 'Freestyle', age: '', gender: '', top: 5 };
+  // season:'' means "all seasons"; populateSeasons() fills it with the most
+  // recent season on first load so leaderboards default to the current season.
+  let state = { stroke: 'Freestyle', age: '', gender: '', season: '', top: 5 };
 
   (async () => {
     // Wait for auth to confirm before fetching — keeps the page blank
@@ -210,6 +218,7 @@
         return;
       }
       content.style.display = 'block';
+      populateSeasons();
       renderTeamRow();
       render();
       renderAwards();
@@ -218,6 +227,18 @@
       loading.innerHTML = '<p class="lead" style="color:var(--red-light);margin:0">Couldn\'t load team data. Try refreshing.</p>';
     }
   })();
+
+  // Populate the season dropdown with every season we've ever ingested and
+  // default the active season to the most recent one — that way coaches see
+  // current-season standings on first load without needing to filter.
+  function populateSeasons(){
+    const seasons = HHST.getAllSeasons(swimmers);
+    const sel = document.getElementById('seasonSelect');
+    if(!sel) return;
+    sel.innerHTML = '<option value="">All seasons</option>' +
+      seasons.map((s, i) => `<option value="${escapeHtml(s)}"${i===0 ? ' selected' : ''}>${escapeHtml(s)}${i===0 ? ' (current)' : ''}</option>`).join('');
+    state.season = seasons[0] || '';
+  }
 
   // ============ Printable Fastest Five awards ============
   const awardsDist = document.getElementById('awardsDist');
@@ -244,7 +265,7 @@
     // bare bracket when gender is unknown. We then group those keys back into a
     // single card per bracket so the printed poster shows Boys AND Girls side
     // by side for the same age group.
-    const boards = HHST.leaderboardsByEvent(Object.values(swimmers), { stroke: 'Freestyle', distance: dist }, { limit: 5 });
+    const boards = HHST.leaderboardsByEvent(Object.values(swimmers), { stroke: 'Freestyle', distance: dist }, { limit: 5, season: state.season });
     function bracketOf(key){ return key.replace(/^(Boys|Girls)\s+/i, ''); }
     function genderOf(key){
       if(/^Boys\s/i.test(key)) return 'Boys';
@@ -404,9 +425,15 @@
     state.top = parseInt(e.target.value, 10);
     render();
   });
+  document.getElementById('seasonSelect').addEventListener('change', (e) => {
+    state.season = e.target.value;
+    renderTeamRow();
+    render();
+    renderAwards();
+  });
 
   function renderTeamRow(){
-    const t = HHST.teamStats(swimmers);
+    const t = HHST.teamStats(swimmers, { season: state.season });
     document.getElementById('tSwimmers').textContent = t.swimmerCount;
     document.getElementById('tRaces').textContent    = t.totalRaces;
     document.getElementById('tMeets').textContent    = t.meetCount;
@@ -415,7 +442,7 @@
   }
 
   function render(){
-    const boards = HHST.buildLeaderboards(swimmers, { stroke: state.stroke || null, top: state.top });
+    const boards = HHST.buildLeaderboards(swimmers, { stroke: state.stroke || null, top: state.top, season: state.season });
 
     // Optional age + gender filters. Age matches against the plain bracket
     // (which is preserved on every board so a "Boys 11-12" / "Girls 11-12"

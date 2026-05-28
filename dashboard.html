@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="assets/styles.css?v=9"/>
+<link rel="stylesheet" href="assets/styles.css?v=10"/>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
 <!-- Firebase compat SDK -->
@@ -80,6 +80,15 @@
   </div>
 
   <div id="dashContent" style="display:none">
+
+    <!-- SEASON FILTER -->
+    <div class="card" id="dashSeasonCard" style="display:none;padding:14px 18px;margin-bottom:14px">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <label for="dashSeasonSelect" style="font-weight:600;color:var(--text);margin:0">Season:</label>
+        <select id="dashSeasonSelect" class="lb-select" style="min-width:200px"></select>
+        <span style="font-size:13px;color:var(--text-muted)">Everything below — PRs, time dropped, podium, charts — filters to the selected season.</span>
+      </div>
+    </div>
 
     <!-- HEADLINE STAT GRID -->
     <div class="stat-grid">
@@ -265,7 +274,7 @@
   Highcroft Hurricanes Swim Team · <a href="index.html">Back to home</a>
 </footer>
 
-<script src="assets/data.js?v=5"></script>
+<script src="assets/data.js?v=6"></script>
 <script>
   HHST.initTheme();
   document.getElementById('themeToggle').addEventListener('click', HHST.toggleTheme);
@@ -339,11 +348,41 @@
     'Other':       '#94a3b8'
   };
 
+  // Active season for the dashboard view. Defaults to the swimmer's most
+  // recent season on first render, then changes when the coach picks a
+  // different option from the dropdown above.
+  let activeSeason = '';
+
+  function populateDashSeasons(){
+    const seasons = HHST.getAllSeasons([swimmer]);
+    const card = document.getElementById('dashSeasonCard');
+    const sel  = document.getElementById('dashSeasonSelect');
+    if(!card || !sel) return;
+    // Hide the picker entirely when this swimmer has no season-tagged data,
+    // so legacy untagged dashboards still look clean.
+    if(!seasons.length){
+      card.style.display = 'none';
+      activeSeason = '';
+      return;
+    }
+    card.style.display = 'block';
+    sel.innerHTML =
+      seasons.map((s, i) => `<option value="${escapeHtml(s)}"${i===0 ? ' selected' : ''}>${escapeHtml(s)}${i===0 ? ' (current)' : ''}</option>`).join('') +
+      '<option value="">All seasons combined</option>';
+    activeSeason = seasons[0];
+    sel.onchange = () => { activeSeason = sel.value; renderDashboard(); };
+  }
+
   function renderDashboard(){
     const sw = swimmer;
     document.getElementById('avatar').textContent = initials(sw.name);
     document.getElementById('swimmerName').textContent = sw.name;
-    stats = HHST.statsForSwimmer(sw);
+    // Initialize the season picker on the first render only — subsequent
+    // renders (triggered by changing the picker) reuse the existing options.
+    if(!document.getElementById('dashSeasonSelect').options.length){
+      populateDashSeasons();
+    }
+    stats = HHST.statsForSwimmer(sw, { season: activeSeason });
 
     // Swimmer meta chips
     const meta = document.getElementById('swimmerMeta');
@@ -567,7 +606,12 @@
 
   function initMeetHistory(sw){
     const tbody = document.querySelector('#meetTable tbody');
-    const allRaces = (sw.results||[]).slice().sort((a,b)=>{
+    // Filter to active season (if any) so the meet history table matches
+    // what the rest of the dashboard is showing.
+    const baseResults = activeSeason
+      ? (sw.results||[]).filter(r => r && r.season === activeSeason)
+      : (sw.results||[]);
+    const allRaces = baseResults.slice().sort((a,b)=>{
       const da = new Date(a.date).getTime() || 0;
       const db = new Date(b.date).getTime() || 0;
       return db - da;
