@@ -896,14 +896,19 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
     renderSeasonStats();
   }
 
+  // Format the season time-dropped column as raw seconds (e.g. "152.40s") so
+  // coaches see the cumulative seconds shaved off PRs at a glance. When the
+  // total spills past a minute we tack on a small minute-form note for
+  // additional context.
   function fmtDrop(sec){
     if(!isFinite(sec) || sec <= 0) return '—';
-    if(sec >= 60){
-      const m = Math.floor(sec/60);
-      const s = (sec - m*60).toFixed(2);
-      return `${m}:${s.padStart(5,'0')}`;
-    }
     return sec.toFixed(2) + 's';
+  }
+  function fmtDropMinutes(sec){
+    if(!isFinite(sec) || sec < 60) return '';
+    const m = Math.floor(sec/60);
+    const s = (sec - m*60).toFixed(2);
+    return `${m}:${s.padStart(5,'0')}`;
   }
 
   function renderSeasonStats(){
@@ -921,18 +926,24 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
       <div class="table-wrap">
         <table class="roster-table" style="min-width:560px">
           <thead><tr>
-            <th>Season</th><th>Swimmers</th><th>Races</th><th>Meets</th><th>Time Dropped</th><th>PRs</th>
+            <th>Season</th><th>Swimmers</th><th>Races</th><th>Meets</th><th>Time Dropped (seconds)</th><th>PRs</th>
           </tr></thead>
           <tbody>
-            ${usable.map((s, i) => `
+            ${usable.map((s, i) => {
+              const minForm = fmtDropMinutes(s.totalDropSec);
+              return `
               <tr>
                 <td><strong>${escapeHtml(s.season)}</strong>${i === 0 && s.season !== '(Untagged)' ? ' <span class="training-chip" title="Most recent season" style="background:rgba(34,197,94,.18);color:#22c55e;border-color:rgba(34,197,94,.35)">Current</span>' : ''}</td>
                 <td>${s.swimmerCount}</td>
                 <td>${s.totalRaces}</td>
                 <td>${s.meetCount}</td>
-                <td style="color:${s.totalDropSec > 0 ? '#22c55e' : 'var(--text-muted)'}">${s.totalDropSec > 0 ? '−' + fmtDrop(s.totalDropSec) : '—'}</td>
+                <td style="color:${s.totalDropSec > 0 ? '#22c55e' : 'var(--text-muted)'};white-space:nowrap">
+                  ${s.totalDropSec > 0 ? '−' + fmtDrop(s.totalDropSec) : '—'}
+                  ${minForm ? `<div style="font-size:11.5px;color:var(--text-muted);font-weight:400;margin-top:2px">${minForm} min</div>` : ''}
+                </td>
                 <td>${s.prRaces || 0}</td>
-              </tr>`).join('')}
+              </tr>`;
+            }).join('')}
           </tbody>
         </table>
       </div>`;
