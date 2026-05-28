@@ -1008,17 +1008,39 @@
 
   // -------- Season helpers --------
   // A "season" is a free-form label the coach picks at upload time
-  // ("2025 Summer", "2024-25 Winter", etc.). It's tagged on every imported
-  // race, then leaderboards / time-dropped / records can be filtered to a
-  // single season. Sort order: lexicographic descending — picks year-prefixed
-  // labels like "2025 Summer" newest-first naturally.
+  // ("2025 Summer", "2024-25 Winter", "2026", etc.). It's tagged on every
+  // imported race AND on each swimmer's `seasons` roster-membership array,
+  // so this function pulls from BOTH — otherwise a brand-new season that
+  // only has a roster uploaded (no times yet) wouldn't appear anywhere
+  // in the dropdowns or "current season" logic.
+  //
+  // Sort order: the highest 4-digit year in the label wins (so "2026"
+  // beats "2025 Summer" beats "2024-25 Winter"). Same-year labels fall
+  // back to numeric-aware locale compare so "Summer" / "Winter" within
+  // a year sort sensibly.
+  function seasonYearKey(s){
+    const m = (s||'').toString().match(/(\d{4})/);
+    return m ? parseInt(m[1], 10) : 0;
+  }
   function getAllSeasons(allSwimmers){
     const seen = new Set();
     const list = Array.isArray(allSwimmers) ? allSwimmers : Object.values(allSwimmers || {});
-    list.forEach(sw => (sw.results || []).forEach(r => {
-      if(r && r.season) seen.add(r.season);
-    }));
-    return Array.from(seen).sort((a,b) => b.localeCompare(a, undefined, { numeric:true, sensitivity:'base' }));
+    list.forEach(sw => {
+      // Roster-membership seasons (added by every roster upload, and by
+      // every successfully-matched times upload).
+      if(Array.isArray(sw.seasons)){
+        sw.seasons.forEach(s => { if(s) seen.add(s); });
+      }
+      // Per-result season tags (set by every times upload).
+      (sw.results || []).forEach(r => {
+        if(r && r.season) seen.add(r.season);
+      });
+    });
+    return Array.from(seen).sort((a,b) => {
+      const ya = seasonYearKey(a), yb = seasonYearKey(b);
+      if(yb !== ya) return yb - ya;
+      return b.localeCompare(a, undefined, { numeric:true, sensitivity:'base' });
+    });
   }
   function currentSeason(allSwimmers){
     const seasons = getAllSeasons(allSwimmers);
