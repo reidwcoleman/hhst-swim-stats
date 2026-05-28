@@ -1600,27 +1600,40 @@ table tr:hover td{background:rgba(96,165,250,.05)}
 .award-lane.lane-left{left:32px}
 .award-lane.lane-right{right:32px}
 
-/* Logo gets a soft white pillow frame so it pops off the watery background */
+/* Logo sits directly on the watery background — no white pillow.
+   A soft cyan halo behind it gives the logo lift without a hard plate,
+   and double drop-shadow on the image itself adds dimension. */
 .award-logo-frame{
-  width:104px;height:104px;flex-shrink:0;
-  border-radius:50%;
-  background:radial-gradient(circle at 35% 30%, #ffffff 0%, rgba(255,255,255,.85) 60%, rgba(219,234,254,.7) 100%);
-  border:2px solid rgba(255,255,255,.95);
-  box-shadow:
-    0 8px 22px -10px rgba(30,64,175,.5),
-    inset 0 1px 0 rgba(255,255,255,.9),
-    0 0 0 1.5px rgba(30,64,175,.18);
+  width:118px;height:118px;flex-shrink:0;
   display:grid;place-items:center;
-  position:relative;
-}
-.award-logo-frame::before{
-  content:'';position:absolute;inset:-7px;
-  border:1.5px dashed rgba(30,64,175,.32);
+  position:relative;background:transparent;border:none;
   border-radius:50%;
+}
+/* Soft halo glow — like sunlight on water, radiates from behind the logo */
+.award-logo-frame::before{
+  content:'';position:absolute;inset:-2px;
+  border-radius:50%;
+  background:
+    radial-gradient(circle at 50% 45%,
+      rgba(255,255,255,.55) 0%,
+      rgba(186,230,253,.45) 28%,
+      rgba(125,211,252,.18) 55%,
+      rgba(125,211,252,0)   72%);
+  pointer-events:none;
+}
+/* Ornamental dashed ring — sits ABOVE the halo, BELOW the logo */
+.award-logo-frame::after{
+  content:'';position:absolute;inset:-2px;
+  border:1.5px dashed rgba(30,64,175,.22);
+  border-radius:50%;
+  pointer-events:none;
 }
 .award-logo-frame .award-logo{
-  width:78px;height:78px;object-fit:contain;
-  filter:drop-shadow(0 3px 6px rgba(15,23,42,.2));
+  width:104px;height:104px;object-fit:contain;
+  position:relative;z-index:1;
+  filter:
+    drop-shadow(0 2px 4px rgba(15,23,42,.25))
+    drop-shadow(0 8px 18px rgba(30,64,175,.35));
 }
 /* Decorative rule under the title */
 .award-title-rule{
@@ -2539,13 +2552,15 @@ table:not(.roster-table) td, table:not(.roster-table) th{word-break:break-word}
     backdrop-filter:none !important;-webkit-backdrop-filter:none !important;
     box-shadow:none !important;
   }
-  /* Logo prints crisply */
-  .award-logo{filter:none !important}
-  .award-logo-frame{
-    box-shadow:0 0 0 1.5px rgba(30,64,175,.4) !important;
-    background:#ffffff !important;
+  /* Logo prints with a simplified shadow for crisp output */
+  .award-logo{
+    filter:drop-shadow(0 2px 4px rgba(15,23,42,.3)) !important;
   }
-  .award-logo-frame::before{display:none}
+  .award-logo-frame{
+    box-shadow:none !important;
+    background:transparent !important;
+  }
+  /* Soft halo and dashed ring print too (color-adjust:exact preserves them) */
   /* Waves and lane lines should print so the watery feel carries to PDF */
   .award-wave-top, .award-wave-bottom, .award-lane{
     display:block !important;
