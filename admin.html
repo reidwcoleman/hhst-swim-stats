@@ -361,6 +361,20 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
     <div class="card">
       <h2>Roster</h2>
       <p class="lead">Click <strong>Edit</strong> next to any swimmer to manage their emails, parents, age, or group. Families look up their swimmer using the swimmer's name + an email on this list.</p>
+      <!-- Legacy mixed-age banner: shown only when swimmers uploaded before
+           the per-season feature still have one frozen age across seasons. -->
+      <div id="seasonMigrateBanner" style="display:none;border:1px solid rgba(245,158,11,.55);background:rgba(245,158,11,.08);border-radius:12px;padding:14px 18px;margin-bottom:16px">
+        <div style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <div style="flex:1;min-width:260px">
+            <strong style="color:var(--text);font-size:14.5px"><span id="migrateCount">0</span> swimmer(s) have one age applied to every season</strong>
+            <div style="margin-top:4px;font-size:13px;color:var(--text-muted)">
+              These were uploaded before per-season ages existed, so their exact age each season wasn't saved. Click below to <strong>estimate</strong> each season's age from the season year (e.g. a swimmer who's 12 in 2026 is shown as 10 in a 2024 season). For exact ages, re-upload that season's roster or times file — a re-upload always overrides the estimate.
+            </div>
+            <button class="btn" id="migrateSeasonsBtn" style="margin-top:10px">Estimate per-season ages now</button>
+          </div>
+        </div>
+      </div>
       <div class="roster-search-row" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
         <input type="text" id="searchInput" placeholder="Search by name, parent, email, or group…" class="roster-search" style="flex:1;min-width:240px"/>
         <select id="rosterSeasonFilter" class="lb-select" style="min-width:200px" title="Show only the roster for a single season">
@@ -456,7 +470,7 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
   </div>
 </div>
 
-<script src="assets/data.js?v=11"></script>
+<script src="assets/data.js?v=12"></script>
 <script>
   HHST.initTheme();
 
@@ -802,6 +816,26 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
     }
   });
 
+  // ESTIMATE PER-SEASON AGES (migrate legacy mixed-age data)
+  document.getElementById('migrateSeasonsBtn').addEventListener('click', async (e)=>{
+    const btn = e.currentTarget;
+    if(!confirm('Estimate each swimmer\'s age for every season from the season year?\n\nThis fixes the "same age across all seasons" problem for data uploaded before per-season ages existed. It is an estimate — re-uploading a season\'s roster or times file later will replace it with the exact age. Seasons that already have exact data are left untouched.')) return;
+    btn.disabled = true;
+    const orig = btn.textContent;
+    btn.textContent = 'Estimating…';
+    try{
+      const res = await HHST.migrateSeasonAges();
+      await refreshAll();
+      setStatus('ok', `Estimated per-season ages for ${res.migrated} swimmer${res.migrated===1?'':'s'}. Re-upload a season's roster/times anytime for exact ages.`);
+    } catch(err){
+      console.error(err);
+      setStatus('err','Could not estimate per-season ages: ' + (err.message || err));
+    } finally {
+      btn.disabled = false;
+      btn.textContent = orig;
+    }
+  });
+
   // RESET
   document.getElementById('resetDataBtn').addEventListener('click', async ()=>{
     if(!confirm('Delete all swimmers, parents, and meet results? This cannot be undone.')) return;
@@ -954,6 +988,22 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
       }
     }
     renderSeasonStats();
+    updateMigrateBanner();
+  }
+
+  // Show the "estimate per-season ages" banner only when legacy mixed-age
+  // swimmers exist (uploaded before per-season ages, so one frozen age covers
+  // every season).
+  function updateMigrateBanner(){
+    const banner = document.getElementById('seasonMigrateBanner');
+    if(!banner) return;
+    const n = HHST.countSwimmersNeedingSeasonMigration(cachedData.swimmers || {});
+    if(n > 0){
+      document.getElementById('migrateCount').textContent = n;
+      banner.style.display = 'block';
+    } else {
+      banner.style.display = 'none';
+    }
   }
 
   // Format the season time-dropped column as raw seconds (e.g. "152.40s") so

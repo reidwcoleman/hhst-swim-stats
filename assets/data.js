@@ -978,6 +978,77 @@
     return toDelete;
   }
 
+  // -------- One-time migration: estimate per-season ages for legacy data --------
+  // The per-season age feature shipped AFTER data was already uploaded under
+  // the old single-age schema, so existing swimmers have one frozen age and no
+  // seasonInfo — every season shows the same (wrong) age. The exact per-season
+  // ages were never stored, so we reconstruct them by year-math: a swimmer who
+  // is age A in their most-recent season (year Y) was about A-(Y-y) in an
+  // earlier season of year y. This un-mixes the age GROUPS across seasons for
+  // the common case. It's an ESTIMATE (flagged estimated:true) and is
+  // overwritten exactly the next time that season's roster/times are uploaded.
+  // Never touches a season that already has real per-season content.
+  // Returns { migrated, scanned }.
+  async function migrateSeasonAges(){
+    const snap = await FB.db.collection('swimmers').get();
+    const writes = [];
+    let scanned = 0;
+    snap.forEach(d => {
+      scanned++;
+      const sw = d.data() || {};
+      const seasons = Array.isArray(sw.seasons) ? sw.seasons.filter(Boolean) : [];
+      if(!seasons.length) return;
+      const anchorAge = parseInt(sw.age, 10);
+      if(!isFinite(anchorAge) || anchorAge <= 0) return; // nothing to anchor on
+      const anchorYear = seasonYearKey(mostRecentSeasonOf(sw));
+      const info = Object.assign({}, sw.seasonInfo || {});
+      let changed = false;
+      seasons.forEach(s => {
+        if(seasonInfoHasContent(info[s])) return; // keep exact data, never clobber
+        const yr = seasonYearKey(s);
+        let est = anchorAge;
+        if(anchorYear && yr) est = anchorAge - (anchorYear - yr);
+        if(!isFinite(est) || est < 1) est = anchorAge; // guard nonsensical values
+        info[s] = {
+          age: String(est),
+          bracket: getAgeGroup(est),
+          group: sw.group || '',
+          ageGroup: sw.ageGroup || '',
+          gender: sw.gender || '',
+          estimated: true
+        };
+        changed = true;
+      });
+      if(changed) writes.push({ key: d.id, seasonInfo: info });
+    });
+    for(let i=0;i<writes.length;i+=400){
+      const batch = FB.db.batch();
+      writes.slice(i, i+400).forEach(w => {
+        batch.set(FB.db.collection('swimmers').doc(w.key),
+          { seasonInfo: w.seasonInfo, updatedAt: FB.FieldValue.serverTimestamp() },
+          { merge: true });
+      });
+      await batch.commit();
+    }
+    return { migrated: writes.length, scanned };
+  }
+  // How many swimmers would benefit from migrateSeasonAges (on ≥1 season, have
+  // a usable age, and are missing per-season content for some season). Lets the
+  // admin show a "fix it" banner only when there's legacy data to fix.
+  function countSwimmersNeedingSeasonMigration(allSwimmers){
+    const list = Array.isArray(allSwimmers) ? allSwimmers : Object.values(allSwimmers || {});
+    let n = 0;
+    list.forEach(sw => {
+      const seasons = Array.isArray(sw.seasons) ? sw.seasons.filter(Boolean) : [];
+      if(!seasons.length) return;
+      const a = parseInt(sw.age, 10);
+      if(!isFinite(a) || a <= 0) return;
+      const missing = seasons.some(s => !seasonInfoHasContent((sw.seasonInfo||{})[s]));
+      if(missing) n++;
+    });
+    return n;
+  }
+
   // Write the per-season {age,group,gender,bracket,ageGroup} into sw.seasonInfo
   // and re-mirror the most-recent season up to the top-level fields.
   function applySeasonInfo(sw, season, { age, group, gender, ageGroup } = {}){
@@ -1648,6 +1719,7 @@
     parseCSV, ingestCSV, ingestRows,
     findSwimmer,
     deleteSwimmer, pruneNonRosterSwimmers, addSwimmerManual, updateSwimmer,
+    migrateSeasonAges, countSwimmersNeedingSeasonMigration,
     clearAll, clearRoster, clearMeetTimes,
     isAdminLoggedIn, loginAdmin, logoutAdmin, onAuthChanged,
     statsForSwimmer, rankSwimmerInAgeGroup, buildLeaderboards, teamStats, teamStatsBySeason,
