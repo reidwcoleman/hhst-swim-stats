@@ -384,12 +384,14 @@
     }
     stats = HHST.statsForSwimmer(sw, { season: activeSeason });
 
-    // Swimmer meta chips
+    // Swimmer meta chips — use the SELECTED season's age/group so a
+    // multi-season swimmer shows the right age for the season being viewed.
     const meta = document.getElementById('swimmerMeta');
+    const sInfo = HHST.swimmerSeasonInfo(sw, activeSeason);
     const chips = [];
-    if(sw.age) chips.push(`<span class="chip">Age ${escapeHtml(sw.age)}</span>`);
+    if(sInfo.age) chips.push(`<span class="chip">Age ${escapeHtml(sInfo.age)}</span>`);
     if(stats.ageGroup && stats.ageGroup !== 'Unknown') chips.push(`<span class="chip">${escapeHtml(stats.ageGroup)} Age Group</span>`);
-    if(sw.group) chips.push(`<span class="chip">${escapeHtml(sw.group)}</span>`);
+    if(sInfo.group) chips.push(`<span class="chip">${escapeHtml(sInfo.group)}</span>`);
     if(sw.parents && sw.parents.length) chips.push(`<span class="chip">Family: ${escapeHtml(sw.parents[0])}</span>`);
     meta.innerHTML = chips.join('') || '<span class="chip">Highcroft Hurricane</span>';
 
@@ -535,7 +537,7 @@
   function renderRanks(sw){
     const host = document.getElementById('ranksList');
     const ageSuffixEl = document.getElementById('rankAgeGroup');
-    const { ageGroup, ranks } = HHST.rankSwimmerInAgeGroup(sw, allSwimmers);
+    const { ageGroup, ranks } = HHST.rankSwimmerInAgeGroup(sw, allSwimmers, activeSeason);
     if(ageGroup && ageGroup !== 'Unknown') ageSuffixEl.textContent = ` in ${ageGroup}`;
     const entries = Object.entries(ranks).sort((a,b) => HHST.compareEventLabel(a[0], b[0]));
     if(!entries.length){

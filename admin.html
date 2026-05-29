@@ -777,13 +777,21 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
   document.getElementById('manualForm').addEventListener('submit', async e=>{
     e.preventDefault();
     try{
+      // Land the manually-added swimmer on the season the roster table is
+      // showing (falls back to the roster upload picker, then the current
+      // season) so their age/group is recorded for the right season.
+      const manualSeason =
+        (document.getElementById('rosterSeasonFilter') && document.getElementById('rosterSeasonFilter').value) ||
+        (document.getElementById('rosterSeasonInput') && document.getElementById('rosterSeasonInput').value.trim()) ||
+        HHST.currentSeason(cachedData.swimmers || {}) || '';
       await HHST.addSwimmerManual({
         name: document.getElementById('mName').value,
         email: document.getElementById('mEmail').value,
         parent: document.getElementById('mParent').value,
         age: document.getElementById('mAge').value,
         group: document.getElementById('mGroup').value,
-        gender: document.getElementById('mGender').value
+        gender: document.getElementById('mGender').value,
+        season: manualSeason
       });
       e.target.reset();
       await refreshAll();
@@ -884,21 +892,8 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
     const totalRaces = swimmers.reduce((sum, s)=> sum + (s.results||[]).length, 0);
     const meets = new Set();
     swimmers.forEach(s => (s.results||[]).forEach(r => meets.add(r.meet)));
-    // Swimmer count in the KPI shows ONLY the current season's roster
-    // (matches the season-filtered roster table below). Falls back to the
-    // all-time total when no season has been used yet, so legacy data
-    // still shows a meaningful number.
-    const currentSeason = HHST.currentSeason(cachedData.swimmers || {});
-    const currentRosterCount = currentSeason
-      ? swimmers.filter(s => Array.isArray(s.seasons) && s.seasons.includes(currentSeason)).length
-      : swimmers.length;
-    document.getElementById('kSwimmers').textContent = currentRosterCount;
-    const dSwimmers = document.getElementById('dSwimmers');
-    if(dSwimmers){
-      dSwimmers.textContent = currentSeason
-        ? `On the ${currentSeason} roster`
-        : 'In the roster';
-    }
+    // The Swimmers KPI is owned by renderRoster (updateSwimmerKPI) so it always
+    // matches the season the roster table is showing.
     document.getElementById('kRaces').textContent = totalRaces;
     document.getElementById('kMeets').textContent = meets.size;
     if(cachedData.lastUpload){
@@ -1018,6 +1013,11 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
     if(seasonFilter){
       swimmers = swimmers.filter(s => Array.isArray(s.seasons) && s.seasons.includes(seasonFilter));
     }
+    // Keep the Swimmers KPI in sync with the season the table is showing.
+    const kSw = document.getElementById('kSwimmers');
+    const dSw = document.getElementById('dSwimmers');
+    if(kSw) kSw.textContent = swimmers.length;
+    if(dSw) dSw.textContent = seasonFilter ? `On the ${seasonFilter} roster` : 'In the roster (all seasons)';
     if(filter){
       swimmers = swimmers.filter(s => {
         const hay = (
@@ -1043,7 +1043,9 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
       </div>`;
       return;
     }
-    const buckets = HHST.groupByBracket(swimmers);
+    // Bucket by the SELECTED season's age group so a multi-season swimmer
+    // shows under the right bracket for the season being viewed.
+    const buckets = HHST.groupByBracket(swimmers, seasonFilter);
     function bracketPillClass(g){
       // Map bracket to a stable modifier so each section has its own accent
       const slug = (g||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
@@ -1051,6 +1053,9 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
     }
     function rowsFor(list, bracket){
       return list.map(s=>{
+        // Per-season attributes for the selected season (age/group/gender all
+        // change between seasons). seasonFilter==='' returns the most-recent.
+        const info = HHST.swimmerSeasonInfo(s, seasonFilter);
         const emails = (s.emails||[]).filter(Boolean);
         const primaryEmail = emails[0] || '';
         const moreEmails = emails.length > 1 ? `<span class="email-more">+${emails.length-1}</span>` : '';
@@ -1060,12 +1065,12 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
         const parentsCell = (s.parents||[]).length
           ? `<span class="parents-cell" title="${escapeHtml((s.parents||[]).join(', '))}">${escapeHtml((s.parents||[])[0])}${s.parents.length>1 ? ` <span class="email-more">+${s.parents.length-1}</span>` : ''}</span>`
           : '<span class="addr-missing">—</span>';
-        const trainingGroup = s.group
-          ? `<span class="training-chip" title="Training group">${escapeHtml(s.group)}</span>`
+        const trainingGroup = info.group
+          ? `<span class="training-chip" title="Training group">${escapeHtml(info.group)}</span>`
           : '';
-        const genderChip = s.gender === 'M'
+        const genderChip = info.gender === 'M'
           ? '<span class="training-chip" title="Boys" style="background:rgba(59,130,246,.18);color:#3b82f6;border-color:rgba(59,130,246,.35)">♂ Boy</span>'
-          : s.gender === 'F'
+          : info.gender === 'F'
           ? '<span class="training-chip" title="Girls" style="background:rgba(236,72,153,.18);color:#ec4899;border-color:rgba(236,72,153,.35)">♀ Girl</span>'
           : '';
         // Per-season roster membership chips. Shows the most recent season
@@ -1085,7 +1090,7 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
               ${seasonChip}
             </div>
           </td>
-          <td class="cell-age">${escapeHtml(s.age||'—')}</td>
+          <td class="cell-age">${escapeHtml(info.age||'—')}</td>
           <td class="cell-bracket"><span class="${bracketPillClass(bracket)}">${escapeHtml(bracket)}</span></td>
           <td class="cell-parents">${parentsCell}</td>
           <td class="cell-email">${emailCell}</td>
@@ -1199,17 +1204,25 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
   });
 
   let editingKey = null;
+  let editingSeason = '';
 
   function openEditModal(key){
     const sw = cachedData.swimmers[key];
     if(!sw) return;
     editingKey = key;
+    // Edit the attributes for whichever season the roster table is showing.
+    const seasonSel = document.getElementById('rosterSeasonFilter');
+    editingSeason = seasonSel ? (seasonSel.value || '') : '';
+    const info = HHST.swimmerSeasonInfo(sw, editingSeason);
     document.getElementById('editSwimmerName').textContent = sw.name;
+    // Make it obvious which season's age/group is being edited.
+    const titleEl = document.getElementById('editTitle');
+    if(titleEl) titleEl.textContent = editingSeason ? `Edit Swimmer — ${editingSeason}` : 'Edit Swimmer';
     emailField.reset(sw.emails);
     parentField.reset(sw.parents);
-    document.getElementById('eAge').value    = sw.age || '';
-    document.getElementById('eGroup').value  = sw.group || '';
-    document.getElementById('eGender').value = sw.gender || '';
+    document.getElementById('eAge').value    = info.age || '';
+    document.getElementById('eGroup').value  = info.group || '';
+    document.getElementById('eGender').value = info.gender || '';
     editModal.style.display = 'flex';
     setTimeout(()=> document.getElementById('eEmailInput').focus(), 30);
   }
@@ -1243,7 +1256,7 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
         age:     document.getElementById('eAge').value.trim(),
         group:   document.getElementById('eGroup').value.trim(),
         gender:  document.getElementById('eGender').value
-      });
+      }, editingSeason);
       closeEditModal();
       await refreshAll();
       setStatus('ok', `Saved updates for ${sw.name} to Firebase.`);
