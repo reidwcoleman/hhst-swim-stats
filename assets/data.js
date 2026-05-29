@@ -655,6 +655,12 @@
     for(const sw of swimmers){
       const bracket = sw.bracket || getAgeGroup(sw.age) || sw.ageGroup || sw.group;
       if(!bracket || bracket === 'Unknown') continue;
+      // People filter: when scoped to a season, only include swimmers on that
+      // season's roster. Legacy swimmers with no seasons array still match.
+      if(season){
+        const sws = Array.isArray(sw.seasons) ? sw.seasons : [];
+        if(sws.length && !sws.includes(season)) continue;
+      }
       const group = splitByGender ? competitionGroup(sw) : bracket;
       if(!group || group === 'Unknown') continue;
       const matching = (sw.results||[]).filter(r => {
@@ -715,14 +721,20 @@
   // that event MINUS their meet-day time, only counted if the meet swim
   // was actually faster. Returns { meet, date, boards } where boards is
   // keyed by competitionGroup ("Boys 11-12" / "Girls 11-12" / bare bracket).
+  // opts.season — restrict BOTH the target-meet selection and the
+  // "best prior time" lookup to a single season. Time drops are then
+  // measured only against races within that season, so Most Improved is
+  // a clean per-season award (no cross-season carryover).
   function mostImprovedAtMeet(allSwimmers, opts){
     opts = opts || {};
     const limit = opts.limit || 5;
     const splitByGender = opts.splitByGender !== false;
+    const season = (opts.season || '').toString();
     const swimmers = Array.isArray(allSwimmers) ? allSwimmers : Object.values(allSwimmers);
+    const inSeason = r => !season || (r && r.season === season);
 
     // Resolve the target meet: explicit { meet, date } wins, otherwise pick
-    // whichever (meet, date) pair has the latest date across all results.
+    // whichever (meet, date) pair has the latest date across all in-season results.
     let target = (opts.meet && opts.date) ? { meet: opts.meet, date: opts.date } : null;
     if(!target){
       let latest = '';
@@ -730,6 +742,7 @@
       swimmers.forEach(sw => {
         (sw.results||[]).forEach(r => {
           if(!r.meet) return;
+          if(!inSeason(r)) return;
           const d = r.date || '';
           if(d > latest){ latest = d; latestName = r.meet; }
         });
@@ -740,8 +753,14 @@
 
     const drops = [];
     swimmers.forEach(sw => {
+      // People filter: only rank swimmers on this season's roster (legacy
+      // swimmers with no seasons array still match).
+      if(season){
+        const sws = Array.isArray(sw.seasons) ? sw.seasons : [];
+        if(sws.length && !sws.includes(season)) return;
+      }
       const meetRaces = (sw.results||[]).filter(r =>
-        r.meet === target.meet && r.date === target.date && isFinite(r.seconds)
+        r.meet === target.meet && r.date === target.date && isFinite(r.seconds) && inSeason(r)
       );
       if(!meetRaces.length) return;
 
@@ -749,11 +768,13 @@
       const eventsDropped = [];
       meetRaces.forEach(meetR => {
         // Best prior time in this event (any prior race in any earlier
-        // meet, OR an earlier-dated race at the same meet).
+        // meet, OR an earlier-dated race at the same meet). Restricted to
+        // the current season when season filter is on.
         let bestPrior = Infinity;
         (sw.results||[]).forEach(r => {
           if(r.event !== meetR.event) return;
           if(!isFinite(r.seconds)) return;
+          if(!inSeason(r)) return;
           if(r.date >= target.date && r.meet === target.meet) return; // same meet skip
           if(r.date > target.date) return; // future swim — shouldn't exist but guard
           if(r.seconds < bestPrior) bestPrior = r.seconds;
@@ -1045,6 +1066,24 @@
   function currentSeason(allSwimmers){
     const seasons = getAllSeasons(allSwimmers);
     return seasons[0] || '';
+  }
+  // Like currentSeason(), but only considers seasons that actually have race
+  // TIMES on file (not roster-only seasons). The Fastest Five / Most Improved
+  // posters need a season that has results - a brand-new season with only a
+  // roster uploaded would otherwise produce empty posters. Falls back to ''
+  // when no result carries a season tag (pure legacy data -> show all-time).
+  function currentSeasonWithTimes(allSwimmers){
+    const seen = new Set();
+    const list = Array.isArray(allSwimmers) ? allSwimmers : Object.values(allSwimmers || {});
+    list.forEach(sw => {
+      (sw.results || []).forEach(r => { if(r && r.season) seen.add(r.season); });
+    });
+    const sorted = Array.from(seen).sort((a,b) => {
+      const ya = seasonYearKey(a), yb = seasonYearKey(b);
+      if(yb !== ya) return yb - ya;
+      return b.localeCompare(a, undefined, { numeric:true, sensitivity:'base' });
+    });
+    return sorted[0] || '';
   }
   // Return every distinct meet that's been imported, with its latest date
   // and season tagged. Sorted most-recent-first so the leaderboards meet
@@ -1385,7 +1424,7 @@
     clearAll, clearRoster, clearMeetTimes,
     isAdminLoggedIn, loginAdmin, logoutAdmin, onAuthChanged,
     statsForSwimmer, rankSwimmerInAgeGroup, buildLeaderboards, teamStats, teamStatsBySeason,
-    getAllSeasons, currentSeason, filterSwimmerToSeason, getAllMeets,
+    getAllSeasons, currentSeason, currentSeasonWithTimes, filterSwimmerToSeason, getAllMeets,
     getAgeGroup, AGE_GROUP_ORDER, STROKE_ORDER, extractStroke, extractDistance, distanceNum, compareEventLabel,
     fmtTime, timeToSeconds, swimmerKey, slugify, meetTimeDocId, norm,
     mapHeader, normHeaderKey,

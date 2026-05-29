@@ -113,7 +113,7 @@
   Highcroft Hurricanes Swim Team · <a href="leaderboards.html">Leaderboards</a> · <a href="admin.html">Admin</a>
 </footer>
 
-<script src="assets/data.js?v=9"></script>
+<script src="assets/data.js?v=10"></script>
 <script>
   HHST.initTheme();
   document.getElementById('themeToggle').addEventListener('click', HHST.toggleTheme);
@@ -196,12 +196,15 @@
     if(!awardsHost) return;
     const today = new Date().toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'});
     const allSwimmers = Object.values(swimmers);
+    const season = HHST.currentSeasonWithTimes(swimmers);
     const brackets = HHST.AGE_GROUP_ORDER.filter(b => b !== 'Unknown' && DIST_FOR_BRACKET[b]);
 
     const cards = brackets.map(bracket => {
       const dist = DIST_FOR_BRACKET[bracket];
       // leaderboardsByEvent splits Boys/Girls automatically when gender is on file.
-      const boards = HHST.leaderboardsByEvent(allSwimmers, { stroke: 'Freestyle', distance: dist }, { limit: 5 });
+      // Scoped to the most recent season that has times so older seasons' times
+      // don't carry over (and a roster-only season with no swims doesn't blank it out).
+      const boards = HHST.leaderboardsByEvent(allSwimmers, { stroke: 'Freestyle', distance: dist }, { limit: 5, season });
 
       // Only entries that actually belong to THIS bracket — strip the gender prefix.
       const boysKey  = `Boys ${bracket}`;
@@ -365,7 +368,12 @@
 
   function renderMostImproved(){
     if(!improvedHost) return;
-    const { meet, date, boards } = HHST.mostImprovedAtMeet(Object.values(swimmers), { limit: 5 });
+    // Scope to the most recent season that has times — time drops shouldn't be
+    // measured against races from previous seasons, and the "latest meet" should
+    // also be chosen from this season's meets only. Using the season-with-times
+    // avoids blanking the board when a roster-only season exists with no swims.
+    const season = HHST.currentSeasonWithTimes(swimmers);
+    const { meet, date, boards } = HHST.mostImprovedAtMeet(Object.values(swimmers), { limit: 5, season });
     if(!meet){ improvedHost.innerHTML = ''; return; }
 
     document.getElementById('improvedMeetName').textContent = meet;
