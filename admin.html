@@ -456,7 +456,7 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
   </div>
 </div>
 
-<script src="assets/data.js?v=10"></script>
+<script src="assets/data.js?v=11"></script>
 <script>
   HHST.initTheme();
 
@@ -935,12 +935,19 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
     // fallback for legacy data review.
     const rosterFilter = document.getElementById('rosterSeasonFilter');
     if(rosterFilter){
+      const initialized = rosterFilter.dataset.initialized === '1';
       const prev = rosterFilter.value;
       rosterFilter.innerHTML =
         allSeasons.map((s, i) => `<option value="${escapeHtml(s)}">${escapeHtml(s)}${i === 0 ? ' (current)' : ''}</option>`).join('') +
         '<option value="">All seasons</option>';
-      // Restore prior selection if it still exists; otherwise pick the current season.
-      if(prev && (prev === '' || allSeasons.includes(prev))){
+      if(!initialized){
+        // First load → default to the current (most recent) season.
+        rosterFilter.value = allSeasons[0] || '';
+        rosterFilter.dataset.initialized = '1';
+      } else if(prev === '' || allSeasons.includes(prev)){
+        // Preserve the coach's selection across refreshes — including an
+        // explicit "All seasons" ('') choice (the leading `prev &&` bug here
+        // used to snap it back to the current season on every save/upload).
         rosterFilter.value = prev;
       } else {
         rosterFilter.value = allSeasons[0] || '';
@@ -1011,7 +1018,13 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
     const seasonFilter = seasonSel ? (seasonSel.value || '') : '';
     let swimmers = Object.values(cachedData.swimmers);
     if(seasonFilter){
-      swimmers = swimmers.filter(s => Array.isArray(s.seasons) && s.seasons.includes(seasonFilter));
+      // Wildcard rule (matches the read helpers): a swimmer with no seasons
+      // array (legacy / manually-added) still shows under any season, so they
+      // never silently vanish from the default current-season view.
+      swimmers = swimmers.filter(s => {
+        const sws = Array.isArray(s.seasons) ? s.seasons : [];
+        return !sws.length || sws.includes(seasonFilter);
+      });
     }
     // Keep the Swimmers KPI in sync with the season the table is showing.
     const kSw = document.getElementById('kSwimmers');
@@ -1211,8 +1224,13 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
     if(!sw) return;
     editingKey = key;
     // Edit the attributes for whichever season the roster table is showing.
+    // When "All seasons" is selected, route the edit to the swimmer's most
+    // recent season so the save isn't a silent no-op (a top-level-only write
+    // would be shadowed by their seasonInfo on re-read). Truly-legacy
+    // swimmers with no seasons fall through to '' → top-level, which IS read.
     const seasonSel = document.getElementById('rosterSeasonFilter');
-    editingSeason = seasonSel ? (seasonSel.value || '') : '';
+    const pickedSeason = seasonSel ? (seasonSel.value || '') : '';
+    editingSeason = pickedSeason || HHST.mostRecentSeasonOf(sw) || '';
     const info = HHST.swimmerSeasonInfo(sw, editingSeason);
     document.getElementById('editSwimmerName').textContent = sw.name;
     // Make it obvious which season's age/group is being edited.

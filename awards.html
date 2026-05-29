@@ -113,7 +113,7 @@
   Highcroft Hurricanes Swim Team · <a href="leaderboards.html">Leaderboards</a> · <a href="admin.html">Admin</a>
 </footer>
 
-<script src="assets/data.js?v=10"></script>
+<script src="assets/data.js?v=11"></script>
 <script>
   HHST.initTheme();
   document.getElementById('themeToggle').addEventListener('click', HHST.toggleTheme);
@@ -276,7 +276,7 @@
     awardsHost.querySelectorAll('[data-print]').forEach(btn => btn.addEventListener('click', () => {
       safePrint({
         scopes: ['printing-awards', 'printing-one'],
-        targetGroup: btn.dataset.group
+        targetGroup: btn.dataset.print
       });
     }));
   }
@@ -461,7 +461,7 @@
     improvedHost.querySelectorAll('[data-print]').forEach(btn => btn.addEventListener('click', () => {
       safePrint({
         scopes: ['printing-improved', 'printing-one'],
-        targetGroup: btn.dataset.group
+        targetGroup: btn.dataset.print
       });
     }));
   }

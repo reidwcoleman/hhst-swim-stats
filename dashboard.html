@@ -274,7 +274,7 @@
   Highcroft Hurricanes Swim Team · <a href="index.html">Back to home</a>
 </footer>
 
-<script src="assets/data.js?v=10"></script>
+<script src="assets/data.js?v=11"></script>
 <script>
   HHST.initTheme();
   document.getElementById('themeToggle').addEventListener('click', HHST.toggleTheme);
@@ -538,7 +538,9 @@
     const host = document.getElementById('ranksList');
     const ageSuffixEl = document.getElementById('rankAgeGroup');
     const { ageGroup, ranks } = HHST.rankSwimmerInAgeGroup(sw, allSwimmers, activeSeason);
-    if(ageGroup && ageGroup !== 'Unknown') ageSuffixEl.textContent = ` in ${ageGroup}`;
+    // Set unconditionally — renderRanks re-runs on season change, so clear a
+    // stale suffix when the swimmer resolves to Unknown for the new season.
+    ageSuffixEl.textContent = (ageGroup && ageGroup !== 'Unknown') ? ` in ${ageGroup}` : '';
     const entries = Object.entries(ranks).sort((a,b) => HHST.compareEventLabel(a[0], b[0]));
     if(!entries.length){
       host.innerHTML = '<div class="empty">Once we have times in your age group, your team rank will appear here.</div>';
@@ -619,9 +621,13 @@
       return db - da;
     });
 
-    // Fill filter dropdowns
+    // Fill filter dropdowns. RESET them first — initMeetHistory re-runs on
+    // every season change, so without clearing, options from prior seasons
+    // accumulate (and selecting a stale meet shows "no races match").
     const meetSel = document.getElementById('meetFilter');
     const strokeSel = document.getElementById('strokeFilter');
+    meetSel.innerHTML = '<option value="">All meets</option>';
+    strokeSel.innerHTML = '<option value="">All strokes</option>';
     const meets = Array.from(new Set(allRaces.map(r => r.meet).filter(Boolean)));
     meets.forEach(m => meetSel.insertAdjacentHTML('beforeend', `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`));
     const strokes = Array.from(new Set(allRaces.map(r => r.stroke || HHST.extractStroke(r.event)).filter(Boolean)));
@@ -673,8 +679,11 @@
           </tr>`;
       }).join('');
     }
-    meetSel.addEventListener('change', render);
-    strokeSel.addEventListener('change', render);
+    // Assign (not addEventListener) so re-running initMeetHistory on each
+    // season change doesn't stack duplicate listeners that fire render()
+    // multiple times against stale closures.
+    meetSel.onchange = render;
+    strokeSel.onchange = render;
     render();
   }
 

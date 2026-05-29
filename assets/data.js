@@ -199,7 +199,7 @@
   function competitionGroup(sw, season){
     if(!sw) return 'Unknown';
     const info = swimmerSeasonInfo(sw, season);
-    const bracket = info.bracket || getAgeGroup(info.age) || info.ageGroup || info.group || 'Unknown';
+    const bracket = resolveBracket(info);
     const g = genderLabel(info.gender);
     if(!g || bracket === 'Unknown') return bracket;
     return `${g} ${bracket}`;
@@ -465,41 +465,55 @@
       // corrects a wrong age) but only when the incoming cell actually has a
       // value — a blank age column must never wipe a good one.
       const sSeason = (rec.season || '').toString().trim() || season;
-      if(sSeason){
+      // Lazily get-or-create the per-season record — only when we actually have
+      // an attribute to write. A times-only row (no age/group/gender columns)
+      // never creates a record, so we don't litter seasonInfo with empty
+      // {bracket:'Unknown'} stubs that would later blank out the mirror.
+      function seasonTgt(){
+        if(!sSeason) return sw;
         if(!sw.seasonInfo || typeof sw.seasonInfo !== 'object') sw.seasonInfo = {};
         if(!sw.seasonInfo[sSeason]) sw.seasonInfo[sSeason] = {};
+        return sw.seasonInfo[sSeason];
       }
-      const tgt = sSeason ? sw.seasonInfo[sSeason] : sw;
-      // Age — accept a plain numeric value, else compute from DOB. Always
-      // overwrite within the season when we have a fresh value.
+      // Age — accept a plain numeric value, else compute from DOB. Overwrite
+      // within the season when we have a fresh value (so a re-upload corrects
+      // a wrong age) but never wipe a good value with a blank cell.
+      let freshAge = '';
       if(rec.age && /^\d{1,3}$/.test(rec.age.trim())){
-        if(tgt.age !== rec.age.trim()){ tgt.age = rec.age.trim(); touched = true; }
+        freshAge = rec.age.trim();
       } else if(rec.dob){
-        const a = ageFromDob(rec.dob);
-        if(a && tgt.age !== a){ tgt.age = a; touched = true; }
+        freshAge = ageFromDob(rec.dob) || '';
+      }
+      if(freshAge){
+        const t = seasonTgt();
+        if(t.age !== freshAge){ t.age = freshAge; touched = true; }
       }
       // group = team training group (RosterGroup / Bronze, Silver, Gold)
       {
         const g = (rec.rostergroup && rec.rostergroup.trim()) || (rec.group && rec.group.trim()) || '';
-        if(g && tgt.group !== g){ tgt.group = g; touched = true; }
+        if(g){ const t = seasonTgt(); if(t.group !== g){ t.group = g; touched = true; } }
       }
       // ageGroup = competition age class label ("Boys 13-14") as exported
       {
         const ag = (rec.agegroup && rec.agegroup.trim()) || '';
-        if(ag && tgt.ageGroup !== ag){ tgt.ageGroup = ag; touched = true; }
+        if(ag){ const t = seasonTgt(); if(t.ageGroup !== ag){ t.ageGroup = ag; touched = true; } }
       }
       // Gender — explicit gender/sex column wins; else parse from the ageGroup
       // label ("Boys 11-12" → M, "Girls 6 & Under" → F).
       {
         let g = parseGender(rec.gender);
         if(!g) g = parseGenderFromAgeGroup(rec.agegroup);
-        if(!g) g = parseGenderFromAgeGroup(tgt.ageGroup);
-        if(g && tgt.gender !== g){ tgt.gender = g; touched = true; }
+        if(!g) g = parseGenderFromAgeGroup((sSeason && sw.seasonInfo && sw.seasonInfo[sSeason] && sw.seasonInfo[sSeason].ageGroup) || '');
+        if(g){ const t = seasonTgt(); if(t.gender !== g){ t.gender = g; touched = true; } }
       }
-      // Bracket is always derived from THIS season's age — never trust a stale one.
+      // Bracket is derived from THIS season's age — only when an age exists, so
+      // we never stamp 'Unknown' onto an otherwise-empty record.
       {
-        const b = getAgeGroup(tgt.age);
-        if(tgt.bracket !== b){ tgt.bracket = b; touched = true; }
+        const t = sSeason ? (sw.seasonInfo && sw.seasonInfo[sSeason]) : sw;
+        if(t && t.age){
+          const b = getAgeGroup(t.age);
+          if(t.bracket !== b){ t.bracket = b; touched = true; }
+        }
       }
       // Preferred name (skip values that look like a full "Last, First" — Swimtopia sometimes mis-fills this)
       if(rec.preferredname && rec.preferredname.indexOf(',') === -1 && !sw.preferredName){
@@ -530,20 +544,22 @@
           touched = true;
         }
       }
-      // Mirror the MOST-RECENT season's attributes up to the top-level fields.
-      // Keeps legacy reads (sw.age / sw.bracket / etc.) and the all-seasons
-      // view showing a sensible current value, even though the per-season
-      // truth lives in seasonInfo.
+      // Mirror the most-recent season that actually HAS attribute content up to
+      // the top-level fields. Keeps legacy reads (sw.age / sw.bracket / etc.)
+      // and the all-seasons view showing a sensible value. Fields are sticky
+      // (fall back to the prior top-level value) so a partial newest season
+      // can't half-blank the mirror, and a times-only season (no content)
+      // never wipes the swimmer's known age.
       {
-        const mr = mostRecentSeasonOf(sw);
-        const L = (mr && sw.seasonInfo && sw.seasonInfo[mr]) ? sw.seasonInfo[mr] : null;
+        const mr = mostRecentSeasonInfoKey(sw);
+        const L = (mr && sw.seasonInfo) ? sw.seasonInfo[mr] : null;
         if(L){
-          sw.age      = L.age || '';
-          sw.bracket  = L.bracket || getAgeGroup(L.age);
-          sw.group    = L.group || '';
-          sw.ageGroup = L.ageGroup || '';
-          sw.gender   = L.gender || sw.gender || '';
-        } else if(sw.age != null){
+          sw.age      = L.age      || sw.age      || '';
+          sw.group    = L.group    || sw.group    || '';
+          sw.ageGroup = L.ageGroup || sw.ageGroup || '';
+          sw.gender   = L.gender   || sw.gender   || '';
+          sw.bracket  = sw.age ? getAgeGroup(sw.age) : (sw.bracket || 'Unknown');
+        } else if(sw.age){
           // Legacy / no-season write landed top-level — keep bracket coherent.
           sw.bracket = getAgeGroup(sw.age);
         }
@@ -698,7 +714,7 @@
       // Use the swimmer's age/bracket FOR THE SELECTED SEASON (so a kid who
       // aged up is grouped correctly per season, not by their latest age).
       const info = swimmerSeasonInfo(sw, season);
-      const bracket = info.bracket || getAgeGroup(info.age) || info.ageGroup || info.group;
+      const bracket = resolveBracket(info);
       if(!bracket || bracket === 'Unknown') continue;
       // People filter: when scoped to a season, only include swimmers on that
       // season's roster. Legacy swimmers with no seasons array still match.
@@ -836,7 +852,7 @@
         // Bracket/gender from this season's info so the swimmer lands in the
         // right age group for the season the meet belongs to.
         const info = swimmerSeasonInfo(sw, season);
-        const bracket = info.bracket || getAgeGroup(info.age);
+        const bracket = resolveBracket(info);
         if(!bracket || bracket === 'Unknown') return;
         drops.push({
           key: sw.key,
@@ -1127,8 +1143,13 @@
     if(yb !== ya) return yb - ya;
     return b.localeCompare(a, undefined, { numeric:true, sensitivity:'base' });
   }
+  // Does a per-season record actually carry attribute data (vs an empty stub)?
+  function seasonInfoHasContent(rec){
+    return !!(rec && (rec.age || rec.group || rec.ageGroup || rec.gender));
+  }
   // The single most-recent season a swimmer is associated with — across both
   // their seasonInfo map keys and their roster-membership seasons[] list.
+  // (Membership semantics: includes times-only seasons.)
   function mostRecentSeasonOf(sw){
     if(!sw) return '';
     const set = new Set();
@@ -1141,14 +1162,44 @@
     list.sort(compareSeasonsDesc);
     return list[0];
   }
+  // The most-recent season whose seasonInfo record actually has content —
+  // used for the top-level mirror and the "most recent" display fallback, so
+  // a times-only (empty) season never blanks the swimmer's known age.
+  function mostRecentSeasonInfoKey(sw){
+    if(!sw || !sw.seasonInfo || typeof sw.seasonInfo !== 'object') return '';
+    const keys = Object.keys(sw.seasonInfo).filter(k => seasonInfoHasContent(sw.seasonInfo[k]));
+    if(!keys.length) return '';
+    keys.sort(compareSeasonsDesc);
+    return keys[0];
+  }
+  // Single source of truth for resolving an age-group bracket from a season
+  // info record — every read path uses this so they bucket identically. Order:
+  // a real numeric bracket → derive from age → the exported ageGroup label →
+  // the training group → Unknown. (A swimmer with a "Boys 13-14" label but a
+  // blank Age column still buckets sensibly instead of vanishing into Unknown.)
+  function resolveBracket(info){
+    if(!info) return 'Unknown';
+    if(info.bracket && info.bracket !== 'Unknown') return info.bracket;
+    const fromAge = getAgeGroup(info.age);
+    if(fromAge !== 'Unknown') return fromAge;
+    // Fall back to the exported label — but strip a leading gender word so a
+    // "Girls 13-14" ageGroup yields the bare bracket "13-14" (competitionGroup
+    // re-prepends the gender, so leaving it in would double it to
+    // "Girls Girls 13-14").
+    const label = (info.ageGroup || info.group || '')
+      .replace(/^\s*(boys|girls|men|women|male|female)\s+/i, '').trim();
+    return label || 'Unknown';
+  }
   // Resolve the {age,bracket,group,ageGroup,gender} record for a swimmer in a
-  // given season. bracket is always derived from that season's age (the age is
-  // the source of truth). Resolution:
-  //   1) season given + seasonInfo[season] exists → that season's record
-  //   2) season given but missing (or season==='') + seasonInfo non-empty →
-  //      the most-recent season's record (so a swimmer predating the selected
-  //      season still shows their latest known age, not a blank)
-  //   3) no seasonInfo at all (legacy doc) → the top-level fields
+  // given season. bracket is always derived from that season's age. Resolution:
+  //   1) season given + seasonInfo[season] HAS CONTENT → that season's record
+  //   2) otherwise (season missing/empty/'') + a content season exists →
+  //      the most-recent CONTENT season's record (so a swimmer predating the
+  //      selected season still shows their latest known age, not a blank)
+  //   3) no content anywhere (legacy doc / times-only) → the top-level mirror
+  // Gender is treated as cross-season (it doesn't change) — it falls back to
+  // the top-level mirror so a gender-less season's record doesn't drop the
+  // swimmer off the Boys/Girls split.
   function swimmerSeasonInfo(sw, season){
     if(!sw) return { age:'', bracket:'Unknown', group:'', ageGroup:'', gender:'' };
     const map = sw.seasonInfo;
@@ -1159,16 +1210,15 @@
         bracket: (rec && rec.bracket) || getAgeGroup(age),
         group:   (rec && rec.group)   || '',
         ageGroup:(rec && rec.ageGroup)|| '',
-        gender:  (rec && rec.gender)  || ''
+        gender:  (rec && rec.gender)  || sw.gender || ''
       };
     }
-    if(map && typeof map === 'object' && Object.keys(map).length){
-      if(season && map[season]) return shape(map[season]);
-      // season missing or all-seasons → most recent
-      const mr = mostRecentSeasonOf(sw);
+    if(map && typeof map === 'object'){
+      if(season && seasonInfoHasContent(map[season])) return shape(map[season]);
+      const mr = mostRecentSeasonInfoKey(sw);
       if(mr && map[mr]) return shape(map[mr]);
     }
-    // Legacy doc / no per-season data → top-level mirror
+    // Legacy doc / no per-season content → top-level mirror
     return {
       age: sw.age || '',
       bracket: sw.bracket || getAgeGroup(sw.age),
@@ -1387,7 +1437,7 @@
       mostImproved, favorite,
       totalTimeDropSec,
       avgPlace,
-      ageGroup: (function(){ const i = swimmerSeasonInfo(sw, season); return i.bracket || getAgeGroup(i.age); })()
+      ageGroup: resolveBracket(swimmerSeasonInfo(sw, season))
     };
   }
 
@@ -1398,7 +1448,7 @@
   function rankSwimmerInAgeGroup(sw, allSwimmers, season){
     season = season || '';
     const myInfo = swimmerSeasonInfo(sw, season);
-    const ag = myInfo.bracket || getAgeGroup(myInfo.age);
+    const ag = resolveBracket(myInfo);
     const inSeason = r => !season || (r && r.season === season);
     const myEvents = {};
     (sw.results||[]).forEach(r => {
@@ -1410,7 +1460,7 @@
       const competitors = [];
       Object.values(allSwimmers).forEach(other => {
         const oInfo = swimmerSeasonInfo(other, season);
-        if((oInfo.bracket || getAgeGroup(oInfo.age)) !== ag) return;
+        if(resolveBracket(oInfo) !== ag) return;
         let best = Infinity;
         (other.results||[]).forEach(r => {
           if(r.event === event && isFinite(r.seconds) && inSeason(r) && r.seconds < best) best = r.seconds;
@@ -1440,7 +1490,7 @@
       // Per-season age/bracket/gender so a multi-season swimmer is ranked in
       // the right age group for the season being viewed.
       const info = swimmerSeasonInfo(sw, season);
-      const bracket = info.bracket || getAgeGroup(info.age);
+      const bracket = resolveBracket(info);
       const ag = splitByGender ? competitionGroup(sw, season) : bracket;
       const byEvent = {};
       (sw.results||[]).forEach(r => {
@@ -1475,7 +1525,19 @@
     });
     Object.values(buckets).forEach(b => {
       b.entries.sort((a,b) => a.seconds - b.seconds);
-      b.entries = b.entries.slice(0, top);
+      if(splitByGender){
+        b.entries = b.entries.slice(0, top);
+      } else {
+        // Gender-merged bucket (the leaderboards.html path that re-splits in
+        // the UI): keep the top-N of EACH gender, not the top-N overall, so a
+        // gender that's slower on average can't get sliced out before the UI
+        // splits the column.
+        const byG = { M:[], F:[], '':[] };
+        b.entries.forEach(e => { (byG[e.gender] || byG['']).push(e); });
+        b.entries = byG.F.slice(0, top)
+          .concat(byG.M.slice(0, top), byG[''].slice(0, top))
+          .sort((a, c) => a.seconds - c.seconds);
+      }
     });
     return Object.values(buckets);
   }
@@ -1574,7 +1636,7 @@
     AGE_GROUP_ORDER.forEach(g => { buckets[g] = []; });
     (swimmers||[]).forEach(sw => {
       const info = swimmerSeasonInfo(sw, season);
-      const b = info.bracket || getAgeGroup(info.age);
+      const b = resolveBracket(info);
       (buckets[b] || buckets['Unknown']).push(sw);
     });
     Object.values(buckets).forEach(list => list.sort((a,b)=> (a.name||'').localeCompare(b.name||'')));
