@@ -507,12 +507,16 @@
         if(g){ const t = seasonTgt(); if(t.gender !== g){ t.gender = g; touched = true; } }
       }
       // Bracket is derived from THIS season's age — only when an age exists, so
-      // we never stamp 'Unknown' onto an otherwise-empty record.
+      // we never stamp 'Unknown' onto an otherwise-empty record. A real upload
+      // also promotes the record from an estimate to exact.
       {
         const t = sSeason ? (sw.seasonInfo && sw.seasonInfo[sSeason]) : sw;
         if(t && t.age){
           const b = getAgeGroup(t.age);
           if(t.bracket !== b){ t.bracket = b; touched = true; }
+        }
+        if(t && t.estimated && (freshAge || (rec.rostergroup||rec.group||rec.agegroup||rec.gender))){
+          delete t.estimated; touched = true;
         }
       }
       // Preferred name (skip values that look like a full "Last, First" — Swimtopia sometimes mis-fills this)
@@ -996,25 +1000,44 @@
     snap.forEach(d => {
       scanned++;
       const sw = d.data() || {};
-      const seasons = Array.isArray(sw.seasons) ? sw.seasons.filter(Boolean) : [];
+      // Every season the swimmer is associated with — roster membership AND
+      // any season tag carried on their results (a results-only season would
+      // otherwise be selectable but never migrated, so it'd stay mixed).
+      const sset = new Set();
+      (Array.isArray(sw.seasons) ? sw.seasons : []).forEach(s => { if(s) sset.add(s); });
+      (Array.isArray(sw.results) ? sw.results : []).forEach(r => { if(r && r.season) sset.add(r.season); });
+      const seasons = Array.from(sset);
       if(!seasons.length) return;
       const anchorAge = parseInt(sw.age, 10);
       if(!isFinite(anchorAge) || anchorAge <= 0) return; // nothing to anchor on
-      const anchorYear = seasonYearKey(mostRecentSeasonOf(sw));
+      // Sort newest→oldest with the shared comparator. We ASSUME the stored
+      // top-level age is the swimmer's age in their newest season (index 0),
+      // then walk back one year per season. Two ways to space the seasons:
+      //  • by 4-digit year delta when both years are known (precise)
+      //  • by rank order otherwise (so yearless labels like "Summer"/"Winter"
+      //    still get distinct, monotonically-younger ages instead of all
+      //    collapsing to the frozen anchor age).
+      const ordered = seasons.slice().sort(compareSeasonsDesc);
+      const anchorYear = seasonYearKey(ordered[0]);
       const info = Object.assign({}, sw.seasonInfo || {});
       let changed = false;
-      seasons.forEach(s => {
+      ordered.forEach((s, idx) => {
         if(seasonInfoHasContent(info[s])) return; // keep exact data, never clobber
         const yr = seasonYearKey(s);
-        let est = anchorAge;
-        if(anchorYear && yr) est = anchorAge - (anchorYear - yr);
-        if(!isFinite(est) || est < 1) est = anchorAge; // guard nonsensical values
+        let est;
+        if(anchorYear && yr) est = anchorAge - (anchorYear - yr); // precise year delta
+        else est = anchorAge - idx;                               // rank fallback (~1 yr/season)
+        if(!isFinite(est)) est = anchorAge;
+        if(est < 1) est = 1; // floor at 1 — never bounce back up to the newest age
+        const g = sw.gender || '';
         info[s] = {
           age: String(est),
           bracket: getAgeGroup(est),
           group: sw.group || '',
-          ageGroup: sw.ageGroup || '',
-          gender: sw.gender || '',
+          // Build the label from the estimated bracket + gender rather than
+          // copying the stale current-season label.
+          ageGroup: (genderLabel(g) ? genderLabel(g) + ' ' : '') + getAgeGroup(est),
+          gender: g,
           estimated: true
         };
         changed = true;
@@ -1039,7 +1062,10 @@
     const list = Array.isArray(allSwimmers) ? allSwimmers : Object.values(allSwimmers || {});
     let n = 0;
     list.forEach(sw => {
-      const seasons = Array.isArray(sw.seasons) ? sw.seasons.filter(Boolean) : [];
+      const sset = new Set();
+      (Array.isArray(sw.seasons) ? sw.seasons : []).forEach(s => { if(s) sset.add(s); });
+      (Array.isArray(sw.results) ? sw.results : []).forEach(r => { if(r && r.season) sset.add(r.season); });
+      const seasons = Array.from(sset);
       if(!seasons.length) return;
       const a = parseInt(sw.age, 10);
       if(!isFinite(a) || a <= 0) return;
@@ -1063,20 +1089,23 @@
     }
     if(!sw.seasonInfo || typeof sw.seasonInfo !== 'object') sw.seasonInfo = {};
     const rec = sw.seasonInfo[season] || (sw.seasonInfo[season] = {});
-    if(age !== undefined && age !== '') rec.age = String(age);
-    if(group !== undefined && group !== '') rec.group = group;
-    if(ageGroup !== undefined && ageGroup !== '') rec.ageGroup = ageGroup;
+    let wroteReal = false;
+    if(age !== undefined && age !== ''){ rec.age = String(age); wroteReal = true; }
+    if(group !== undefined && group !== ''){ rec.group = group; wroteReal = true; }
+    if(ageGroup !== undefined && ageGroup !== ''){ rec.ageGroup = ageGroup; wroteReal = true; }
     const g = parseGender(gender);
-    if(g) rec.gender = g;
+    if(g){ rec.gender = g; wroteReal = true; }
     rec.bracket = getAgeGroup(rec.age);
+    // A manual edit / re-upload promotes the record from estimated to exact.
+    if(wroteReal) delete rec.estimated;
     if(!Array.isArray(sw.seasons)) sw.seasons = [];
     if(!sw.seasons.includes(season)) sw.seasons.push(season);
-    // Mirror most-recent season to top-level.
-    const mr = mostRecentSeasonOf(sw);
+    // Mirror the most-recent season WITH content to top-level (sticky).
+    const mr = mostRecentSeasonInfoKey(sw);
     const L = (mr && sw.seasonInfo[mr]) ? sw.seasonInfo[mr] : null;
     if(L){
-      sw.age = L.age || ''; sw.bracket = L.bracket || getAgeGroup(L.age);
-      sw.group = L.group || ''; sw.ageGroup = L.ageGroup || ''; sw.gender = L.gender || sw.gender || '';
+      sw.age = L.age || sw.age || ''; sw.bracket = sw.age ? getAgeGroup(sw.age) : (sw.bracket||'Unknown');
+      sw.group = L.group || sw.group || ''; sw.ageGroup = L.ageGroup || sw.ageGroup || ''; sw.gender = L.gender || sw.gender || '';
     }
   }
   async function addSwimmerManual({name, address, email, parent, age, group, gender, season}){

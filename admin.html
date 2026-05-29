@@ -470,7 +470,7 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
   </div>
 </div>
 
-<script src="assets/data.js?v=12"></script>
+<script src="assets/data.js?v=13"></script>
 <script>
   HHST.initTheme();
 
@@ -826,7 +826,21 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
     try{
       const res = await HHST.migrateSeasonAges();
       await refreshAll();
-      setStatus('ok', `Estimated per-season ages for ${res.migrated} swimmer${res.migrated===1?'':'s'}. Re-upload a season's roster/times anytime for exact ages.`);
+      // The CURRENT season's ages are unchanged by definition (the estimate
+      // anchors on them), so switch the roster view to the OLDEST season where
+      // the coach can actually SEE the corrected younger ages.
+      const seasons = HHST.getAllSeasons(cachedData.swimmers || {});
+      const rf = document.getElementById('rosterSeasonFilter');
+      let switched = '';
+      if(rf && seasons.length > 1){
+        switched = seasons[seasons.length - 1]; // oldest
+        rf.value = switched;
+        renderRoster(document.getElementById('searchInput').value);
+      }
+      setStatus('ok',
+        `Estimated per-season ages for ${res.migrated} swimmer${res.migrated===1?'':'s'}.`
+        + (switched ? ` Now showing the ${switched} roster so you can see the corrected (younger) ages — use the Season dropdown to review each season. The current season's ages don't change.` : '')
+        + ` Re-upload a season's roster/times file anytime for exact ages.`);
     } catch(err){
       console.error(err);
       setStatus('err','Could not estimate per-season ages: ' + (err.message || err));
