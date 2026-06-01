@@ -297,6 +297,14 @@
     opts = opts || {};
     const mode = opts.mode === 'roster' ? 'roster' : 'results';
     const season = (opts.season || '').toString().trim();
+    // Per-file provenance. When the admin page passes an uploadId (one per
+    // dropped file) we tag every result + roster-membership it produces with
+    // it, and write a row into hhst_uploads. That's what lets a coach later
+    // remove a single file's contribution (one meet, one roster) without
+    // clearing everything. Omitted for legacy/manual paths — those rows just
+    // carry no uploadId and stay outside the per-file delete system.
+    const uploadId = (opts.uploadId || '').toString().trim();
+    const fileName = (opts.fileName || '').toString();
     if(!rows || rows.length < 2) return { added:0, swimmers:0, profileUpdates:0, skippedSwimmers:[], errors:['Empty file'] };
     const rawHeaders = rows[0];
     const headers = rawHeaders.map(mapHeader);
@@ -325,6 +333,7 @@
     let added = 0;
     const meetNames = new Set();
     const profileUpdated = new Set(); // swimmers whose profile (non-result) fields changed
+    const newSwimmerKeys = new Set(); // swimmers first created by THIS upload (roster mode)
 
     // First pass: pull existing swimmers we'll touch (so we merge, not overwrite)
     const touchedKeys = new Set();
@@ -428,6 +437,7 @@
         }
       }
       if(!updates[key]){
+        if(!existing[key]) newSwimmerKeys.add(key);
         updates[key] = existing[key] || {
           key, name,
           address: '',
@@ -439,6 +449,7 @@
           gender: '',
           seasons: [],
           seasonInfo: {},
+          rosterUploads: {},
           results: []
         };
         // ensure shape
@@ -447,6 +458,7 @@
         updates[key].results    = updates[key].results    || [];
         updates[key].seasons    = updates[key].seasons    || [];
         updates[key].seasonInfo = updates[key].seasonInfo || {};
+        updates[key].rosterUploads = (updates[key].rosterUploads && typeof updates[key].rosterUploads === 'object') ? updates[key].rosterUploads : {};
       }
       writtenKeys.add(key);
       const sw = updates[key];
@@ -548,6 +560,17 @@
           touched = true;
         }
       }
+      // Roster-membership provenance: which roster file(s) put this swimmer on
+      // this season's roster. Only roster uploads write here — a times upload
+      // implies membership but doesn't "own" it, so removing a meet file never
+      // drops anyone from the roster. deleteUpload() reads this to know when a
+      // season's last roster file is gone and the membership can be retired.
+      if(sSeason && uploadId && mode === 'roster'){
+        if(!sw.rosterUploads || typeof sw.rosterUploads !== 'object') sw.rosterUploads = {};
+        const arr = Array.isArray(sw.rosterUploads[sSeason]) ? sw.rosterUploads[sSeason] : [];
+        if(!arr.includes(uploadId)){ arr.push(uploadId); touched = true; }
+        sw.rosterUploads[sSeason] = arr;
+      }
       // Mirror the most-recent season that actually HAS attribute content up to
       // the top-level fields. Keeps legacy reads (sw.age / sw.bracket / etc.)
       // and the all-seasons view showing a sensible value. Fields are sticky
@@ -588,17 +611,21 @@
           date: rec.date || '',
           place: rec.place || '',
           split: rec.split || '',
-          season: rowSeason
+          season: rowSeason,
+          uploadId: uploadId || ''
         };
         sw.results.push(result);
         added++;
         if(rec.meet) meetNames.add(rec.meet);
         // Stage a mirror write to hhst_meet_times. Doc id = swimmer + event +
-        // season, so re-uploading the same combo into a different season
-        // creates a separate doc instead of overwriting last season's record.
-        const mirrorId = rowSeason
+        // season + uploadId. Including the uploadId means each file owns its own
+        // mirror docs, so two meet files that both carry the same swimmer+event+
+        // season don't clobber one shared doc — and deleteUpload's
+        // where('uploadId','==',…) wipe stays exactly 1:1 with this file's rows.
+        const mirrorBase = rowSeason
           ? `${meetTimeDocId(key, eventLabel)}__${slugify(rowSeason)}`
           : meetTimeDocId(key, eventLabel);
+        const mirrorId = uploadId ? `${mirrorBase}__${slugify(uploadId)}` : mirrorBase;
         // Mirror uses THIS row's season attributes (age group / gender) so a
         // time from 2024 carries the swimmer's 2024 age group, not their
         // current one.
@@ -619,7 +646,8 @@
             ageGroup: mi.bracket || getAgeGroup(mi.age),
             gender: mi.gender || '',
             competitionGroup: competitionGroup(sw, rowSeason),
-            season: rowSeason
+            season: rowSeason,
+            uploadId: uploadId || ''
           }
         });
       }
@@ -693,12 +721,39 @@
       lastUpload: FB.FieldValue.serverTimestamp()
     }, { merge: true });
 
+    // Record this file in the uploads registry so it shows in the admin's
+    // "Uploaded files" list and can be removed on its own later. Skipped when
+    // no uploadId was supplied (legacy/manual ingest) so we don't create
+    // un-deletable phantom rows.
+    if(uploadId){
+      try {
+        await FB.db.collection('hhst_uploads').doc(uploadId).set({
+          uploadId,
+          fileName: fileName || '',
+          season,
+          mode,
+          addedResults: added,
+          swimmerCount: writtenKeys.size,
+          newSwimmerKeys: Array.from(newSwimmerKeys),
+          touchedSwimmerKeys: Array.from(writtenKeys),
+          meetNames: Array.from(meetNames),
+          uploadedAt: FB.FieldValue.serverTimestamp()
+        }, { merge: true });
+      } catch(e){
+        // The ingest itself already committed, but without this registry row the
+        // file won't show in "Uploaded files" and can't be removed on its own.
+        // Surface it as an error so the admin knows rather than failing silently.
+        errors.push(`Saved data but could not register "${fileName || uploadId}" in the uploaded-files list (remove-by-file unavailable for it): ${e && e.message || e}`);
+      }
+    }
+
     return {
       added,
       swimmers: writtenKeys.size,
       profileUpdates: profileUpdated.size,
       skippedSwimmers: Array.from(skippedSwimmers),
       meets: meetNames.size,
+      uploadId: uploadId || '',
       errors
     };
   }
@@ -952,6 +1007,222 @@
       }
     }catch(e){}
   }
+  // Re-mirror the most-recent CONTENT season's per-season attributes up to the
+  // swimmer's top-level age/group/ageGroup/gender/bracket. Shared by the ingest
+  // path and deleteUpload so a removal that drops a season keeps the top-level
+  // view coherent. Sticky: never blanks a known value when the newest content
+  // season is empty.
+  function mirrorTopLevelFromSeasons(sw){
+    const mr = mostRecentSeasonInfoKey(sw);
+    const L = (mr && sw.seasonInfo) ? sw.seasonInfo[mr] : null;
+    if(L){
+      sw.age      = L.age      || sw.age      || '';
+      sw.group    = L.group    || sw.group    || '';
+      sw.ageGroup = L.ageGroup || sw.ageGroup || '';
+      sw.gender   = L.gender   || sw.gender   || '';
+      sw.bracket  = sw.age ? getAgeGroup(sw.age) : (sw.bracket || 'Unknown');
+    } else if(sw.age){
+      sw.bracket = getAgeGroup(sw.age);
+    }
+  }
+
+  // -------- Uploaded-files registry (per-file add/remove) --------
+  // Every season-scoped upload (roster or meet times) writes one hhst_uploads
+  // doc. getUploads lists them (newest first) for the admin "Uploaded files"
+  // panel; deleteUpload surgically removes a single file's contribution.
+  async function getUploads(){
+    const snap = await FB.db.collection('hhst_uploads').get();
+    const out = [];
+    snap.forEach(d => out.push({ id: d.id, ...d.data() }));
+    function ms(u){
+      const t = u && u.uploadedAt;
+      if(t && typeof t.toMillis === 'function') return t.toMillis();
+      if(t && typeof t.seconds === 'number') return t.seconds * 1000;
+      return 0;
+    }
+    out.sort((a,b) => {
+      const m = ms(b) - ms(a);
+      if(m) return m;
+      // Stable secondary sort so equal/absent timestamps still order sensibly.
+      const sa = (a.season||''), sb = (b.season||'');
+      if(sa !== sb) return compareSeasonsDesc(sa, sb);
+      return (b.id||'').localeCompare(a.id||'');
+    });
+    return out;
+  }
+
+  // Remove a single uploaded file's contribution.
+  //  • meet-times upload  → strips every result tagged with this uploadId from
+  //    each swimmer (and the matching hhst_meet_times mirror docs). Roster
+  //    membership is left intact — meets never define the roster.
+  //  • roster upload      → drops this file from each swimmer's rosterUploads
+  //    provenance. When a season has no roster file left AND the swimmer has no
+  //    results in that season, the season membership + seasonInfo are retired.
+  //  A swimmer left with no seasons, no results, and no roster provenance is
+  //  deleted outright (they only ever existed because of this file).
+  // Returns { mode, season, removedResults, removedSwimmers, updatedSwimmers }.
+  async function deleteUpload(uploadId){
+    uploadId = (uploadId || '').toString().trim();
+    if(!uploadId) return { mode:null, season:'', removedResults:0, removedSwimmers:0, updatedSwimmers:0 };
+    let meta = null;
+    try {
+      const uSnap = await FB.db.collection('hhst_uploads').doc(uploadId).get();
+      if(uSnap.exists) meta = uSnap.data();
+    } catch(e){}
+
+    const swSnap = await FB.db.collection('swimmers').get();
+    const toWrite = [];   // full-doc overwrites (so dropped seasonInfo keys actually disappear)
+    const toDelete = [];  // orphan swimmer keys
+    let removedResults = 0;
+
+    swSnap.forEach(d => {
+      const sw = d.data() || {};
+      let changed = false;
+      // The set of seasons THIS file actually contributed to, via the only two
+      // provenance mechanisms we track: a tagged result's season (meet file) or
+      // a rosterUploads[season] entry holding this uploadId (roster file). We
+      // only ever consider retiring seasons in this set — every other season
+      // (legacy roster membership, manually-added seasons, migrated per-season
+      // ages, OTHER files' seasons) is left completely untouched. This is what
+      // keeps a single-file delete from collaterally destroying unrelated data.
+      const touchedSeasons = new Set();
+
+      // 1) Strip results from this upload (recording their seasons as touched).
+      const results = Array.isArray(sw.results) ? sw.results : [];
+      const keptResults = [];
+      results.forEach(r => {
+        if(r && r.uploadId === uploadId){
+          removedResults++;
+          if(r.season) touchedSeasons.add(r.season);
+        } else {
+          keptResults.push(r);
+        }
+      });
+      if(keptResults.length !== results.length){ sw.results = keptResults; changed = true; }
+
+      // 2) Drop this file from roster provenance (recording its seasons too).
+      if(sw.rosterUploads && typeof sw.rosterUploads === 'object'){
+        Object.keys(sw.rosterUploads).forEach(s => {
+          const arr = Array.isArray(sw.rosterUploads[s]) ? sw.rosterUploads[s] : [];
+          if(!arr.includes(uploadId)) return;
+          changed = true;
+          touchedSeasons.add(s);
+          const left = arr.filter(u => u !== uploadId);
+          if(left.length) sw.rosterUploads[s] = left;
+          else delete sw.rosterUploads[s];
+        });
+      }
+
+      if(!changed) return;
+
+      // 3) Retire a TOUCHED season only when nothing backs it anymore: no roster
+      // file still lists it (rosterUploads[s] gone) AND no remaining race is
+      // tagged with it. Seasons this file never touched are never examined, so
+      // legacy/manual/migrated memberships and other seasons survive intact.
+      const hasProv = s => !!(sw.rosterUploads && typeof sw.rosterUploads === 'object' && Array.isArray(sw.rosterUploads[s]) && sw.rosterUploads[s].length);
+      const hasResultInSeason = s => (sw.results || []).some(r => r && r.season === s);
+      touchedSeasons.forEach(s => {
+        if(hasProv(s) || hasResultInSeason(s)) return; // still backed — keep it
+        if(Array.isArray(sw.seasons)) sw.seasons = sw.seasons.filter(x => x !== s);
+        if(sw.seasonInfo && typeof sw.seasonInfo === 'object' && sw.seasonInfo[s]) delete sw.seasonInfo[s];
+      });
+
+      // Keep the top-level mirror coherent after any seasonInfo/season change.
+      mirrorTopLevelFromSeasons(sw);
+
+      // Orphan deletion is reserved for a swimmer who now has NOTHING left:
+      // no races, no roster membership of any kind, and no per-season attribute
+      // content. That can only happen to a swimmer this file alone created —
+      // a legacy/manual swimmer always retains at least one of these.
+      const noResults = !((sw.results || []).length);
+      const noSeasons = !(Array.isArray(sw.seasons) && sw.seasons.length);
+      const noProvenance = !(sw.rosterUploads && typeof sw.rosterUploads === 'object' && Object.keys(sw.rosterUploads).length);
+      const noSeasonInfo = !(sw.seasonInfo && typeof sw.seasonInfo === 'object' && Object.values(sw.seasonInfo).some(seasonInfoHasContent));
+      if(noResults && noSeasons && noProvenance && noSeasonInfo){
+        toDelete.push(d.id);
+      } else {
+        toWrite.push({ key: d.id, data: sw });
+      }
+    });
+
+    // Overwrite touched swimmers (merge:false so removed seasonInfo/season keys
+    // are actually gone, not silently retained by a merge).
+    for(let i=0;i<toWrite.length;i+=400){
+      const batch = FB.db.batch();
+      toWrite.slice(i, i+400).forEach(w => {
+        batch.set(FB.db.collection('swimmers').doc(w.key),
+          { ...w.data, updatedAt: FB.FieldValue.serverTimestamp() });
+      });
+      await batch.commit();
+    }
+    // Delete fully-orphaned swimmers (also wipes their roster/meet-time mirrors).
+    for(const key of toDelete){
+      try { await deleteSwimmer(key); } catch(e){ /* keep going */ }
+    }
+
+    // Wipe this upload's meet-time mirror docs.
+    try {
+      const mt = await FB.db.collection('hhst_meet_times').where('uploadId','==',uploadId).get();
+      const refs = [];
+      mt.forEach(doc => refs.push(doc.ref));
+      while(refs.length){
+        const batch = FB.db.batch();
+        refs.splice(0,400).forEach(ref => batch.delete(ref));
+        await batch.commit();
+      }
+    } catch(e){}
+
+    // Also overwrite hhst_rosters mirrors for surviving touched swimmers so the
+    // slim view tracks the change (best-effort, chunked at Firestore's limit).
+    try {
+      for(let i=0;i<toWrite.length;i+=400){
+        const batch = FB.db.batch();
+        toWrite.slice(i, i+400).forEach(w => {
+          const sw = w.data;
+          batch.set(FB.db.collection('hhst_rosters').doc(w.key), {
+            swimmerKey: w.key,
+            name: sw.name,
+            age: sw.age || '',
+            ageGroup: sw.bracket || getAgeGroup(sw.age),
+            gender: sw.gender || '',
+            competitionGroup: competitionGroup(sw),
+            group: sw.group || '',
+            seasons: Array.isArray(sw.seasons) ? sw.seasons : [],
+            seasonInfo: (sw.seasonInfo && typeof sw.seasonInfo === 'object') ? sw.seasonInfo : {},
+            uploadedAt: FB.FieldValue.serverTimestamp()
+          }); // full overwrite — a merge would leave stale seasonInfo keys behind
+        });
+        await batch.commit();
+      }
+    } catch(e){}
+
+    // Remove the registry row itself.
+    try { await FB.db.collection('hhst_uploads').doc(uploadId).delete(); } catch(e){}
+
+    // Recompute distinct meet count from the post-delete state we ALREADY have
+    // in memory (the swSnap we read up front + the toWrite/toDelete deltas) —
+    // no second full-collection scan.
+    try {
+      const writeMap = new Map(toWrite.map(w => [w.key, w.data]));
+      const deleteSet = new Set(toDelete);
+      const allMeets = new Set();
+      swSnap.forEach(doc => {
+        if(deleteSet.has(doc.id)) return;
+        const finalDoc = writeMap.get(doc.id) || doc.data();
+        (finalDoc.results || []).forEach(r => { if(r && r.meet) allMeets.add(r.meet); });
+      });
+      await FB.db.collection('meta').doc('stats').set({ meetCount: allMeets.size }, { merge: true });
+    } catch(e){}
+
+    return {
+      mode: meta ? (meta.mode||null) : null,
+      season: meta ? (meta.season||'') : '',
+      removedResults,
+      removedSwimmers: toDelete.length,
+      updatedSwimmers: toWrite.length
+    };
+  }
+
   // Remove truly-orphan swimmer docs — entries with no roster membership
   // for ANY season AND no race results. Per-season rosters mean a swimmer
   // who's only on a past season's roster must be preserved (otherwise
@@ -1172,6 +1443,8 @@
       await clearCollection('swimmers');
       await clearCollection('hhst_rosters');
       await clearCollection('hhst_meet_times');
+      // Everyone's gone, so every uploaded-file row is moot.
+      await clearCollection('hhst_uploads');
     } else if(opts.meetTimes !== false){
       // Times-only wipe: keep swimmer docs, but null out the embedded results.
       const snap = await FB.db.collection('swimmers').get();
@@ -1183,6 +1456,8 @@
         await batch.commit();
       }
       await clearCollection('hhst_meet_times');
+      // Drop only the meet-times upload rows; roster upload rows stay.
+      await deleteUploadsByMode('results');
     }
     if(opts.roster !== false && opts.meetTimes !== false){
       try{ await FB.db.collection('meta').doc('stats').delete(); }catch(e){}
@@ -1190,6 +1465,19 @@
   }
   async function clearRoster(){ return clearAll({ roster:true, meetTimes:false }); }
   async function clearMeetTimes(){ return clearAll({ roster:false, meetTimes:true }); }
+  // Delete every uploads-registry row of a given mode ('roster' | 'results').
+  async function deleteUploadsByMode(mode){
+    try {
+      const snap = await FB.db.collection('hhst_uploads').where('mode','==',mode).get();
+      const refs = [];
+      snap.forEach(d => refs.push(d.ref));
+      while(refs.length){
+        const batch = FB.db.batch();
+        refs.splice(0,400).forEach(ref => batch.delete(ref));
+        await batch.commit();
+      }
+    } catch(e){}
+  }
 
   // -------- Auth --------
   // Login form labels say "Email" & "Password" so they create
@@ -1545,10 +1833,15 @@
   // season — rank the swimmer within their age group FOR THAT SEASON: use the
   // season's age bracket and only count races (theirs and competitors') tagged
   // with the season, so rankings don't bleed across years.
+  // Gender — at HHST boys and girls don't race each other, so a girl is only
+  // compared against other girls in her bracket (and vice versa). Swimmers with
+  // an unknown gender fall through to the full bracket (legacy data with no
+  // gender on file still gets ranked rather than vanishing).
   function rankSwimmerInAgeGroup(sw, allSwimmers, season){
     season = season || '';
     const myInfo = swimmerSeasonInfo(sw, season);
     const ag = resolveBracket(myInfo);
+    const myGender = myInfo.gender || '';
     const inSeason = r => !season || (r && r.season === season);
     const myEvents = {};
     (sw.results||[]).forEach(r => {
@@ -1561,6 +1854,8 @@
       Object.values(allSwimmers).forEach(other => {
         const oInfo = swimmerSeasonInfo(other, season);
         if(resolveBracket(oInfo) !== ag) return;
+        // Same-gender heat only — skip the other gender when we know ours.
+        if(myGender && oInfo.gender && oInfo.gender !== myGender) return;
         let best = Infinity;
         (other.results||[]).forEach(r => {
           if(r.event === event && isFinite(r.seconds) && inSeason(r) && r.seconds < best) best = r.seconds;
@@ -1571,7 +1866,10 @@
       const idx = competitors.findIndex(c => c.key === sw.key);
       ranks[event] = { rank: idx + 1, total: competitors.length };
     });
-    return { ageGroup: ag, ranks };
+    // Build a human label: "Girls 11-12" when we know the gender, else just "11-12".
+    const gLabel = genderLabel(myGender);
+    const ageGroupLabel = (gLabel && ag && ag !== 'Unknown') ? `${gLabel} ${ag}` : ag;
+    return { ageGroup: ag, ageGroupLabel, gender: myGender, ranks };
   }
 
   // Build leaderboards across the whole roster.
@@ -1748,6 +2046,7 @@
     parseCSV, ingestCSV, ingestRows,
     findSwimmer,
     deleteSwimmer, pruneNonRosterSwimmers, addSwimmerManual, updateSwimmer,
+    getUploads, deleteUpload,
     migrateSeasonAges, countSwimmersNeedingSeasonMigration,
     clearAll, clearRoster, clearMeetTimes,
     isAdminLoggedIn, loginAdmin, logoutAdmin, onAuthChanged,

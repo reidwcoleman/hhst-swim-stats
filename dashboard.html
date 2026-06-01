@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="assets/styles.css?v=18"/>
+<link rel="stylesheet" href="assets/styles.css?v=20"/>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
 <!-- Firebase compat SDK -->
@@ -48,10 +48,18 @@
 </header>
 
 <section class="dash-hero">
+  <div class="dash-hero-bg" aria-hidden="true"></div>
   <div class="dash-hero-inner">
+    <a class="dash-hero-back" href="index.html" aria-label="Back to search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      <span>Back</span>
+    </a>
     <div class="swimmer-id">
-      <div class="avatar" id="avatar">RC</div>
-      <div style="flex:1;min-width:0">
+      <div class="avatar-wrap">
+        <div class="avatar" id="avatar">RC</div>
+        <span class="avatar-gender-pill" id="avatarGender" style="display:none" aria-hidden="true"></span>
+      </div>
+      <div class="swimmer-id-text">
         <div class="swimmer-name" id="swimmerName">Loading…</div>
         <div class="swimmer-meta" id="swimmerMeta"></div>
         <div class="swimmer-tagline" id="swimmerTagline" style="display:none"></div>
@@ -92,32 +100,38 @@
 
     <!-- HEADLINE STAT GRID -->
     <div class="stat-grid">
-      <div class="stat-card"><div class="accent"></div>
+      <div class="stat-card stat-races"><div class="accent"></div>
+        <div class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/><path d="M2 17c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/><path d="M2 7c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/></svg></div>
         <div class="label">Races Logged</div>
         <div class="value" id="kRaces">—</div>
         <div class="sub">Across all events</div>
       </div>
-      <div class="stat-card"><div class="accent"></div>
+      <div class="stat-card stat-meets"><div class="accent"></div>
+        <div class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div>
         <div class="label">Meets Attended</div>
         <div class="value" id="kMeets">—</div>
         <div class="sub">Distinct meets</div>
       </div>
-      <div class="stat-card"><div class="accent"></div>
+      <div class="stat-card stat-events"><div class="accent"></div>
+        <div class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/></svg></div>
         <div class="label">Events Swum</div>
         <div class="value" id="kEvents">—</div>
         <div class="sub">Unique event types</div>
       </div>
-      <div class="stat-card"><div class="accent"></div>
+      <div class="stat-card stat-prs"><div class="accent"></div>
+        <div class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M21 7v6h-6"/></svg></div>
         <div class="label">PRs Held</div>
         <div class="value" id="kPRs">—</div>
         <div class="sub">Events where the latest swim is the fastest</div>
       </div>
-      <div class="stat-card"><div class="accent"></div>
+      <div class="stat-card stat-podium"><div class="accent"></div>
+        <div class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M8.5 13L5 22l7-4 7 4-3.5-9"/></svg></div>
         <div class="label">Podium Finishes</div>
         <div class="value" id="kPodium">—</div>
         <div class="sub" id="kPodiumSub">Top-3 placings</div>
       </div>
-      <div class="stat-card"><div class="accent"></div>
+      <div class="stat-card stat-drop"><div class="accent"></div>
+        <div class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14l-7 7-7-7"/><path d="M12 3v18"/></svg></div>
         <div class="label">Total Time Dropped</div>
         <div class="value" id="kDrop">—</div>
         <div class="sub">Cumulative seconds shaved off PRs</div>
@@ -210,7 +224,7 @@
     <!-- TEAM RANKINGS -->
     <div class="chart-card">
       <h3>Where You Rank<span class="rank-suffix" id="rankAgeGroup"></span></h3>
-      <p class="lead">Your placing within your age group on the Hurricanes roster for each event you've swum.</p>
+      <p class="lead" id="rankLead">Your placing within your age group on the Hurricanes roster for each event you've swum.</p>
       <div id="ranksList" class="ranks-list"></div>
     </div>
 
@@ -274,7 +288,7 @@
   Highcroft Hurricanes Swim Team · <a href="index.html">Back to home</a>
 </footer>
 
-<script src="assets/data.js?v=13"></script>
+<script src="assets/data.js?v=14"></script>
 <script>
   HHST.initTheme();
   document.getElementById('themeToggle').addEventListener('click', HHST.toggleTheme);
@@ -389,11 +403,31 @@
     const meta = document.getElementById('swimmerMeta');
     const sInfo = HHST.swimmerSeasonInfo(sw, activeSeason);
     const chips = [];
-    if(sInfo.age) chips.push(`<span class="chip">Age ${escapeHtml(sInfo.age)}</span>`);
-    if(stats.ageGroup && stats.ageGroup !== 'Unknown') chips.push(`<span class="chip">${escapeHtml(stats.ageGroup)} Age Group</span>`);
-    if(sInfo.group) chips.push(`<span class="chip">${escapeHtml(sInfo.group)}</span>`);
-    if(sw.parents && sw.parents.length) chips.push(`<span class="chip">Family: ${escapeHtml(sw.parents[0])}</span>`);
+    const genderLabel = sInfo.gender === 'F' ? 'Girls' : sInfo.gender === 'M' ? 'Boys' : '';
+    if(sInfo.age) chips.push(`<span class="chip chip-age"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v8M8 12h8"/><circle cx="12" cy="12" r="9"/></svg>Age ${escapeHtml(sInfo.age)}</span>`);
+    if(stats.ageGroup && stats.ageGroup !== 'Unknown'){
+      const heatLabel = genderLabel ? `${genderLabel} ${stats.ageGroup}` : `${stats.ageGroup}`;
+      chips.push(`<span class="chip chip-heat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>${escapeHtml(heatLabel)}</span>`);
+    }
+    if(sInfo.group) chips.push(`<span class="chip chip-squad"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/></svg>${escapeHtml(sInfo.group)}</span>`);
+    if(sw.parents && sw.parents.length) chips.push(`<span class="chip chip-family"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>${escapeHtml(sw.parents[0])}</span>`);
     meta.innerHTML = chips.join('') || '<span class="chip">Highcroft Hurricane</span>';
+
+    // Gender pill on the avatar (purely decorative ♀/♂)
+    const genderEl = document.getElementById('avatarGender');
+    if(genderEl){
+      if(sInfo.gender === 'F'){
+        genderEl.textContent = '♀';
+        genderEl.className = 'avatar-gender-pill is-girls';
+        genderEl.style.display = '';
+      } else if(sInfo.gender === 'M'){
+        genderEl.textContent = '♂';
+        genderEl.className = 'avatar-gender-pill is-boys';
+        genderEl.style.display = '';
+      } else {
+        genderEl.style.display = 'none';
+      }
+    }
 
     // Tagline (one-liner summary)
     const tagline = buildTagline(stats);
@@ -537,10 +571,28 @@
   function renderRanks(sw){
     const host = document.getElementById('ranksList');
     const ageSuffixEl = document.getElementById('rankAgeGroup');
-    const { ageGroup, ranks } = HHST.rankSwimmerInAgeGroup(sw, allSwimmers, activeSeason);
+    const leadEl = document.getElementById('rankLead');
+    const { ageGroup, ageGroupLabel, gender, ranks } = HHST.rankSwimmerInAgeGroup(sw, allSwimmers, activeSeason);
     // Set unconditionally — renderRanks re-runs on season change, so clear a
     // stale suffix when the swimmer resolves to Unknown for the new season.
-    ageSuffixEl.textContent = (ageGroup && ageGroup !== 'Unknown') ? ` in ${ageGroup}` : '';
+    // Use the gender-prefixed label ("Girls 11-12") so the heading matches the
+    // actual heat being compared (girls vs. girls, boys vs. boys).
+    const label = ageGroupLabel || ageGroup;
+    ageSuffixEl.textContent = (label && label !== 'Unknown') ? ` in ${label}` : '';
+
+    // Make the same-gender rule explicit in the supporting copy. The user
+    // requested gender-split rankings — surface what's actually happening so
+    // parents aren't surprised by missing kids in the comparison set.
+    if(leadEl){
+      if(gender === 'F'){
+        leadEl.textContent = `Placing among the other girls in the ${ageGroup} age group on the Hurricanes roster.`;
+      } else if(gender === 'M'){
+        leadEl.textContent = `Placing among the other boys in the ${ageGroup} age group on the Hurricanes roster.`;
+      } else {
+        leadEl.textContent = `Placing within your age group on the Hurricanes roster for each event you've swum.`;
+      }
+    }
+
     const entries = Object.entries(ranks).sort((a,b) => HHST.compareEventLabel(a[0], b[0]));
     if(!entries.length){
       host.innerHTML = '<div class="empty">Once we have times in your age group, your team rank will appear here.</div>';
@@ -550,15 +602,17 @@
       const pct = r.total > 1 ? ((r.total - r.rank) / (r.total - 1)) : 1;
       const badge = r.rank === 1 ? '🥇' : r.rank === 2 ? '🥈' : r.rank === 3 ? '🥉' : '';
       const rankClass = r.rank === 1 ? 'rank-1' : r.rank <= 3 ? 'rank-top3' : r.rank <= Math.max(5, r.total*0.25) ? 'rank-top' : '';
+      const pctLabel = r.total > 1 ? `Top ${Math.max(1, Math.round((r.rank / r.total) * 100))}%` : 'Only swimmer';
       return `
         <div class="rank-row ${rankClass}">
           <div class="rank-event">${escapeHtml(event)}</div>
-          <div class="rank-bar">
+          <div class="rank-bar" title="${pctLabel}">
             <div class="rank-bar-fill" style="width:${(pct*100).toFixed(1)}%"></div>
           </div>
           <div class="rank-place">
             <span class="rank-badge">${badge}</span>
-            <strong>${ordinal(r.rank)}</strong> of ${r.total}
+            <strong>${ordinal(r.rank)}</strong>
+            <span class="rank-place-of">of ${r.total}</span>
           </div>
         </div>`;
     }).join('');

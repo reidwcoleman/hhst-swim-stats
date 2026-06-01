@@ -334,6 +334,22 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
       </details>
     </div>
 
+    <!-- UPLOADED FILES CARD — per-file, per-season history with one-click
+         remove. Lets a coach undo a single mistaken roster or meet file
+         instead of wiping everything. -->
+    <div class="card" id="uploadsCard">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap">
+        <div>
+          <h2 style="margin:0">Uploaded Files</h2>
+          <p class="lead" style="margin:4px 0 0">Every roster and meet file you've uploaded, grouped by season. Click the trash icon to remove just that file — its swimmers stay, but the times (or roster spots) it added are taken back out, and stats recompute.</p>
+        </div>
+        <select id="uploadsSeasonFilter" class="lb-select" style="min-width:190px" title="Show files for a single season">
+          <option value="">All seasons</option>
+        </select>
+      </div>
+      <div id="uploadsBody" style="margin-top:16px"></div>
+    </div>
+
     <!-- MANUAL ADD CARD -->
     <div class="card">
       <h2>Add or Update Swimmer Manually</h2>
@@ -470,7 +486,7 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
   </div>
 </div>
 
-<script src="assets/data.js?v=13"></script>
+<script src="assets/data.js?v=14"></script>
 <script>
   HHST.initTheme();
 
@@ -684,7 +700,11 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
           const rows = await readFileToRows(f);
           const sheetTag = f.__chosenSheet ? ` (sheet "${f.__chosenSheet}")` : '';
           setStatus('ok', `Importing ${f.name}${sheetTag} — ${rows.length} rows (${i+1}/${supported.length})…`);
-          const result = await HHST.ingestRows(rows, { mode, season: uploadSeason });
+          // One uploadId per dropped file so it can be removed on its own later
+          // from the "Uploaded files" panel. Kept unique across files in the
+          // same drop (Date.now + index + slug of the name).
+          const uploadId = `${HHST.slugify(uploadSeason)}__${mode}__${Date.now()}__${i}__${HHST.slugify(f.name)}`;
+          const result = await HHST.ingestRows(rows, { mode, season: uploadSeason, uploadId, fileName: f.name });
           totals.added         += result.added || 0;
           totals.profileUpdates += result.profileUpdates || 0;
           totals.meets         += result.meets || 0;
@@ -922,10 +942,13 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
 
   // SEARCH BOX
   let cachedData = { swimmers:{}, lastUpload:null };
+  let cachedUploads = [];
+  let deletingUpload = false; // guard: only one deleteUpload in flight at a time
   document.getElementById('searchInput').addEventListener('input', e => renderRoster(e.target.value));
   document.getElementById('rosterSeasonFilter').addEventListener('change', () => {
     renderRoster(document.getElementById('searchInput').value);
   });
+  document.getElementById('uploadsSeasonFilter').addEventListener('change', renderUploads);
 
   // KPI + roster refresh
   async function refreshAll(){
@@ -958,6 +981,154 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
     // ("current season") when renderRoster reads it on the first paint.
     refreshSeasonUI();
     renderRoster(document.getElementById('searchInput').value);
+    refreshUploads();
+  }
+
+  // Load the uploaded-files registry and (re)render the Uploaded Files card.
+  async function refreshUploads(){
+    try {
+      cachedUploads = await HHST.getUploads();
+    } catch(err){
+      console.error('Could not load uploads', err);
+      cachedUploads = [];
+    }
+    renderUploads();
+  }
+
+  function renderUploads(){
+    const card = document.getElementById('uploadsCard');
+    const body = document.getElementById('uploadsBody');
+    const filterSel = document.getElementById('uploadsSeasonFilter');
+    if(!card || !body) return;
+
+    // Keep the season filter options in sync with the seasons that actually
+    // have files. Preserve the current selection when still valid.
+    const seasons = Array.from(new Set(cachedUploads.map(u => u.season || ''))).filter(Boolean);
+    seasons.sort((a,b) => {
+      const ya = (a.match(/(\d{4})/)||[])[1]||0, yb = (b.match(/(\d{4})/)||[])[1]||0;
+      if(yb !== ya) return yb - ya;
+      return b.localeCompare(a, undefined, { numeric:true });
+    });
+    if(filterSel){
+      const prev = filterSel.value;
+      filterSel.innerHTML = '<option value="">All seasons</option>' +
+        seasons.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+      filterSel.value = (prev && (prev === '' || seasons.includes(prev))) ? prev : '';
+    }
+    const activeFilter = filterSel ? (filterSel.value || '') : '';
+
+    if(!cachedUploads.length){
+      body.innerHTML = `<div class="empty" style="padding:28px 16px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <div>No files uploaded yet. Roster and meet files you upload above will appear here so you can remove any single one.</div>
+      </div>`;
+      return;
+    }
+
+    const shown = activeFilter ? cachedUploads.filter(u => (u.season||'') === activeFilter) : cachedUploads;
+
+    // Group by season (newest first; seasons() already sorted).
+    const order = activeFilter ? [activeFilter] : seasons.slice();
+    // Include an "(no season)" bucket for any legacy/odd rows.
+    const noSeason = shown.filter(u => !u.season);
+    const html = order.map(season => {
+      const files = shown.filter(u => (u.season||'') === season);
+      if(!files.length) return '';
+      return renderSeasonBlock(season, files);
+    }).join('') + (noSeason.length ? renderSeasonBlock('', noSeason) : '');
+
+    body.innerHTML = html || `<div class="empty" style="padding:20px">No files for this season.</div>`;
+
+    body.querySelectorAll('button[data-upl]').forEach(b => b.addEventListener('click', async () => {
+      // deleteUpload does a non-transactional read-modify-write across the whole
+      // swimmers collection. Two overlapping deletes would race and could
+      // resurrect data, so allow only one at a time and freeze every trash
+      // button (across all season blocks) for the duration.
+      if(deletingUpload) return;
+      const id = b.dataset.upl;
+      const u = cachedUploads.find(x => x.id === id);
+      if(!u) return;
+      const kind = u.mode === 'roster' ? 'roster file' : 'meet file';
+      const detail = u.mode === 'roster'
+        ? `This will remove the roster spots "${u.fileName||id}" added to the ${u.season} season. Swimmers who are also on another file or have times on record are kept; swimmers this file alone added (with no times) are removed.`
+        : `This will remove the ${u.addedResults||0} race time(s) "${u.fileName||id}" added to the ${u.season} season. Swimmers stay on the roster; their stats, PRs, and time-dropped recompute without these times.`;
+      if(!confirm(`Remove this ${kind}?\n\n${detail}\n\nThis can't be undone (but you can re-upload the file).`)) return;
+      deletingUpload = true;
+      body.querySelectorAll('button[data-upl]').forEach(x => { x.disabled = true; });
+      const card2 = b.closest('.upload-file-row');
+      if(card2) card2.style.opacity = '0.5';
+      try {
+        const res = await HHST.deleteUpload(id);
+        const summary = u.mode === 'roster'
+          ? `Removed roster file "${u.fileName||id}". ${res.removedSwimmers} swimmer${res.removedSwimmers===1?'':'s'} removed, ${res.updatedSwimmers} updated.`
+          : `Removed meet file "${u.fileName||id}". Took back ${res.removedResults} race time${res.removedResults===1?'':'s'} across ${res.updatedSwimmers} swimmer${res.updatedSwimmers===1?'':'s'}.`;
+        deletingUpload = false;
+        await refreshAll();
+        setStatus('ok', summary);
+      } catch(err){
+        console.error(err);
+        deletingUpload = false;
+        await refreshAll();
+        setStatus('err', 'Could not remove file: ' + (err.message || err));
+      }
+    }));
+  }
+
+  // Render one season's group of uploaded files (roster files first, then meets).
+  function renderSeasonBlock(season, files){
+    const roster = files.filter(f => f.mode === 'roster');
+    const meets  = files.filter(f => f.mode !== 'roster');
+    const ordered = roster.concat(meets);
+    const title = season ? escapeHtml(season) : 'No season tag';
+    const rows = ordered.map(renderUploadRow).join('');
+    return `
+      <div class="uploads-season" style="margin-bottom:18px">
+        <h3 class="age-group-h" style="margin:0 0 10px">
+          <span class="bracket-pill bracket-pill-lg" style="background:rgba(34,197,94,.16);color:#22c55e;border-color:rgba(34,197,94,.32)">${title}</span>
+          <span class="age-group-count">${ordered.length} file${ordered.length===1?'':'s'}</span>
+        </h3>
+        <div style="display:flex;flex-direction:column;gap:8px">${rows}</div>
+      </div>`;
+  }
+
+  function renderUploadRow(u){
+    const isRoster = u.mode === 'roster';
+    const icon = isRoster
+      ? '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>'
+      : '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>';
+    const typeChip = isRoster
+      ? '<span class="training-chip" style="background:rgba(59,130,246,.16);color:#3b82f6;border-color:rgba(59,130,246,.32)">Roster</span>'
+      : '<span class="training-chip" style="background:rgba(245,158,11,.16);color:#f59e0b;border-color:rgba(245,158,11,.32)">Meet</span>';
+    const when = (function(){
+      const t = u.uploadedAt;
+      let d = null;
+      if(t && typeof t.toDate === 'function') d = t.toDate();
+      else if(t && typeof t.seconds === 'number') d = new Date(t.seconds*1000);
+      if(!d || isNaN(d.getTime())) return '';
+      return d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}) +
+             ' · ' + d.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'});
+    })();
+    const stat = isRoster
+      ? `${u.swimmerCount||0} swimmer${(u.swimmerCount||0)===1?'':'s'}` +
+        ((u.newSwimmerKeys && u.newSwimmerKeys.length) ? ` · ${u.newSwimmerKeys.length} new` : '')
+      : `${u.addedResults||0} race${(u.addedResults||0)===1?'':'s'}` +
+        ((u.meetNames && u.meetNames.length) ? ` · ${escapeHtml(u.meetNames.slice(0,2).join(', '))}${u.meetNames.length>2?` +${u.meetNames.length-2}`:''}` : '');
+    const name = escapeHtml(u.fileName || u.id || 'Uploaded file');
+    return `
+      <div class="upload-file-row" style="display:flex;align-items:center;gap:12px;padding:11px 14px;border:1px solid var(--border);border-radius:11px;background:var(--surface)">
+        <span style="color:var(--text-muted);display:flex">${icon}</span>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <strong style="font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:340px" title="${name}">${name}</strong>
+            ${typeChip}
+          </div>
+          <div style="font-size:12.5px;color:var(--text-muted);margin-top:3px">${stat}${when ? ` · ${when}` : ''}</div>
+        </div>
+        <button class="icon-trash" data-upl="${escapeHtml(u.id)}" title="Remove this file" aria-label="Remove ${name}"
+          style="flex:none;display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:9px;border:1px solid var(--border-strong);background:transparent;color:var(--text-muted);cursor:pointer">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+        </button>
+      </div>`;
   }
 
   // Refresh the season <datalist> (autocomplete on the upload picker), default
