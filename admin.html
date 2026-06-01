@@ -295,42 +295,59 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
       </details>
     </div>
 
-    <!-- MEET RESULTS UPLOAD CARD -->
-    <div class="card">
-      <h2>Upload Meet Results</h2>
-      <p class="lead">
-        Drop one or more Swimtopia <strong>meet results files</strong> here — CSV or Excel (<code>.xlsx</code>, <code>.xls</code>). Required: <code>Athlete</code> (or <code>Athlete First Name</code> + <code>Athlete Last Name</code>), <code>Event</code>, <code>Time</code>, <code>Meet</code>. Optional: <code>Date</code>, <code>Place</code>, <code>Age</code>, <code>Group</code>. Names in <em>"Last, First"</em> format are flipped automatically. <strong>Heads up:</strong> after a times upload, any swimmer no longer on the current roster is removed automatically.
-      </p>
-
-      <!-- SEASON PICKER — required before upload. The datalist suggests every
-           season the system has seen so far; coaches can also type a new one. -->
-      <div class="season-picker" style="margin:0 0 14px;display:flex;flex-wrap:wrap;align-items:flex-end;gap:14px">
-        <div class="field" style="flex:1;min-width:220px;margin:0">
-          <label for="seasonInput" style="display:block;margin-bottom:6px;font-weight:600;color:var(--text)">Season for this upload <span style="color:var(--accent)">*</span></label>
-          <input type="text" id="seasonInput" list="seasonOptions" placeholder="e.g. 2025 Summer" autocomplete="off"
-                 style="width:100%;padding:12px 14px;border-radius:10px;background:var(--surface);color:var(--text);border:1px solid var(--border-strong);font-size:14.5px"/>
-          <datalist id="seasonOptions"></datalist>
-          <p class="field-hint" style="margin:6px 0 0;font-size:12.5px;color:var(--text-muted)">
-            Every race in the file gets tagged with this season so leaderboards, Fastest Five, and time-dropped can be filtered to a single season. Use a consistent format like <code>YYYY Summer</code> or <code>YYYY-YY Winter</code> so they sort newest-first.
-          </p>
+    <!-- ADD A MEET CARD — one meet at a time, named by the coach. The name you
+         type becomes the meet shown in every swimmer's stats; the file just
+         supplies the times. -->
+    <div class="card meet-card">
+      <div class="meet-card-head">
+        <span class="meet-card-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+        </span>
+        <div>
+          <h2 style="margin:0">Add a Meet</h2>
+          <p class="lead" style="margin:4px 0 0">Name the meet, pick its season, and drop the results file. The name you type — like <em>“Highcroft at Riverstone”</em> — is what shows in each swimmer's stats. One file = one meet.</p>
         </div>
       </div>
 
-      <label class="drop-zone" id="dropZone" for="csvFile">
+      <div class="meet-form-grid">
+        <div class="field" style="margin:0">
+          <label for="meetNameInput" style="display:block;margin-bottom:6px;font-weight:600;color:var(--text)">Meet name <span style="color:var(--accent)">*</span></label>
+          <input type="text" id="meetNameInput" list="meetNameOptions" placeholder="e.g. Highcroft at Riverstone" autocomplete="off"
+                 style="width:100%;padding:12px 14px;border-radius:10px;background:var(--surface);color:var(--text);border:1px solid var(--border-strong);font-size:14.5px"/>
+          <datalist id="meetNameOptions"></datalist>
+        </div>
+        <div class="field" style="margin:0">
+          <label for="meetDateInput" style="display:block;margin-bottom:6px;font-weight:600;color:var(--text)">Meet date <span style="color:var(--text-muted);font-weight:400">(optional)</span></label>
+          <input type="date" id="meetDateInput"
+                 style="width:100%;padding:12px 14px;border-radius:10px;background:var(--surface);color:var(--text);border:1px solid var(--border-strong);font-size:14.5px"/>
+        </div>
+        <div class="field" style="margin:0">
+          <label for="seasonInput" style="display:block;margin-bottom:6px;font-weight:600;color:var(--text)">Season <span style="color:var(--accent)">*</span></label>
+          <input type="text" id="seasonInput" list="seasonOptions" placeholder="e.g. 2025 Summer" autocomplete="off"
+                 style="width:100%;padding:12px 14px;border-radius:10px;background:var(--surface);color:var(--text);border:1px solid var(--border-strong);font-size:14.5px"/>
+          <datalist id="seasonOptions"></datalist>
+        </div>
+      </div>
+      <p class="field-hint" style="margin:0 0 14px;font-size:12.5px;color:var(--text-muted)">
+        Only swimmers already on this season's roster are matched — uploading a meet never changes who's on the roster, it just adds these times to their profiles. A meet date entered here applies to the whole meet; leave it blank to use the file's own dates.
+      </p>
+
+      <label class="drop-zone meet-drop" id="dropZone" for="csvFile">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        <h3>Drag &amp; drop your results file(s) here</h3>
-        <p>or click to browse · CSV or Excel (.xlsx, .xls) · drop several meets at once</p>
-        <input type="file" id="csvFile" multiple accept=".csv,.xlsx,.xls,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"/>
+        <h3>Drop this meet's results file</h3>
+        <p>or click to browse · one CSV or Excel (.xlsx, .xls) file</p>
+        <input type="file" id="csvFile" accept=".csv,.xlsx,.xls,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"/>
       </label>
       <div class="upload-status" id="uploadStatus"></div>
 
       <details style="margin-top:18px;color:var(--text-muted);font-size:13.5px">
-        <summary style="cursor:pointer;font-weight:600;color:var(--text)">Results CSV format example</summary>
-<pre style="background:var(--bg-alt);padding:14px;border-radius:10px;margin-top:12px;font-size:12.5px;overflow-x:auto;border:1px solid var(--border);color:var(--text)">Athlete,Event,Time,Meet,Date,Age,Group,Place
-"Carter, Riley",50 Free,28.42,Spring Invitational,2026-03-14,11,Bronze,3
-"Carter, Riley",100 Free,1:02.18,Spring Invitational,2026-03-14,11,Bronze,5
-"Rivera, Mateo",50 Free,30.10,Spring Invitational,2026-03-14,10,Silver,7
-"Thompson, Ava",50 Fly,35.20,Spring Invitational,2026-03-14,12,Gold,2</pre>
+        <summary style="cursor:pointer;font-weight:600;color:var(--text)">Results file columns the importer needs</summary>
+        <p style="margin:12px 0 8px">Required: <code>Athlete</code> (or <code>Athlete First Name</code> + <code>Athlete Last Name</code>), <code>Event</code>, <code>Time</code>. Optional: <code>Date</code>, <code>Place</code>, <code>Age</code>, <code>Group</code>. You don't need a <code>Meet</code> column — the name you type above is used for every race. Names in <em>"Last, First"</em> format are flipped automatically.</p>
+<pre style="background:var(--bg-alt);padding:14px;border-radius:10px;margin-top:12px;font-size:12.5px;overflow-x:auto;border:1px solid var(--border);color:var(--text)">Athlete,Event,Time,Date,Age,Group,Place
+"Carter, Riley",50 Free,28.42,2026-03-14,11,Bronze,3
+"Carter, Riley",100 Free,1:02.18,2026-03-14,11,Bronze,5
+"Rivera, Mateo",50 Free,30.10,2026-03-14,10,Silver,7
+"Thompson, Ava",50 Fly,35.20,2026-03-14,12,Gold,2</pre>
       </details>
     </div>
 
@@ -486,7 +503,7 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
   </div>
 </div>
 
-<script src="assets/data.js?v=14"></script>
+<script src="assets/data.js?v=15"></script>
 <script>
   HHST.initTheme();
 
@@ -659,6 +676,16 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
       }
 
       const mode = label === 'roster' ? 'roster' : 'results';
+      // A named meet is exactly one file. Drag-and-drop bypasses the input's
+      // single-file limit, so reject a multi-file meet drop up front (rather
+      // than silently importing an arbitrary one) — each meet needs its own
+      // name, so they must be uploaded one at a time.
+      if(mode === 'results' && supported.length > 1){
+        setStatus('err', `Drop one file per meet — you dropped ${supported.length}. Each meet gets its own name, so upload them one at a time.`);
+        const inp = document.getElementById('csvFile');
+        if(inp) inp.value = '';
+        return;
+      }
       // Both roster and times uploads are now season-scoped: roster tags
       // each swimmer with the season they were on the team for, then
       // times-mode only matches against that season's roster.
@@ -678,6 +705,25 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
         const inp = document.getElementById(fileInputId);
         if(inp) inp.value = '';
         return;
+      }
+      // Meet uploads are named: the coach types the meet name (and optional
+      // date), which is applied to every race in the file. Require the name.
+      let meetName = '', meetDate = '';
+      if(mode === 'results'){
+        const nameInput = document.getElementById('meetNameInput');
+        meetName = (nameInput && nameInput.value || '').trim();
+        meetDate = (document.getElementById('meetDateInput') && document.getElementById('meetDateInput').value || '').trim();
+        if(!meetName){
+          setStatus('err', 'Name this meet first (e.g. "Highcroft at Riverstone") above the drop zone, then upload again. That name is what shows in each swimmer\'s stats.');
+          if(nameInput){
+            nameInput.focus();
+            nameInput.style.borderColor = 'var(--red, #ef4444)';
+            setTimeout(() => { nameInput.style.borderColor = ''; }, 1800);
+          }
+          const inp = document.getElementById('csvFile');
+          if(inp) inp.value = '';
+          return;
+        }
       }
       // Remember it for next time so coaches don't re-type for the same season
       try { localStorage.setItem('hhst.lastSeason', uploadSeason); } catch(_){}
@@ -704,7 +750,7 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
           // from the "Uploaded files" panel. Kept unique across files in the
           // same drop (Date.now + index + slug of the name).
           const uploadId = `${HHST.slugify(uploadSeason)}__${mode}__${Date.now()}__${i}__${HHST.slugify(f.name)}`;
-          const result = await HHST.ingestRows(rows, { mode, season: uploadSeason, uploadId, fileName: f.name });
+          const result = await HHST.ingestRows(rows, { mode, season: uploadSeason, uploadId, fileName: f.name, meetName, meetDate });
           totals.added         += result.added || 0;
           totals.profileUpdates += result.profileUpdates || 0;
           totals.meets         += result.meets || 0;
@@ -755,9 +801,16 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
           + (totals.added ? `; added ${totals.added} race${totals.added===1?'':'s'}` : '')
           + '.';
       } else {
-        body = `Added ${totals.added} race${totals.added===1?'':'s'} across ${touchedSwimmers} swimmer${touchedSwimmers===1?'':'s'} to season "${uploadSeason}".`;
+        body = `Added "${meetName}" to season "${uploadSeason}" — ${totals.added} race${totals.added===1?'':'s'} across ${touchedSwimmers} swimmer${touchedSwimmers===1?'':'s'}.`;
         if(prunedNames.length){
           body += ` Removed ${prunedNames.length} orphan swimmer${prunedNames.length===1?'':'s'} (no roster, no times on file).`;
+        }
+        // Clear the meet fields only when the upload actually landed races and
+        // skipped no one — so a coach who uploaded before the roster existed
+        // (every swimmer skipped) doesn't have to re-type the name to retry.
+        if(totals.filesOk && !totals.errors.length && totals.added > 0 && !totals.skippedSwimmers.size){
+          const nm = document.getElementById('meetNameInput'); if(nm) nm.value = '';
+          const dt = document.getElementById('meetDateInput'); if(dt) dt.value = '';
         }
       }
       const skippedArr = Array.from(totals.skippedSwimmers);
@@ -1048,11 +1101,12 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
       const id = b.dataset.upl;
       const u = cachedUploads.find(x => x.id === id);
       if(!u) return;
-      const kind = u.mode === 'roster' ? 'roster file' : 'meet file';
+      const meetLabel = u.meetName || (u.meetNames && u.meetNames[0]) || u.fileName || id;
+      const kind = u.mode === 'roster' ? 'roster file' : 'meet';
       const detail = u.mode === 'roster'
         ? `This will remove the roster spots "${u.fileName||id}" added to the ${u.season} season. Swimmers who are also on another file or have times on record are kept; swimmers this file alone added (with no times) are removed.`
-        : `This will remove the ${u.addedResults||0} race time(s) "${u.fileName||id}" added to the ${u.season} season. Swimmers stay on the roster; their stats, PRs, and time-dropped recompute without these times.`;
-      if(!confirm(`Remove this ${kind}?\n\n${detail}\n\nThis can't be undone (but you can re-upload the file).`)) return;
+        : `This will remove "${meetLabel}" (${u.addedResults||0} race time${(u.addedResults||0)===1?'':'s'}) from the ${u.season} season. Swimmers stay on the roster; their stats, PRs, and time-dropped recompute without this meet.`;
+      if(!confirm(`Remove this ${kind}?\n\n${detail}\n\nThis can't be undone (but you can re-upload it).`)) return;
       deletingUpload = true;
       body.querySelectorAll('button[data-upl]').forEach(x => { x.disabled = true; });
       const card2 = b.closest('.upload-file-row');
@@ -1061,7 +1115,7 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
         const res = await HHST.deleteUpload(id);
         const summary = u.mode === 'roster'
           ? `Removed roster file "${u.fileName||id}". ${res.removedSwimmers} swimmer${res.removedSwimmers===1?'':'s'} removed, ${res.updatedSwimmers} updated.`
-          : `Removed meet file "${u.fileName||id}". Took back ${res.removedResults} race time${res.removedResults===1?'':'s'} across ${res.updatedSwimmers} swimmer${res.updatedSwimmers===1?'':'s'}.`;
+          : `Removed meet "${meetLabel}". Took back ${res.removedResults} race time${res.removedResults===1?'':'s'} across ${res.updatedSwimmers} swimmer${res.updatedSwimmers===1?'':'s'}.`;
         deletingUpload = false;
         await refreshAll();
         setStatus('ok', summary);
@@ -1108,12 +1162,33 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
       return d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}) +
              ' · ' + d.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'});
     })();
+    // A nicely-formatted meet date ("Mar 14, 2026") from the stored YYYY-MM-DD.
+    const meetDateStr = (function(){
+      const raw = (u.meetDate || '').trim();
+      if(!raw) return '';
+      const m = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if(!m) return raw;
+      const d = new Date(+m[1], +m[2]-1, +m[3]);
+      if(isNaN(d.getTime())) return raw;
+      return d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'});
+    })();
+    // Roster rows are titled by their file; meet rows are titled by the MEET
+    // NAME the coach gave (falling back to the file's Meet column / filename),
+    // so this panel reads as "the meets in each season".
+    const title = isRoster
+      ? (u.fileName || u.id || 'Roster file')
+      : (u.meetName || (u.meetNames && u.meetNames[0]) || u.fileName || u.id || 'Meet');
+    const name = escapeHtml(title);
     const stat = isRoster
       ? `${u.swimmerCount||0} swimmer${(u.swimmerCount||0)===1?'':'s'}` +
         ((u.newSwimmerKeys && u.newSwimmerKeys.length) ? ` · ${u.newSwimmerKeys.length} new` : '')
-      : `${u.addedResults||0} race${(u.addedResults||0)===1?'':'s'}` +
-        ((u.meetNames && u.meetNames.length) ? ` · ${escapeHtml(u.meetNames.slice(0,2).join(', '))}${u.meetNames.length>2?` +${u.meetNames.length-2}`:''}` : '');
-    const name = escapeHtml(u.fileName || u.id || 'Uploaded file');
+      : (meetDateStr ? `${meetDateStr} · ` : '') +
+        `${u.addedResults||0} race${(u.addedResults||0)===1?'':'s'}` +
+        ((u.swimmerCount||0) ? ` · ${u.swimmerCount} swimmer${u.swimmerCount===1?'':'s'}` : '');
+    // Secondary line: the source filename + when it was uploaded.
+    const sub = isRoster
+      ? (when || '')
+      : [u.fileName ? `from ${escapeHtml(u.fileName)}` : '', when].filter(Boolean).join(' · ');
     return `
       <div class="upload-file-row" style="display:flex;align-items:center;gap:12px;padding:11px 14px;border:1px solid var(--border);border-radius:11px;background:var(--surface)">
         <span style="color:var(--text-muted);display:flex">${icon}</span>
@@ -1122,7 +1197,8 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
             <strong style="font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:340px" title="${name}">${name}</strong>
             ${typeChip}
           </div>
-          <div style="font-size:12.5px;color:var(--text-muted);margin-top:3px">${stat}${when ? ` · ${when}` : ''}</div>
+          <div style="font-size:12.5px;color:var(--text-muted);margin-top:3px">${stat}</div>
+          ${sub ? `<div style="font-size:11.5px;color:var(--text-muted);margin-top:2px;opacity:.8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${sub}</div>` : ''}
         </div>
         <button class="icon-trash" data-upl="${escapeHtml(u.id)}" title="Remove this file" aria-label="Remove ${name}"
           style="flex:none;display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:9px;border:1px solid var(--border-strong);background:transparent;color:var(--text-muted);cursor:pointer">
@@ -1139,6 +1215,13 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
     const dataList = document.getElementById('seasonOptions');
     if(dataList){
       dataList.innerHTML = allSeasons.map(s => `<option value="${escapeHtml(s)}"></option>`).join('');
+    }
+    // Suggest meet names already in use (so re-uploading a correction reuses the
+    // exact same name instead of creating a near-duplicate meet).
+    const meetList = document.getElementById('meetNameOptions');
+    if(meetList){
+      const meets = HHST.getAllMeets(cachedData.swimmers || {}).map(m => m.meet).filter(Boolean).filter(m => m !== 'Unknown Meet');
+      meetList.innerHTML = Array.from(new Set(meets)).map(m => `<option value="${escapeHtml(m)}"></option>`).join('');
     }
     // Pre-fill BOTH season inputs (roster + meet times): last-used season
     // (localStorage) → most recent known season → empty.

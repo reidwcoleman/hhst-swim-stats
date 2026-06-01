@@ -3557,3 +3557,17 @@ a.lb-entry-name:hover{color:var(--accent)!important;text-decoration:underline;te
 .icon-trash:hover{background:rgba(239,68,68,.12);color:#ef4444;border-color:rgba(239,68,68,.4)}
 .icon-trash:disabled{opacity:.5;cursor:default}
 .upload-file-row{transition:opacity .15s}
+
+/* ===== Add-a-Meet card ===== */
+.meet-card-head{display:flex;align-items:flex-start;gap:14px;margin-bottom:18px}
+.meet-card-badge{flex:none;display:flex;align-items:center;justify-content:center;width:46px;height:46px;border-radius:13px;
+  background:linear-gradient(135deg,rgba(245,158,11,.22),rgba(245,158,11,.06));
+  color:#f59e0b;border:1px solid rgba(245,158,11,.32)}
+.meet-card-badge svg{width:24px;height:24px}
+.meet-form-grid{display:grid;grid-template-columns:1.5fr .9fr 1fr;gap:14px;margin-bottom:10px}
+.meet-form-grid input:focus{outline:none;border-color:var(--accent)}
+.meet-drop{border-style:dashed}
+.meet-drop:hover{border-color:rgba(245,158,11,.5)}
+@media (max-width:680px){
+  .meet-form-grid{grid-template-columns:1fr}
+}

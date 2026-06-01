@@ -305,6 +305,13 @@
     // carry no uploadId and stay outside the per-file delete system.
     const uploadId = (opts.uploadId || '').toString().trim();
     const fileName = (opts.fileName || '').toString();
+    // Named-meet upload: the coach gives the meet an explicit name (e.g.
+    // "Highcroft at Riverstone") and optional date that apply to EVERY race in
+    // the file, regardless of what the file's Meet/Date columns say. This is how
+    // one upload == one named meet. Omitted for roster uploads and for legacy
+    // column-driven meet imports, which fall back to the file's own columns.
+    const meetName = (opts.meetName || '').toString().trim();
+    const meetDate = (opts.meetDate || '').toString().trim();
     if(!rows || rows.length < 2) return { added:0, swimmers:0, profileUpdates:0, skippedSwimmers:[], errors:['Empty file'] };
     const rawHeaders = rows[0];
     const headers = rawHeaders.map(mapHeader);
@@ -599,16 +606,19 @@
         const timeStr = fmtTime(rec.time);
         // Per-row season can override the upload-level default — useful when
         // the spreadsheet has a `season` column (rec.season is grabbed below
-        // from the header aliases).
-        const rowSeason = (rec.season || '').toString().trim() || season;
+        // from the header aliases). EXCEPTION: a named-meet upload is, by
+        // definition, one meet in the one season the coach picked — so a stray
+        // Season/Year column in the file must NOT scatter that meet across
+        // seasons. When meetName is set we pin every race to the upload season.
+        const rowSeason = meetName ? season : ((rec.season || '').toString().trim() || season);
         const result = {
           event: eventLabel,
           distance,
           stroke,
           time: timeStr,
           seconds: timeToSeconds(timeStr),
-          meet: rec.meet || 'Unknown Meet',
-          date: rec.date || '',
+          meet: meetName || rec.meet || 'Unknown Meet',
+          date: meetDate || rec.date || '',
           place: rec.place || '',
           split: rec.split || '',
           season: rowSeason,
@@ -616,7 +626,10 @@
         };
         sw.results.push(result);
         added++;
-        if(rec.meet) meetNames.add(rec.meet);
+        // Record the meet for the registry/summary — but don't let a meetless
+        // legacy row register the synthetic 'Unknown Meet' placeholder (matches
+        // the pre-named-meet behavior).
+        if(meetName || rec.meet) meetNames.add(result.meet);
         // Stage a mirror write to hhst_meet_times. Doc id = swimmer + event +
         // season + uploadId. Including the uploadId means each file owns its own
         // mirror docs, so two meet files that both carry the same swimmer+event+
@@ -732,6 +745,8 @@
           fileName: fileName || '',
           season,
           mode,
+          meetName: meetName || '',
+          meetDate: meetDate || '',
           addedResults: added,
           swimmerCount: writtenKeys.size,
           newSwimmerKeys: Array.from(newSwimmerKeys),
