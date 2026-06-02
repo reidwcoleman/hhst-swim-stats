@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <meta name="theme-color" content="#0b1d3a"/>
-<title>Hurricane Rankings Hub — Highcroft Hurricanes</title>
+<title>Season Stats — Highcroft Hurricanes</title>
 <meta name="robots" content="noindex,nofollow"/>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -15,6 +15,21 @@
 <style>
   /* Hide everything until auth check completes — admins only. */
   body:not(.auth-ready) > *{visibility:hidden}
+
+  /* ===== Season Stats (ss- prefixed) ===== */
+  .ss-season-bar{display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin:0 0 22px}
+  .ss-season-bar label{font-weight:700;color:var(--text);font-size:14px}
+  .ss-season-bar .lb-select{min-width:220px;font-size:15px;padding:11px 14px}
+  .ss-season-badge{display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:999px;font-size:12.5px;font-weight:700;
+    background:rgba(34,197,94,.16);color:#22c55e;border:1px solid rgba(34,197,94,.32)}
+  .ss-section-title{display:flex;align-items:baseline;gap:12px;margin:34px 0 14px}
+  .ss-section-title h2{font-family:'Fraunces',serif;font-size:22px;font-weight:700;margin:0}
+  .ss-section-title span{color:var(--text-muted);font-size:13px}
+  .ss-table-row-link{cursor:pointer}
+  .ss-table-row-link:hover{background:var(--bg-alt)}
+  .ss-cur-chip{background:rgba(34,197,94,.18);color:#22c55e;border-color:rgba(34,197,94,.35)}
+  .ss-drop{color:#22c55e;white-space:nowrap;font-weight:600}
+  .ss-muted{color:var(--text-muted)}
 </style>
 
 <!-- Firebase compat SDK -->
@@ -22,155 +37,6 @@
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="assets/firebase-init.js"></script>
-
-<style id="rk-style">
-  /* ===== Hurricane Rankings Hub — all rk- prefixed, token-driven ===== */
-  :root{--rk-bar-h:120px}
-
-  /* ---- Sticky command bar ---- */
-  .rk-bar{position:sticky;top:0;z-index:30;background:var(--surface-glass);backdrop-filter:saturate(180%) blur(18px);-webkit-backdrop-filter:saturate(180%) blur(18px);border-bottom:1px solid var(--border);padding:12px clamp(16px,4vw,40px);display:flex;flex-direction:column;gap:12px}
-  .rk-bar-row{display:flex;flex-wrap:wrap;align-items:flex-end;gap:14px}
-  .rk-bar-top{justify-content:space-between;align-items:center}
-  .rk-bar-search{display:flex;align-items:center;gap:10px;flex:1;justify-content:flex-end}
-  .rk-bar-filters{display:flex;flex-wrap:wrap;gap:14px}
-  .rk-f{margin:0}
-  .rk-f.rk-hidden{display:none}
-  .rk-search{background:var(--surface);border:1px solid var(--border-strong);border-radius:10px;padding:9px 14px;color:var(--text);font:600 13px/1 'Inter',sans-serif;min-width:180px}
-  .rk-search:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--ring)}
-  .rk-count{font-size:12.5px;color:var(--text-muted);min-width:64px;text-align:right}
-
-  /* ---- Stage / view panels ---- */
-  .rk-view[hidden]{display:none}
-  .rk-view:focus{outline:none}
-  .rk-view-note{color:var(--text-muted);font-size:13.5px;margin:0 0 14px}
-  .rk-fade-in{animation:rk-fade .18s ease}
-  @keyframes rk-fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-
-  /* ---- Table of contents (Board only) ---- */
-  .rk-toc{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:22px}
-  .rk-toc-pill{display:inline-flex;flex-direction:column;gap:1px;padding:8px 14px;border-radius:12px;background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--border-strong);text-decoration:none;color:var(--text);transition:transform .15s,border-color .15s}
-  .rk-toc-pill:hover{transform:translateY(-1px);border-color:var(--accent)}
-  .rk-toc-pill strong{font-weight:700}
-  .rk-toc-pill span{color:var(--text-subtle);font-size:12px}
-  .rk-toc-pill.toc-6-under{border-left-color:#f472b6}
-  .rk-toc-pill.toc-7-8{border-left-color:#a78bfa}
-  .rk-toc-pill.toc-9-10{border-left-color:#60a5fa}
-  .rk-toc-pill.toc-11-12{border-left-color:#34d399}
-  .rk-toc-pill.toc-13-14{border-left-color:#fbbf24}
-  .rk-toc-pill.toc-15-18{border-left-color:#f87171}
-  .rk-toc-pill.toc-unknown{border-left-color:#94a3b8}
-
-  /* ---- Section + sticky section head ---- */
-  .rk-section{margin-bottom:30px}
-  .rk-section[id]{scroll-margin-top:calc(var(--rk-bar-h) + 12px)}
-  .rk-section-head{position:sticky;top:var(--rk-bar-h);z-index:5;display:flex;align-items:center;gap:14px;padding:10px 0;margin-bottom:10px;background:var(--surface-glass);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
-  .rk-section-meta{color:var(--text-muted);font-size:13px}
-
-  /* ---- Board grid ---- */
-  .rk-cols-head,.rk-evrow{display:grid;grid-template-columns:minmax(132px,180px) 1fr 1fr;gap:16px;align-items:start}
-  .rk-cols-head[data-cols="1"],.rk-evrow[data-cols="1"]{grid-template-columns:minmax(132px,180px) 1fr}
-  .rk-cols-head{padding:0 16px 6px;font:600 11px/1 'Inter',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--text-subtle)}
-  .rk-col-cap.rk-cap-girls{color:#f9a8d4}
-  .rk-col-cap.rk-cap-boys{color:#93c5fd}
-
-  .rk-evrow{position:relative;overflow:hidden;background:var(--card-grad);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;margin-bottom:12px;transition:transform .15s,box-shadow .15s,border-color .15s}
-  @media (hover:hover){.rk-evrow:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg);border-color:var(--border-strong)}}
-  .rk-evrow::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px}
-  .rk-evrow.stroke-freestyle::before{background:linear-gradient(180deg,#60a5fa,#2563eb)}
-  .rk-evrow.stroke-backstroke::before{background:linear-gradient(180deg,#34d399,#059669)}
-  .rk-evrow.stroke-breaststroke::before{background:linear-gradient(180deg,#fbbf24,#d97706)}
-  .rk-evrow.stroke-butterfly::before{background:linear-gradient(180deg,#f472b6,#db2777)}
-  .rk-evrow.stroke-im::before{background:linear-gradient(180deg,#a78bfa,#7c3aed)}
-  .rk-evrow.stroke-other::before{background:var(--border-strong)}
-
-  .rk-event{padding-left:8px}
-  .rk-event h3{font-family:'Fraunces',serif;font-weight:700;font-size:17px;letter-spacing:-.01em}
-  .rk-stroke-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px;vertical-align:middle}
-  .rk-stroke-dot.stroke-freestyle{background:#60a5fa}
-  .rk-stroke-dot.stroke-backstroke{background:#34d399}
-  .rk-stroke-dot.stroke-breaststroke{background:#fbbf24}
-  .rk-stroke-dot.stroke-butterfly{background:#f472b6}
-  .rk-stroke-dot.stroke-im{background:#a78bfa}
-  .rk-stroke-dot.stroke-other{background:#94a3b8}
-
-  .rk-list{list-style:none;display:flex;flex-direction:column;gap:2px}
-  .rk-entry{display:grid;grid-template-columns:28px 1fr auto;align-items:center;gap:10px;padding:7px 10px;border-radius:10px;transition:background .15s,opacity .15s}
-  @media (hover:hover){.rk-entry:hover{background:var(--bg-alt)}}
-  .rk-rank{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:999px;font-family:'Fraunces',serif;font-weight:700;font-variant-numeric:tabular-nums;font-size:13px;background:var(--bg-alt);color:var(--text-muted)}
-  .rk-rank-1 .rk-rank{background:rgba(251,191,36,.18);color:var(--amber-300);box-shadow:0 0 0 3px rgba(251,191,36,.14)}
-  .rk-rank-2 .rk-rank{background:rgba(203,213,225,.16);color:#cbd5e1}
-  .rk-rank-3 .rk-rank{background:rgba(217,119,6,.16);color:#d97706}
-  .rk-rank-1{background:linear-gradient(90deg,rgba(251,191,36,.10),transparent)}
-  [data-theme="light"] .rk-rank-1 .rk-rank{color:#b45309}
-  [data-theme="light"] .rk-rank-2 .rk-rank{color:#475569}
-
-  .rk-entry-main{display:flex;flex-direction:column;gap:1px;min-width:0}
-  .rk-name{font-weight:600;font-size:14px;color:var(--text);text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  @media (hover:hover){.rk-name:hover{text-decoration:underline;color:var(--accent)}}
-  .rk-sub{font-size:11.5px;color:var(--text-subtle);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
-  .rk-time{font-family:'Fraunces',serif;font-variant-numeric:tabular-nums;font-weight:600;font-size:15px;color:var(--text);white-space:nowrap}
-  .rk-gap{display:inline-block;margin-left:6px;font-family:'Inter',sans-serif;font-size:11px;color:var(--text-subtle)}
-
-  .rk-empty{background:var(--card-grad);border:1px solid var(--border);border-radius:var(--radius-lg);padding:40px 24px;text-align:center;color:var(--text-muted)}
-  .rk-empty-row,.rk-entry.rk-empty{opacity:.4}
-
-  /* ---- Records ---- */
-  .rk-rec-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
-  .rk-rec-card{background:var(--card-grad);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 18px;transition:transform .15s,box-shadow .15s,border-color .15s}
-  @media (hover:hover){.rk-rec-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg)}}
-  .rk-rec-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
-  .rk-rec-head strong{font-family:'Fraunces',serif;font-weight:700;font-size:16px}
-  .rk-rec-gender{font-size:12px;color:var(--text-subtle)}
-  .rk-rec-row{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
-  .rk-rec-lbl{font:700 10.5px/1 'Inter',sans-serif;letter-spacing:.07em;text-transform:uppercase;color:var(--text-subtle);min-width:62px}
-  .rk-rec-alltime{margin-bottom:4px}
-  .rk-rec-meta{font-size:12px;color:var(--text-subtle);margin:2px 0 8px 62px}
-  .rk-rec-season{padding-top:8px;border-top:1px solid var(--border)}
-  .rk-muted{color:var(--text-subtle);font-style:italic}
-  .rk-badge-new{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:999px;font:700 11px/1 'Inter',sans-serif;letter-spacing:.04em;background:linear-gradient(135deg,var(--amber-400),var(--amber-300));color:#3a2a05;box-shadow:0 4px 12px -4px rgba(245,158,11,.5)}
-  .rk-rec-new{border-color:rgba(251,191,36,.4);box-shadow:0 0 0 1px rgba(251,191,36,.25),0 12px 28px -16px rgba(245,158,11,.4)}
-  .rk-rec-season-hot .rk-time{color:var(--amber-300)}
-
-  /* ---- Movers ---- */
-  .rk-movers-list{list-style:none;display:flex;flex-direction:column;gap:8px;max-width:760px}
-  .rk-mover{display:grid;grid-template-columns:44px 1fr auto;align-items:center;gap:14px;padding:14px 16px;background:var(--card-grad);border:1px solid var(--border);border-radius:var(--radius-lg);text-decoration:none;color:var(--text);transition:transform .15s,box-shadow .15s,border-color .15s}
-  @media (hover:hover){.rk-mover:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg);border-color:var(--border-strong)}}
-  .rk-mover .rk-rank{width:34px;height:34px;font-size:16px}
-  .rk-mover-main{min-width:0}
-  .rk-mover-sub{display:block;font-size:12.5px;color:var(--text-muted);margin-top:2px}
-  .rk-mover-drop{font-family:'Fraunces',serif;font-weight:700;font-size:22px;font-variant-numeric:tabular-nums;color:var(--green-light);white-space:nowrap}
-
-  /* ---- Live search states ---- */
-  .rk-dim{opacity:.28}
-  .rk-hit{outline:2px solid var(--accent);outline-offset:1px;border-radius:10px}
-  .rk-hit .rk-name{color:var(--accent)}
-
-  /* ---- Focus a11y ---- */
-  .rk-bar :focus-visible,.rk-toc-pill:focus-visible,.rk-name:focus-visible,.rk-mover:focus-visible{outline:none;box-shadow:0 0 0 3px var(--ring)}
-
-  /* ---- Responsive ---- */
-  @media (max-width:860px){
-    .rk-cols-head,.rk-evrow{grid-template-columns:1fr !important}
-    .rk-cols-head{display:none}
-    .rk-podium-girls::before{content:'Girls';display:block;font:600 10.5px/1 'Inter',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#f9a8d4;margin:6px 0 4px 10px}
-    .rk-podium-boys::before{content:'Boys';display:block;font:600 10.5px/1 'Inter',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#93c5fd;margin:6px 0 4px 10px}
-  }
-  @media (max-width:720px){
-    .rk-bar-search{flex-basis:100%;justify-content:flex-start}
-    .seg,#strokeSeg,#ageSeg,#genderSeg{overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch}
-    .seg button{min-height:38px}
-    .rk-f .lb-select{width:100%}
-    .rk-f[style*="max-width"]{max-width:none !important}
-    .rk-mover{grid-template-columns:34px 1fr}
-    .rk-mover-drop{grid-column:1/-1;text-align:right}
-  }
-
-  /* ---- Motion ---- */
-  @media (prefers-reduced-motion: reduce){
-    .rk-fade-in{animation:none}
-    .rk-evrow,.rk-rec-card,.rk-mover,.rk-toc-pill,.rk-entry,.rk-name{transition:none}
-  }
-</style>
 </head>
 <body>
 
@@ -188,7 +54,8 @@
     </a>
     <ul class="nav-links">
       <li><a href="index.html">Swimmer Lookup</a></li>
-      <li><a href="leaderboards.html" class="active">Leaderboards</a></li>
+      <li><a href="leaderboards.html" class="active">Season Stats</a></li>
+      <li><a href="awards.html">Fastest Five</a></li>
       <li><a href="admin.html" class="btn">Admin</a></li>
       <li>
         <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
@@ -203,84 +70,12 @@
 <section class="dash-hero leaderboard-hero">
   <div class="dash-hero-inner">
     <div class="leaderboard-hero-content">
-      <div class="kicker"><span class="pulse"></span> Team Rankings · Coaches View</div>
-      <h1>Hurricane Rankings Hub</h1>
-      <p class="lb-sub">Live team rankings, the all-time record book, and this season's biggest movers — all in one place. Boys and girls race separately; use the command bar to focus any view.</p>
-      <div class="lb-team-row" id="lbTeamRow">
-        <div class="lb-mini"><div class="lb-mini-val" id="tSwimmers">—</div><div class="lb-mini-lbl">Swimmers</div></div>
-        <div class="lb-mini"><div class="lb-mini-val" id="tRaces">—</div><div class="lb-mini-lbl">Races logged</div></div>
-        <div class="lb-mini"><div class="lb-mini-val" id="tMeets">—</div><div class="lb-mini-lbl">Meets</div></div>
-        <div class="lb-mini"><div class="lb-mini-val" id="tGold">—</div><div class="lb-mini-lbl">Golds 🥇</div></div>
-        <div class="lb-mini"><div class="lb-mini-val" id="tDrop">—</div><div class="lb-mini-lbl">Time dropped</div></div>
-      </div>
+      <div class="kicker"><span class="pulse"></span> Team Stats · Coaches View</div>
+      <h1>Season Stats</h1>
+      <p class="lb-sub">Every season's team totals in one place — swimmers, meets, races, medals, PRs, and total time dropped, broken down by age group and meet.</p>
     </div>
   </div>
 </section>
-
-<div class="rk-bar no-print" id="rkBar">
-  <div class="rk-bar-row rk-bar-top">
-    <div class="seg rk-viewseg" id="rkViewSeg" role="tablist" aria-label="Choose a view">
-      <button id="rkTabBoard"   data-view="board"   class="active" role="tab" aria-selected="true"  aria-controls="rkBoard">Board</button>
-      <button id="rkTabRecords" data-view="records"               role="tab" aria-selected="false" aria-controls="rkRecords">Records</button>
-      <button id="rkTabMovers"  data-view="movers"                role="tab" aria-selected="false" aria-controls="rkMovers">Movers</button>
-    </div>
-    <div class="rk-bar-search">
-      <input type="search" id="rkSearch" class="rk-search" placeholder="Search swimmer…" aria-label="Search swimmers" autocomplete="off">
-      <span class="rk-count" id="rkSearchCount" aria-live="polite"></span>
-      <button class="btn ghost rk-reset" id="rkReset" type="button">Reset</button>
-    </div>
-  </div>
-  <div class="rk-bar-row rk-bar-filters">
-    <div class="field rk-f" data-views="board records movers">
-      <label id="rkStrokeLbl">Stroke</label>
-      <div class="seg" id="strokeSeg" role="group" aria-labelledby="rkStrokeLbl">
-        <button data-stroke="Freestyle" class="active">Freestyle</button>
-        <button data-stroke="Backstroke">Backstroke</button>
-        <button data-stroke="Breaststroke">Breaststroke</button>
-        <button data-stroke="Butterfly">Butterfly</button>
-        <button data-stroke="IM">IM</button>
-        <button data-stroke="">All</button>
-      </div>
-    </div>
-    <div class="field rk-f" data-views="board records movers">
-      <label id="rkAgeLbl">Age Group</label>
-      <div class="seg" id="ageSeg" role="group" aria-labelledby="rkAgeLbl">
-        <button data-age="" class="active">All</button>
-        <button data-age="6 & Under">6 &amp; Under</button>
-        <button data-age="7-8">7–8</button>
-        <button data-age="9-10">9–10</button>
-        <button data-age="11-12">11–12</button>
-        <button data-age="13-14">13–14</button>
-        <button data-age="15-18">15–18</button>
-      </div>
-    </div>
-    <div class="field rk-f" data-views="board records movers">
-      <label id="rkGenderLbl">Gender</label>
-      <div class="seg" id="genderSeg" role="group" aria-labelledby="rkGenderLbl">
-        <button data-gender="" class="active">All</button>
-        <button data-gender="Boys">Boys</button>
-        <button data-gender="Girls">Girls</button>
-      </div>
-    </div>
-    <div class="field rk-f" data-views="board records movers" style="max-width:220px">
-      <label>Season</label>
-      <select id="seasonSelect" class="lb-select"><option value="">All seasons</option></select>
-    </div>
-    <div class="field rk-f" data-views="board" style="max-width:260px">
-      <label>Meet</label>
-      <select id="meetSelect" class="lb-select"><option value="">All meets</option></select>
-    </div>
-    <div class="field rk-f" data-views="board movers" style="max-width:200px">
-      <label>Show top</label>
-      <select id="topN" class="lb-select">
-        <option value="3">Top 3</option>
-        <option value="5" selected>Top 5</option>
-        <option value="10">Top 10</option>
-        <option value="25">Top 25</option>
-      </select>
-    </div>
-  </div>
-</div>
 
 <main class="admin-shell">
 
@@ -292,42 +87,120 @@
 
   <div id="emptyState" class="card" style="display:none;text-align:center;padding:60px 24px">
     <h2>No times in the system yet</h2>
-    <p class="lead">Upload meet results from the Admin page and the leaderboards will populate automatically.</p>
+    <p class="lead">Upload meet results from the Admin page and the season stats will populate automatically.</p>
     <a href="admin.html" class="btn lg" style="margin-top:8px;display:inline-flex">Open Admin</a>
   </div>
 
-  <div id="rkStage" class="rk-stage" style="display:none">
-    <div id="rkBoard"   class="rk-view"          role="tabpanel" aria-labelledby="rkTabBoard"   tabindex="-1">
-      <div class="rk-toc no-print" id="rkToc"></div>
-      <div id="rkBoardBody"></div>
-    </div>
-    <div id="rkRecords" class="rk-view" hidden   role="tabpanel" aria-labelledby="rkTabRecords" tabindex="-1">
-      <p class="rk-view-note" id="rkRecordsNote"></p>
-      <div id="rkRecordsBody"></div>
-    </div>
-    <div id="rkMovers"  class="rk-view" hidden   role="tabpanel" aria-labelledby="rkTabMovers"  tabindex="-1">
-      <p class="rk-view-note" id="rkMoversNote"></p>
-      <div id="rkMoversBody"></div>
-    </div>
-  </div>
+  <div id="statsStage" style="display:none">
 
-  <!-- Fastest Five lives on its own page (awards.html) so this view stays
-       focused on rankings; the admin nav surfaces both. -->
-  <div class="card no-print" style="display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap">
-    <div>
-      <h2 style="margin:0 0 4px;font-family:Fraunces,serif;font-weight:700;font-size:22px">Looking for the printable awards?</h2>
-      <p class="lead" style="margin:0">Each age group gets its own Fastest Five certificate on the dedicated awards page.</p>
+    <!-- SEASON PICKER -->
+    <div class="ss-season-bar">
+      <label for="seasonSelect">Season</label>
+      <select id="seasonSelect" class="lb-select"></select>
+      <span class="ss-season-badge" id="seasonBadge" style="display:none"></span>
     </div>
-    <a href="awards.html" class="btn">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-      Open Fastest Five
-    </a>
-  </div>
 
+    <!-- HEADLINE STAT CARDS -->
+    <div class="stat-grid">
+      <div class="stat-card stat-races"><div class="accent"></div>
+        <div class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+        <div class="label">Swimmers</div>
+        <div class="value" id="kSwimmers">—</div>
+        <div class="sub" id="kSwimmersSub">Raced this season</div>
+      </div>
+      <div class="stat-card stat-meets"><div class="accent"></div>
+        <div class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div>
+        <div class="label">Meets</div>
+        <div class="value" id="kMeets">—</div>
+        <div class="sub">Distinct meets</div>
+      </div>
+      <div class="stat-card stat-events"><div class="accent"></div>
+        <div class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/><path d="M2 17c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/><path d="M2 7c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/></svg></div>
+        <div class="label">Races Logged</div>
+        <div class="value" id="kRaces">—</div>
+        <div class="sub">Across all events</div>
+      </div>
+      <div class="stat-card stat-prs"><div class="accent"></div>
+        <div class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M21 7v6h-6"/></svg></div>
+        <div class="label">Personal Records</div>
+        <div class="value" id="kPRs">—</div>
+        <div class="sub">Best-time events this season</div>
+      </div>
+      <div class="stat-card stat-podium"><div class="accent"></div>
+        <div class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M8.5 13L5 22l7-4 7 4-3.5-9"/></svg></div>
+        <div class="label">Podium Finishes</div>
+        <div class="value" id="kPodium">—</div>
+        <div class="sub">Top-3 placings</div>
+      </div>
+      <div class="stat-card stat-drop"><div class="accent"></div>
+        <div class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14l-7 7-7-7"/><path d="M12 3v18"/></svg></div>
+        <div class="label">Total Time Dropped</div>
+        <div class="value" id="kDrop">—</div>
+        <div class="sub" id="kDropSub">Cumulative seconds shaved off PRs</div>
+      </div>
+    </div>
+
+    <!-- MEDALS -->
+    <div class="card" style="margin-top:18px">
+      <h2 style="margin:0 0 4px">Medals</h2>
+      <p class="lead" style="margin:0 0 16px">Heat-finish placings across this season's meets.</p>
+      <div class="medal-row">
+        <div class="medal medal-gold">
+          <div class="medal-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M8.5 13L5 22l7-4 7 4-3.5-9"/></svg></div>
+          <div class="medal-count" id="mGold">0</div>
+          <div class="medal-label">Gold</div>
+        </div>
+        <div class="medal medal-silver">
+          <div class="medal-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M8.5 13L5 22l7-4 7 4-3.5-9"/></svg></div>
+          <div class="medal-count" id="mSilver">0</div>
+          <div class="medal-label">Silver</div>
+        </div>
+        <div class="medal medal-bronze">
+          <div class="medal-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M8.5 13L5 22l7-4 7 4-3.5-9"/></svg></div>
+          <div class="medal-count" id="mBronze">0</div>
+          <div class="medal-label">Bronze</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BY AGE GROUP -->
+    <div class="ss-section-title"><h2>By Age Group</h2><span id="byGroupSeason"></span></div>
+    <div class="card">
+      <div class="table-wrap">
+        <table class="roster-table" style="min-width:560px">
+          <thead><tr><th>Age Group</th><th>Swimmers</th><th>Races</th><th>PRs</th><th>Time Dropped</th></tr></thead>
+          <tbody id="byGroupBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- MEETS -->
+    <div class="ss-section-title"><h2>Meets</h2><span id="meetsSeason"></span></div>
+    <div class="card">
+      <div class="table-wrap">
+        <table class="roster-table" style="min-width:560px">
+          <thead><tr><th>Meet</th><th>Date</th><th>Swimmers</th><th>Races</th></tr></thead>
+          <tbody id="meetsBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ALL SEASONS COMPARISON -->
+    <div class="ss-section-title"><h2>All Seasons</h2><span>Click a season to view its stats</span></div>
+    <div class="card">
+      <div class="table-wrap">
+        <table class="roster-table" style="min-width:620px">
+          <thead><tr><th>Season</th><th>Swimmers</th><th>Races</th><th>Meets</th><th>PRs</th><th>Time Dropped</th></tr></thead>
+          <tbody id="allSeasonsBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
 </main>
 
 <footer>
-  Highcroft Hurricanes Swim Team · <a href="index.html">Back to home</a> · <a href="admin.html">Admin</a>
+  Highcroft Hurricanes Swim Team · <a href="index.html">Swimmer Lookup</a> · <a href="awards.html">Fastest Five</a> · <a href="admin.html">Admin</a>
 </footer>
 
 <script src="assets/data.js?v=22"></script>
@@ -336,9 +209,8 @@
   document.getElementById('themeToggle').addEventListener('click', HHST.toggleTheme);
 
   // ============ Admin-only gate ============
-  // Leaderboards expose every swimmer's times — that's coaches-only.
-  // If not signed in, bounce to the admin login and bring the user back
-  // here on success.
+  // Season stats expose every swimmer's data — coaches only. If not signed in,
+  // bounce to the admin login and return here on success.
   (function gateBehindAdmin(){
     let resolved = false;
     FB.auth.onAuthStateChanged(user => {
@@ -347,45 +219,30 @@
       if(user){
         document.body.classList.add('auth-ready');
       } else {
-        const back = encodeURIComponent('leaderboards.html');
-        location.replace(`admin.html?next=${back}`);
+        location.replace('admin.html?next=' + encodeURIComponent('leaderboards.html'));
       }
     });
   })();
 
   let swimmers = {};
-  // The single source of truth for every view. seasonDefault remembers the
-  // first-load default so Reset can restore it without re-deriving.
-  let state = { view:'board', stroke:'Freestyle', age:'', gender:'', season:'', meet:'', top:5, q:'' };
-  let seasonDefault = '';
+  let activeSeason = '';
 
   (async () => {
-    // Wait for auth to confirm before fetching — keeps the page blank
-    // for unauthenticated visitors instead of flashing data on screen.
-    await new Promise(resolve => {
-      const unsub = FB.auth.onAuthStateChanged(u => { unsub(); resolve(u); });
-    });
+    await new Promise(resolve => { const unsub = FB.auth.onAuthStateChanged(u => { unsub(); resolve(u); }); });
     if(!FB.auth.currentUser) return;
     const loading = document.getElementById('loadingState');
     const empty   = document.getElementById('emptyState');
-    const stage   = document.getElementById('rkStage');
+    const stage   = document.getElementById('statsStage');
     try {
       const { swimmers: data } = await HHST.readAll();
       swimmers = data || {};
       loading.style.display = 'none';
       const total = Object.values(swimmers).reduce((s, sw) => s + ((sw.results||[]).length), 0);
-      if(total === 0){
-        empty.style.display = 'block';
-        return;
-      }
+      if(total === 0){ empty.style.display = 'block'; return; }
       stage.style.display = 'block';
       populateSeasons();
-      populateMeets();
-      renderTeamRow();
-      syncControlVisibility();
-      renderActiveView();
-      applySearchFilter();
-      measureBar();
+      renderAllSeasons();
+      render();
     } catch(err){
       console.error(err);
       loading.style.display = 'block';
@@ -393,483 +250,135 @@
     }
   })();
 
-  // ============ Helpers (kept verbatim — shared by every view) ============
-  function displayName(sw){
-    const full = sw.name || sw.swimmerName || '';
-    if(sw.preferredName){
-      const last = full.split(' ').filter(Boolean).pop() || '';
-      return `${sw.preferredName} ${last}`.trim() || full;
-    }
-    return full;
-  }
+  // ============ Helpers ============
   function escapeHtml(s){
     return (s||'').toString().replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
-  function slug(s){
-    return (s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
-  }
-  function fmtDate(s){
-    if(!s) return '';
-    const d = new Date(s);
-    if(isNaN(d)) return s;
-    return d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'});
-  }
-  function fmtDrop(sec){
-    if(!isFinite(sec)) return '—';
-    if(sec >= 60){
-      const m = Math.floor(sec/60);
-      const s = (sec - m*60).toFixed(1);
-      return `${m}:${s.padStart(4,'0')}`;
-    }
-    return sec.toFixed(1) + 's';
-  }
-  function formatMeetDate(s){
-    if(!s) return '';
-    const d = new Date(s);
-    if(isNaN(d)) return s;
+  function fmtNum(n){ return (n||0).toLocaleString(); }
+  function fmtDrop(sec){ if(!isFinite(sec) || sec <= 0) return '—'; return '−' + sec.toFixed(2) + 's'; }
+  function fmtDropMin(sec){ if(!isFinite(sec) || sec < 60) return ''; const m = Math.floor(sec/60); const s = (sec - m*60).toFixed(2); return `${m}:${s.padStart(5,'0')} min`; }
+  // Friendly meet date from ISO ("2026-06-14") or US ("07/15/25") strings.
+  function fmtMeetDate(raw){
+    raw = (raw||'').trim();
+    if(!raw) return '—';
+    let m = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+    let d;
+    if(m){ d = new Date(+m[1], +m[2]-1, +m[3]); }
+    else { m = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/); if(m){ let y=+m[3]; if(y<100) y+=2000; d = new Date(y, +m[1]-1, +m[2]); } }
+    if(!d || isNaN(d.getTime())) return raw;
     return d.toLocaleDateString(undefined, { month:'short', day:'numeric', year:'numeric' });
   }
 
-  // ============ Sticky-bar height measurement ============
-  // The Fraunces swap can change the bar height, so re-measure on load,
-  // resize (debounced), and after fonts settle. Section heads stick below it.
-  function measureBar(){
-    const bar = document.getElementById('rkBar');
-    if(bar) document.documentElement.style.setProperty('--rk-bar-h', bar.offsetHeight + 'px');
-  }
-  let _barT;
-  window.addEventListener('resize', () => { clearTimeout(_barT); _barT = setTimeout(measureBar, 150); });
-  if(document.fonts && document.fonts.ready){ document.fonts.ready.then(measureBar); }
-
-  // ============ Season + Meet dropdowns ============
-  // Default to the most-recent season WITH times so Board/Movers/Records
-  // aren't empty on first paint for a roster-only newest season.
   function populateSeasons(){
     const seasons = HHST.getAllSeasons(swimmers);
-    const def = HHST.currentSeasonWithTimes(swimmers) || HHST.currentSeason(swimmers) || '';
-    seasonDefault = def;
-    state.season = def;
     const sel = document.getElementById('seasonSelect');
-    if(!sel) return;
-    sel.innerHTML = '<option value="">All seasons</option>' +
-      seasons.map(s => {
-        const isDef = s === def;
-        return `<option value="${escapeHtml(s)}"${isDef ? ' selected' : ''}>${escapeHtml(s)}${isDef ? ' (current)' : ''}</option>`;
-      }).join('');
-    // If def === '' (pure-legacy data), "All seasons" stays selected by default.
+    sel.innerHTML = seasons.map((s,i) => `<option value="${escapeHtml(s)}">${escapeHtml(s)}${i===0?' (current)':''}</option>`).join('')
+      + '<option value="">All seasons combined</option>';
+    activeSeason = seasons[0] || '';
+    sel.value = activeSeason;
+    sel.addEventListener('change', () => { activeSeason = sel.value; render(); });
   }
 
-  function populateMeets(){
-    const sel = document.getElementById('meetSelect');
-    if(!sel) return;
-    const meets = HHST.getAllMeets(swimmers, { season: state.season });
-    const previousMeet = state.meet;
-    const fmt = (m) => m.date ? `${m.meet} · ${formatMeetDate(m.date)}` : m.meet;
-    sel.innerHTML = '<option value="">All meets</option>' +
-      meets.map(m => `<option value="${escapeHtml(m.meet)}"${m.meet === previousMeet ? ' selected' : ''}>${escapeHtml(fmt(m))}</option>`).join('');
-    if(!meets.some(m => m.meet === previousMeet)) state.meet = '';
+  // Swimmers who actually raced in the given season (season '' = all-time).
+  function seasonSwimmers(season){
+    return Object.values(swimmers).filter(sw =>
+      season ? (sw.results||[]).some(r => r && r.season === season) : (sw.results||[]).length > 0
+    );
   }
 
-  // ============ KPI ribbon ============
-  // KPIs follow Season + Meet. teamStats REQUIRES the raw map.
-  function renderTeamRow(){
-    const t = HHST.teamStats(swimmers, { season: state.season, meet: state.meet });
-    document.getElementById('tSwimmers').textContent = t.swimmerCount;
-    document.getElementById('tRaces').textContent    = t.totalRaces;
-    document.getElementById('tMeets').textContent    = t.meetCount;
-    document.getElementById('tGold').textContent     = t.gold;
-    document.getElementById('tDrop').textContent     = t.totalDropSec > 0 ? '−' + fmtDrop(t.totalDropSec) : '—';
+  function render(){
+    const season = activeSeason;
+    const badge = document.getElementById('seasonBadge');
+    if(season){ badge.style.display=''; badge.textContent = season; } else { badge.style.display='none'; }
+
+    const t = HHST.teamStats(swimmers, { season });
+    document.getElementById('kSwimmers').textContent = fmtNum(t.swimmerCount);
+    document.getElementById('kSwimmersSub').textContent = season ? 'Raced this season' : 'Raced all-time';
+    document.getElementById('kMeets').textContent = fmtNum(t.meetCount);
+    document.getElementById('kRaces').textContent = fmtNum(t.totalRaces);
+    document.getElementById('kPRs').textContent = fmtNum(t.prRaces);
+    document.getElementById('kPodium').textContent = fmtNum(t.podium);
+    document.getElementById('kDrop').textContent = t.totalDropSec > 0 ? fmtDrop(t.totalDropSec) : '—';
+    const dmin = fmtDropMin(t.totalDropSec);
+    document.getElementById('kDropSub').textContent = dmin ? `${dmin} shaved off PRs` : 'Cumulative seconds shaved off PRs';
+
+    document.getElementById('mGold').textContent   = fmtNum(t.gold);
+    document.getElementById('mSilver').textContent = fmtNum(t.silver);
+    document.getElementById('mBronze').textContent = fmtNum(t.bronze);
+
+    const label = season || 'All seasons';
+    document.getElementById('byGroupSeason').textContent = label;
+    document.getElementById('meetsSeason').textContent = label;
+
+    renderByGroup(season);
+    renderMeets(season);
   }
 
-  // ============ Control visibility per view ============
-  function syncControlVisibility(){
-    document.querySelectorAll('#rkBar .rk-f').forEach(f => {
-      const views = (f.dataset.views || '').split(/\s+/);
-      f.classList.toggle('rk-hidden', !views.includes(state.view));
-    });
-    document.getElementById('rkToc').style.display = state.view === 'board' ? '' : 'none';
+  function renderByGroup(season){
+    const body = document.getElementById('byGroupBody');
+    const list = seasonSwimmers(season);
+    const buckets = HHST.groupByBracket(list, season);
+    const rows = HHST.AGE_GROUP_ORDER.filter(g => g !== 'Unknown').map(bracket => {
+      const swrs = buckets[bracket] || [];
+      if(!swrs.length) return '';
+      let races = 0, drop = 0, prs = 0;
+      swrs.forEach(sw => { const s = HHST.statsForSwimmer(sw, { season }); races += s.totalRaces; drop += s.totalTimeDropSec; prs += s.prCount; });
+      const dmin = fmtDropMin(drop);
+      return `<tr>
+        <td><span class="bracket-pill bracket-${bracket.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'')}">${escapeHtml(bracket)}</span></td>
+        <td>${swrs.length}</td>
+        <td>${fmtNum(races)}</td>
+        <td>${fmtNum(prs)}</td>
+        <td>${drop > 0 ? `<span class="ss-drop">${fmtDrop(drop)}</span>${dmin?`<div style="font-size:11.5px;font-weight:400;margin-top:2px" class="ss-muted">${dmin}</div>`:''}` : '<span class="ss-muted">—</span>'}</td>
+      </tr>`;
+    }).filter(Boolean).join('');
+    body.innerHTML = rows || `<tr><td colspan="5" class="ss-muted" style="padding:18px;text-align:center">No swimmers raced this season yet.</td></tr>`;
   }
 
-  // ============ View dispatcher ============
-  function renderActiveView(){
-    if(state.view === 'board')        renderBoard();
-    else if(state.view === 'records') renderRecords();
-    else if(state.view === 'movers')  renderMovers();
-    measureBar();
-  }
-
-  function fadeIn(el){ el.classList.remove('rk-fade-in'); void el.offsetWidth; el.classList.add('rk-fade-in'); }
-
-  // ============ Live search — view-agnostic, no re-render ============
-  function applySearchFilter(){
-    const q = state.q;
-    const panel = document.querySelector('.rk-view:not([hidden])');
-    let n = 0;
-    if(panel){
-      panel.querySelectorAll('[data-key]').forEach(el => {
-        const name = (el.querySelector('.rk-name')?.textContent || '').toLowerCase();
-        const hit = !q || name.includes(q);
-        el.classList.toggle('rk-dim', !!q && !hit);
-        el.classList.toggle('rk-hit', !!q && hit);
-        if(hit) n++;
-      });
-    }
-    const countEl = document.getElementById('rkSearchCount');
-    countEl.textContent = q ? (n ? (n + ' match' + (n===1?'':'es')) : 'No matches') : '';
-  }
-
-  // ============ Event wiring ============
-  document.querySelectorAll('#rkViewSeg button').forEach(btn => btn.addEventListener('click', () => {
-    state.view = btn.dataset.view;
-    document.querySelectorAll('#rkViewSeg button').forEach(x => { x.classList.remove('active'); x.setAttribute('aria-selected','false'); });
-    btn.classList.add('active');
-    btn.setAttribute('aria-selected','true');
-    const panels = { board:'rkBoard', records:'rkRecords', movers:'rkMovers' };
-    Object.entries(panels).forEach(([v, id]) => {
-      document.getElementById(id).toggleAttribute('hidden', v !== state.view);
-    });
-    syncControlVisibility();
-    renderActiveView();
-    const panel = document.getElementById(panels[state.view]);
-    if(panel) panel.focus();
-    applySearchFilter();
-  }));
-
-  document.querySelectorAll('#strokeSeg button').forEach(btn => btn.addEventListener('click', () => {
-    document.querySelectorAll('#strokeSeg button').forEach(x => x.classList.remove('active'));
-    btn.classList.add('active');
-    state.stroke = btn.dataset.stroke;
-    renderActiveView();
-    applySearchFilter();
-  }));
-  document.querySelectorAll('#ageSeg button').forEach(btn => btn.addEventListener('click', () => {
-    document.querySelectorAll('#ageSeg button').forEach(x => x.classList.remove('active'));
-    btn.classList.add('active');
-    state.age = btn.dataset.age;
-    renderActiveView();
-    applySearchFilter();
-  }));
-  document.querySelectorAll('#genderSeg button').forEach(btn => btn.addEventListener('click', () => {
-    document.querySelectorAll('#genderSeg button').forEach(x => x.classList.remove('active'));
-    btn.classList.add('active');
-    state.gender = btn.dataset.gender;
-    renderActiveView();
-    applySearchFilter();
-  }));
-  document.getElementById('seasonSelect').addEventListener('change', (e) => {
-    state.season = e.target.value;
-    populateMeets();
-    renderTeamRow();
-    renderActiveView();
-    applySearchFilter();
-  });
-  document.getElementById('meetSelect').addEventListener('change', (e) => {
-    state.meet = e.target.value;
-    renderTeamRow();
-    renderActiveView();
-    applySearchFilter();
-  });
-  document.getElementById('topN').addEventListener('change', (e) => {
-    state.top = parseInt(e.target.value, 10);
-    renderActiveView();
-    applySearchFilter();
-  });
-
-  let _searchT;
-  const rkSearch = document.getElementById('rkSearch');
-  rkSearch.addEventListener('input', () => {
-    clearTimeout(_searchT);
-    _searchT = setTimeout(() => {
-      state.q = rkSearch.value.trim().toLowerCase();
-      applySearchFilter();
-    }, 120);
-  });
-
-  document.getElementById('rkReset').addEventListener('click', () => {
-    // Keep the current view so the coach doesn't lose their place.
-    state = { view: state.view, stroke:'Freestyle', age:'', gender:'', season: seasonDefault, meet:'', top:5, q:'' };
-    const setActive = (sel, pred) => document.querySelectorAll(sel).forEach(b => b.classList.toggle('active', pred(b)));
-    setActive('#strokeSeg button', b => b.dataset.stroke === 'Freestyle');
-    setActive('#ageSeg button',    b => b.dataset.age === '');
-    setActive('#genderSeg button', b => b.dataset.gender === '');
-    document.getElementById('seasonSelect').value = seasonDefault;
-    document.getElementById('topN').value = '5';
-    rkSearch.value = '';
-    populateMeets();
-    renderTeamRow();
-    renderActiveView();
-    applySearchFilter();
-  });
-
-  // ============================================================
-  // VIEW 1 — BOARD
-  // ============================================================
-  function strokeClassOf(stroke){ return (stroke||'Other').toLowerCase().replace(/\s+/g,''); }
-
-  function renderBoard(){
-    const body = document.getElementById('rkBoardBody');
-    const tocEl = document.getElementById('rkToc');
-
-    const boards = HHST.buildLeaderboards(swimmers, {
-      stroke: state.stroke || null,
-      top:    state.top,
-      season: state.season,
-      meet:   state.meet,
-      splitByGender: false
-    });
-
-    // Filter by age bracket, then group + sort.
-    const groups = {};
-    boards.forEach(b => {
-      if(state.age && b.bracket !== state.age) return;
-      (groups[b.bracket] = groups[b.bracket] || []).push(b);
-    });
-    Object.values(groups).forEach(arr => arr.sort((a,b) => HHST.compareEventLabel(a.event, b.event)));
-    const orderedAges = HHST.AGE_GROUP_ORDER.filter(ag => groups[ag] && groups[ag].length);
-
-    if(orderedAges.length === 0){
-      body.innerHTML = '<div class="rk-empty">No times match these filters yet.</div>';
-      tocEl.innerHTML = '';
-      return;
-    }
-
-    tocEl.innerHTML = orderedAges.map(ag => {
-      const n = groups[ag].length;
-      return `<a href="#rk-ag-${slug(ag)}" class="rk-toc-pill toc-${slug(ag)}"><strong>${escapeHtml(ag)}</strong><span>${n} event${n===1?'':'s'}</span></a>`;
+  function renderMeets(season){
+    const body = document.getElementById('meetsBody');
+    const ordered = HHST.getAllMeets(swimmers, { season });
+    // Count races + distinct swimmers per meet for this season.
+    const counts = {};
+    Object.values(swimmers).forEach(sw => (sw.results||[]).forEach(r => {
+      if(!r || !r.meet) return;
+      if(season && r.season !== season) return;
+      const c = counts[r.meet] || (counts[r.meet] = { races:0, swimmers:new Set() });
+      c.races++; c.swimmers.add(sw.key);
+    }));
+    const rows = ordered.map(m => {
+      const c = counts[m.meet] || { races:0, swimmers:new Set() };
+      return `<tr>
+        <td><strong>${escapeHtml(m.meet)}</strong></td>
+        <td class="ss-muted">${escapeHtml(fmtMeetDate(m.date))}</td>
+        <td>${c.swimmers.size}</td>
+        <td>${fmtNum(c.races)}</td>
+      </tr>`;
     }).join('');
+    body.innerHTML = rows || `<tr><td colspan="4" class="ss-muted" style="padding:18px;text-align:center">No meets recorded for this season yet.</td></tr>`;
+  }
 
-    const showGirls = state.gender !== 'Boys';
-    const showBoys  = state.gender !== 'Girls';
-
-    body.innerHTML = orderedAges.map(ag => {
-      const events = groups[ag];
-      const n = events.length;
-      return `<section class="rk-section" id="rk-ag-${slug(ag)}">
-        <div class="rk-section-head">
-          <span class="bracket-pill bracket-pill-lg bracket-${slug(ag)}">${escapeHtml(ag)}</span>
-          <span class="rk-section-meta">${n} event${n===1?'':'s'} · ${state.stroke ? escapeHtml(state.stroke) : 'All strokes'}</span>
-        </div>
-        <div class="rk-cols-head" data-cols="${(showGirls && showBoys) ? '2' : '1'}">
-          <span class="rk-col-event">Event</span>
-          ${showGirls ? '<span class="rk-col-cap rk-cap-girls">Girls</span>' : ''}
-          ${showBoys  ? '<span class="rk-col-cap rk-cap-boys">Boys</span>'  : ''}
-        </div>
-        ${events.map(buildEventRow).join('')}
-      </section>`;
+  function renderAllSeasons(){
+    const body = document.getElementById('allSeasonsBody');
+    const rows = HHST.teamStatsBySeason(swimmers);
+    body.innerHTML = rows.map((s, i) => {
+      const real = s.season !== '(Untagged)';
+      const dmin = fmtDropMin(s.totalDropSec);
+      return `<tr class="${real ? 'ss-table-row-link' : ''}" ${real ? `data-season="${escapeHtml(s.season)}"` : ''}>
+        <td><strong>${escapeHtml(s.season)}</strong>${i===0 && real ? ' <span class="training-chip ss-cur-chip" title="Most recent season">Current</span>' : ''}</td>
+        <td>${fmtNum(s.swimmerCount)}</td>
+        <td>${fmtNum(s.totalRaces)}</td>
+        <td>${fmtNum(s.meetCount)}</td>
+        <td>${fmtNum(s.prRaces)}</td>
+        <td>${s.totalDropSec > 0 ? `<span class="ss-drop">${fmtDrop(s.totalDropSec)}</span>${dmin?`<div style="font-size:11.5px;font-weight:400;margin-top:2px" class="ss-muted">${dmin}</div>`:''}` : '<span class="ss-muted">—</span>'}</td>
+      </tr>`;
     }).join('');
-    fadeIn(body);
-  }
-
-  function buildEventRow(b){
-    const sc = strokeClassOf(b.stroke);
-    const limit = state.top;
-    const girls = b.entries.filter(e => e.gender === 'F').slice(0, limit);
-    const boys  = b.entries.filter(e => e.gender === 'M').slice(0, limit);
-    const mixed = b.entries.filter(e => !e.gender).slice(0, limit);
-    const haveGendered = girls.length || boys.length;
-    const showGirls = state.gender !== 'Boys';
-    const showBoys  = state.gender !== 'Girls';
-
-    function entryHtml(e, i, leaderSeconds){
-      const rank = i + 1;
-      const rankClass = rank===1?'rk-rank-1':rank===2?'rk-rank-2':rank===3?'rk-rank-3':'';
-      const medal = rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':'';
-      const gap = (rank>1 && isFinite(e.seconds) && isFinite(leaderSeconds)) ? (e.seconds - leaderSeconds) : null;
-      return `<li class="rk-entry ${rankClass}" data-key="${escapeHtml(e.swimmerKey)}">
-        <span class="rk-rank">${medal || rank}</span>
-        <div class="rk-entry-main">
-          <a class="rk-name" href="dashboard.html?s=${encodeURIComponent(e.swimmerKey)}">${escapeHtml(e.swimmerName)}</a>
-          ${e.meet ? `<span class="rk-sub" title="${escapeHtml(e.meet)}${e.date?(' · '+escapeHtml(fmtDate(e.date))):''}">${escapeHtml(e.meet)}${e.date?(' · '+escapeHtml(fmtDate(e.date))):''}</span>` : ''}
-        </div>
-        <span class="rk-time">${escapeHtml(e.time)}${(gap!=null && gap>0)?`<span class="rk-gap">+${gap.toFixed(2)}s</span>`:''}</span>
-      </li>`;
-    }
-    function emptyEntry(rank){
-      return `<li class="rk-entry rk-empty">
-        <span class="rk-rank">${rank}</span>
-        <div class="rk-entry-main"><span class="rk-name">—</span></div>
-        <span class="rk-time">—</span>
-      </li>`;
-    }
-    function listHtml(entries){
-      const fillerCount = Math.max(0, Math.min(limit, 5) - entries.length);
-      const rows = entries.map((e,i) => entryHtml(e, i, entries[0] ? entries[0].seconds : NaN)).join('');
-      const filler = Array.from({length:fillerCount}, (_, i) => emptyEntry(entries.length + i + 1)).join('');
-      return `<ol class="rk-list">${rows}${filler}</ol>`;
-    }
-
-    let girlsCol = '', boysCol = '';
-    if(haveGendered){
-      if(showGirls) girlsCol = `<div class="rk-podium rk-podium-girls">${listHtml(girls)}</div>`;
-      if(showBoys)  boysCol  = `<div class="rk-podium rk-podium-boys">${listHtml(boys)}</div>`;
-    } else {
-      girlsCol = `<div class="rk-podium rk-podium-mixed" style="grid-column:2/-1">${listHtml(mixed)}</div>`;
-    }
-    return `<div class="rk-evrow stroke-${sc}" data-cols="${(showGirls&&showBoys&&haveGendered)?'2':'1'}">
-      <div class="rk-event">
-        <span class="rk-stroke-dot stroke-${sc}"></span>
-        <h3>${escapeHtml(b.event)}</h3>
-      </div>
-      ${girlsCol}
-      ${boysCol}
-    </div>`;
-  }
-
-  // ============================================================
-  // VIEW 2 — RECORDS (team record book)
-  // ============================================================
-  function renderRecords(){
-    const body = document.getElementById('rkRecordsBody');
-    const seasonSel = state.season; // '' = all seasons
-    const seasonShort = seasonSel || 'all-time';
-    document.getElementById('rkRecordsNote').textContent =
-      `Fastest swim ever per event vs the ${seasonShort} best. 🔥 marks a record set or tied this season.`;
-
-    const allTime = HHST.buildLeaderboards(swimmers, {
-      stroke: state.stroke || null, top: 1, season: '', meet: '', splitByGender: true
-    });
-    const seasonBest = seasonSel
-      ? HHST.buildLeaderboards(swimmers, { stroke: state.stroke || null, top: 1, season: seasonSel, meet: '', splitByGender: true })
-      : allTime; // all-seasons view: season-best === all-time, so never badge NEW
-    // Only the most-recent season WITH times can hold "the" current record.
-    const canBadge = !!seasonSel && seasonSel === (HHST.currentSeasonWithTimes(swimmers) || '');
-
-    const seasonMap = {};
-    seasonBest.forEach(b => { seasonMap[b.ageGroup + '||' + b.event] = (b.entries[0] || null); });
-
-    let rows = allTime.map(b => {
-      const rec = b.entries[0]; if(!rec) return null;
-      const sb  = seasonMap[b.ageGroup + '||' + b.event] || null;
-      const isNew = !!(canBadge && sb && isFinite(sb.seconds) && isFinite(rec.seconds) && sb.seconds <= rec.seconds);
-      return { bracket:b.bracket, ageGroup:b.ageGroup, gender:b.gender, event:b.event, stroke:b.stroke, rec, sb, isNew };
-    }).filter(Boolean);
-
-    // Command-bar filters (stroke already applied via both passes).
-    rows = rows.filter(r => {
-      if(state.age && r.bracket !== state.age) return false;
-      if(state.gender && HHST.genderLabel(r.gender) !== state.gender) return false;
-      return true;
-    });
-
-    if(rows.length === 0){
-      body.innerHTML = '<div class="rk-empty">No team records yet for this filter.</div>';
-      return;
-    }
-
-    // Group by bracket; order brackets canonically.
-    const groups = {};
-    rows.forEach(r => { (groups[r.bracket] = groups[r.bracket] || []).push(r); });
-    Object.values(groups).forEach(arr => arr.sort((a,b) =>
-      HHST.compareEventLabel(a.event, b.event) || ((a.gender==='F'?0:1) - (b.gender==='F'?0:1))
-    ));
-    const orderedAges = HHST.AGE_GROUP_ORDER.filter(ag => groups[ag] && groups[ag].length);
-
-    body.innerHTML = orderedAges.map(ag => {
-      const recs = groups[ag];
-      const n = recs.length;
-      const cards = recs.map(r => {
-        const sc = strokeClassOf(r.stroke);
-        const seasonRow = seasonSel ? `
-          <div class="rk-rec-row rk-rec-season${r.isNew?' rk-rec-season-hot':''}">
-            <span class="rk-rec-lbl">${escapeHtml(seasonShort)} best</span>
-            ${r.sb ? `<a class="rk-name" href="dashboard.html?s=${encodeURIComponent(r.sb.swimmerKey)}">${escapeHtml(r.sb.swimmerName)}</a><span class="rk-time">${escapeHtml(r.sb.time)}</span>`
-                   : '<span class="rk-muted">— no swim this season —</span>'}
-          </div>` : '';
-        return `<article class="rk-rec-card${r.isNew?' rk-rec-new':''}" data-key="${escapeHtml(r.rec.swimmerKey)}">
-          <header class="rk-rec-head">
-            <span class="rk-stroke-dot stroke-${sc}"></span>
-            <strong>${escapeHtml(r.event)}</strong>
-            <span class="rk-rec-gender">${escapeHtml(HHST.genderLabel(r.gender) || '')}</span>
-            ${r.isNew ? '<span class="rk-badge-new" role="status">🔥 NEW TEAM RECORD</span>' : ''}
-          </header>
-          <div class="rk-rec-row rk-rec-alltime">
-            <span class="rk-rec-lbl">All-time</span>
-            <a class="rk-name" href="dashboard.html?s=${encodeURIComponent(r.rec.swimmerKey)}">${escapeHtml(r.rec.swimmerName)}</a>
-            <span class="rk-time">${escapeHtml(r.rec.time)}</span>
-          </div>
-          <div class="rk-rec-meta">${escapeHtml(r.rec.meet||'')}${r.rec.date ? ' · ' + escapeHtml(fmtDate(r.rec.date)) : ''}</div>
-          ${seasonRow}
-        </article>`;
-      }).join('');
-      return `<section class="rk-section" id="rk-rec-${slug(ag)}">
-        <div class="rk-section-head">
-          <span class="bracket-pill bracket-pill-lg bracket-${slug(ag)}">${escapeHtml(ag)}</span>
-          <span class="rk-section-meta">${n} record${n===1?'':'s'}</span>
-        </div>
-        <div class="rk-rec-grid">${cards}</div>
-      </section>`;
-    }).join('');
-    fadeIn(body);
-  }
-
-  // ============================================================
-  // VIEW 3 — MOVERS (season improvement leaders)
-  // ============================================================
-  function renderMovers(){
-    const body = document.getElementById('rkMoversBody');
-    const season = state.season;
-    const strokeF = state.stroke || ''; // FULL name or ''
-    document.getElementById('rkMoversNote').textContent =
-      `Total time dropped ${season ? 'in ' + season : 'across all seasons'} — debut vs. personal best, summed across events.`;
-
-    const list = [];
-    Object.values(swimmers).forEach(sw => {
-      // Roster gate (statsForSwimmer does NOT roster-filter; legacy empty
-      // seasons[] is a wildcard and passes).
-      if(season){
-        const sws = Array.isArray(sw.seasons) ? sw.seasons : [];
-        if(sws.length && !sws.includes(season)) return;
-      }
-      const st = HHST.statsForSwimmer(sw, { season });
-      const improvedEvents = st.bestTimes.filter(b => b.improvement > 0);
-      let drop, nEvents, topEventLabel, topEventDrop;
-      if(strokeF){
-        const se = improvedEvents.filter(b => b.stroke === strokeF);
-        drop = se.reduce((s,b) => s + b.improvement, 0);
-        nEvents = se.length;
-        const top = se.slice().sort((a,b) => b.improvement - a.improvement)[0] || null;
-        topEventLabel = top ? top.event : ''; topEventDrop = top ? top.improvement : 0;
-      } else {
-        drop = st.totalTimeDropSec;
-        nEvents = improvedEvents.length;
-        topEventLabel = st.mostImproved ? st.mostImproved.event : '';
-        topEventDrop  = st.mostImproved ? st.mostImproved.improvement : 0;
-      }
-      if(!(drop > 0)) return; // excludes no-improvement / no in-season races (guards NaN)
-      const info = HHST.swimmerSeasonInfo(sw, season);
-      list.push({ key: sw.key, sw, group: HHST.competitionGroup(sw, season),
-                  bracket: st.ageGroup, gender: info.gender || '',
-                  drop, nEvents, topEventLabel, topEventDrop });
-    });
-
-    const filtered = list.filter(r => {
-      if(r.bracket === 'Unknown') return false;
-      if(state.age && r.bracket !== state.age) return false;
-      if(state.gender && HHST.genderLabel(r.gender) !== state.gender) return false;
-      return true;
-    });
-    filtered.sort((a,b) => (b.drop - a.drop) || (b.nEvents - a.nEvents) || displayName(a.sw).localeCompare(displayName(b.sw)));
-    const rows = filtered.slice(0, state.top);
-
-    if(rows.length === 0){
-      body.innerHTML = '<div class="rk-empty">No measurable time drops yet this season — once swimmers log a second timed swim in an event, their drops appear here.</div>';
-      return;
-    }
-
-    body.innerHTML = '<ol class="rk-movers-list">' + rows.map((r, i) => {
-      const rank = i + 1;
-      const rankClass = rank<=3 ? 'rk-rank-'+rank : '';
-      const medal = rank<=3 ? (['🥇','🥈','🥉'][rank-1]) : rank;
-      return `<li class="rk-mover ${rankClass}" data-key="${escapeHtml(r.key)}">
-        <span class="rk-rank">${medal}</span>
-        <div class="rk-mover-main">
-          <a class="rk-name" href="dashboard.html?s=${encodeURIComponent(r.key)}">${escapeHtml(displayName(r.sw))}</a>
-          <span class="rk-mover-sub">${r.nEvents} event${r.nEvents===1?'':'s'} improved${r.topEventLabel ? (' · best: ' + escapeHtml(r.topEventLabel) + ' −' + r.topEventDrop.toFixed(2) + 's') : ''}</span>
-        </div>
-        <span class="rk-mover-drop" title="Debut vs. personal best, summed across events">−${fmtDrop(r.drop)}</span>
-      </li>`;
-    }).join('') + '</ol>';
-    fadeIn(body);
+    body.querySelectorAll('tr[data-season]').forEach(tr => tr.addEventListener('click', () => {
+      const s = tr.dataset.season;
+      const sel = document.getElementById('seasonSelect');
+      sel.value = s; activeSeason = s; render();
+      document.getElementById('statsStage').scrollIntoView({ behavior:'smooth' });
+    }));
   }
 </script>
 
