@@ -967,10 +967,25 @@
           if(base[r.event] === undefined || r.seconds < base[r.event]) base[r.event] = r.seconds;
         }
       });
+      // Plausibility guard for guessed-distance data: no stroke beats freestyle
+      // over the same distance, so if a non-free TARGET time is faster than the
+      // swimmer's own freestyle at that distance, the distance label is wrong
+      // (a 25 mislabeled 50, etc.) — drop it rather than report a fake plunge.
+      const tgtFreeByDist = {};
+      Object.keys(tgt).forEach(ev => {
+        if(extractStroke(ev) !== 'Freestyle') return;
+        const d = extractDistance(ev);
+        if(d && (tgtFreeByDist[d] === undefined || tgt[ev] < tgtFreeByDist[d])) tgtFreeByDist[d] = tgt[ev];
+      });
       let totalDrop = 0;
       const eventsDropped = [];
       Object.keys(tgt).forEach(ev => {
         if(base[ev] === undefined) return;        // not swum at the baseline meet → can't compare
+        const stroke = extractStroke(ev);
+        if(stroke && stroke !== 'Freestyle'){
+          const f = tgtFreeByDist[extractDistance(ev)];
+          if(f !== undefined && tgt[ev] < f) return; // impossible time → bad distance label, skip
+        }
         const drop = base[ev] - tgt[ev];
         if(drop > 0){ totalDrop += drop; eventsDropped.push({ event: ev, drop }); }
       });
