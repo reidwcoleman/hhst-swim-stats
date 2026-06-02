@@ -12,6 +12,14 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
 <link rel="stylesheet" href="assets/styles.css?v=20"/>
+<style>
+  /* Progress-chart "time dropped" badge */
+  .chart-drop{display:inline-flex;align-items:center;gap:8px;margin:2px 0 14px;padding:7px 13px;border-radius:999px;
+    font-size:13px;font-weight:500;line-height:1.2;
+    background:rgba(34,197,94,.12);color:#22c55e;border:1px solid rgba(34,197,94,.30)}
+  .chart-drop strong{font-weight:700}
+  .chart-drop svg{flex:0 0 auto}
+</style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
 <!-- Firebase compat SDK -->
@@ -243,8 +251,9 @@
     <!-- PROGRESS CHART -->
     <div class="chart-card">
       <h3>Progress by Event</h3>
-      <p class="lead">Pick an event to see how times have trended across meets. The brightest dot is the current PR.</p>
+      <p class="lead">Pick an event to see how times have trended across meets. Each dot is a race; as times drop the line heads <strong>down</strong> — that's getting faster. The gold ⭐ dot is the current personal record.</p>
       <div class="tabs" id="eventTabs"></div>
+      <div id="chartDrop" class="chart-drop" style="display:none"></div>
       <div class="chart-host">
         <canvas id="progressChart"></canvas>
       </div>
@@ -757,6 +766,21 @@
     const pointBg = seconds.map(s => s === bestSec ? '#fbbf24' : (document.documentElement.getAttribute('data-theme')==='light' ? '#2563eb' : '#60a5fa'));
     const pointR  = seconds.map(s => s === bestSec ? 8 : 5);
 
+    // At-a-glance drop badge: how much faster the PR is vs the very first race
+    // of this event. Reinforces the "down = faster" reading of the chart.
+    const dropEl = document.getElementById('chartDrop');
+    if(dropEl){
+      const firstSec = seconds[0];
+      const improve = (isFinite(firstSec) && seconds.length >= 2) ? (firstSec - bestSec) : 0;
+      if(improve > 0.001){
+        dropEl.className = 'chart-drop is-faster';
+        dropEl.innerHTML = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M19 12l-7 7-7-7"/></svg><span><strong>${improve.toFixed(2)}s faster</strong> in the ${escapeHtml(eventData.event)} since the first race</span>`;
+        dropEl.style.display = '';
+      } else {
+        dropEl.style.display = 'none';
+      }
+    }
+
     const isLight = document.documentElement.getAttribute('data-theme') === 'light';
     const textColor = isLight ? '#516a8a' : '#b2c5e0';
     const gridColor = isLight ? 'rgba(30,64,175,.08)' : 'rgba(96,165,250,.12)';
@@ -811,12 +835,15 @@
         },
         scales:{
           y:{
-            reverse:true,
+            // Normal axis (NOT reversed): faster times sit lower, so the line
+            // trends DOWNWARD as the swimmer drops time — "my times are going
+            // down" reads the way everyone expects.
+            title:{ display:true, text:'Race time — lower is faster ↓', color:textColor, font:{ size:12, weight:'600' } },
             ticks:{color:textColor, callback: v=> HHST.fmtTime(v)},
             grid:{color:gridColor}
           },
           x:{
-            ticks:{color:textColor},
+            ticks:{color:textColor, maxRotation:0, autoSkipPadding:12},
             grid:{color:gridColor}
           }
         }

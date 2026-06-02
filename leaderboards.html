@@ -17,19 +17,47 @@
   body:not(.auth-ready) > *{visibility:hidden}
 
   /* ===== Season Stats (ss- prefixed) ===== */
-  .ss-season-bar{display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin:0 0 22px}
-  .ss-season-bar label{font-weight:700;color:var(--text);font-size:14px}
-  .ss-season-bar .lb-select{min-width:220px;font-size:15px;padding:11px 14px}
+  .ss-season-bar{display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin:0 0 26px;
+    padding:14px 18px;background:var(--surface-glass);border:1px solid var(--border);
+    border-radius:var(--radius-lg);box-shadow:var(--shadow-lg)}
+  .ss-season-bar label{font-weight:700;font-size:13px;letter-spacing:.02em;text-transform:uppercase;color:var(--text-muted)}
+  .ss-season-bar .lb-select{min-width:220px;font-size:15px;padding:11px 14px;transition:border-color .18s ease,box-shadow .18s ease}
+  .ss-season-bar .lb-select:hover{border-color:var(--border-strong)}
+  .ss-season-bar .lb-select:focus-visible{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--ring)}
   .ss-season-badge{display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:999px;font-size:12.5px;font-weight:700;
     background:rgba(34,197,94,.16);color:#22c55e;border:1px solid rgba(34,197,94,.32)}
-  .ss-section-title{display:flex;align-items:baseline;gap:12px;margin:34px 0 14px}
-  .ss-section-title h2{font-family:'Fraunces',serif;font-size:22px;font-weight:700;margin:0}
+  .ss-section-title{display:flex;align-items:baseline;gap:12px;margin:38px 0 14px}
+  .ss-section-title h2{font-family:'Fraunces',serif;font-size:22px;font-weight:700;margin:0;letter-spacing:-.01em}
   .ss-section-title span{color:var(--text-muted);font-size:13px}
-  .ss-table-row-link{cursor:pointer}
+  .ss-table-row-link{cursor:pointer;transition:background .16s ease}
   .ss-table-row-link:hover{background:var(--bg-alt)}
   .ss-cur-chip{background:rgba(34,197,94,.18);color:#22c55e;border-color:rgba(34,197,94,.35)}
   .ss-drop{color:#22c55e;white-space:nowrap;font-weight:600}
   .ss-muted{color:var(--text-muted)}
+  /* Polished table affordances */
+  .ss-section-title + .card .roster-table tbody tr{transition:background .16s ease}
+  .ss-section-title + .card .roster-table tbody tr:hover{background:var(--bg-alt)}
+  .ss-season-bar + .stat-grid .stat-card .sub{transition:color .18s ease}
+
+  /* ===== Top Movers ===== */
+  .ss-movers-card{margin-top:26px}
+  .ss-movers-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 4px}
+  .ss-movers-head h2{font-family:'Fraunces',serif;font-size:20px;font-weight:700;margin:0}
+  .ss-movers-head .ss-muted{font-size:12.5px}
+  .ss-movers-list{display:grid;gap:10px;margin-top:16px}
+  .ss-mover{display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:14px;
+    background:var(--bg-alt);border:1px solid var(--border);text-decoration:none;color:var(--text);
+    transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease,background .16s ease}
+  .ss-mover:hover{transform:translateY(-2px);border-color:var(--border-strong);box-shadow:var(--shadow-lg);background:var(--surface)}
+  .ss-mover-rank{flex:0 0 auto;width:30px;height:30px;display:grid;place-items:center;border-radius:9px;
+    font-family:'Fraunces',serif;font-weight:700;font-size:14px;color:var(--text-muted);
+    background:var(--surface);border:1px solid var(--border)}
+  .ss-mover:nth-child(1) .ss-mover-rank{color:#22c55e;border-color:rgba(34,197,94,.4);background:rgba(34,197,94,.12)}
+  .ss-mover-name{flex:1 1 auto;min-width:0;font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ss-mover-sub{display:block;font-size:12px;color:var(--text-subtle);font-weight:400;margin-top:1px}
+  .ss-mover-drop{flex:0 0 auto;font-family:'Fraunces',serif;font-weight:700;font-size:17px;color:#22c55e;white-space:nowrap}
+  .ss-mover-arrow{flex:0 0 auto;color:var(--text-subtle);transition:transform .16s ease,color .16s ease;display:flex}
+  .ss-mover:hover .ss-mover-arrow{transform:translateX(3px);color:var(--accent)}
 </style>
 
 <!-- Firebase compat SDK -->
@@ -161,6 +189,16 @@
           <div class="medal-label">Bronze</div>
         </div>
       </div>
+    </div>
+
+    <!-- TOP MOVERS -->
+    <div class="card ss-movers-card" id="moversCard" style="display:none">
+      <div class="ss-movers-head">
+        <h2>Top Movers</h2>
+        <span class="ss-muted" id="moversSub">Biggest time drops this season</span>
+      </div>
+      <p class="lead" style="margin:0">Swimmers who shaved the most total time off their best times.</p>
+      <div class="ss-movers-list" id="moversList"></div>
     </div>
 
     <!-- BY AGE GROUP -->
@@ -310,8 +348,34 @@
     document.getElementById('byGroupSeason').textContent = label;
     document.getElementById('meetsSeason').textContent = label;
 
+    renderMovers(season);
     renderByGroup(season);
     renderMeets(season);
+  }
+
+  // Top ~5 swimmers by total time dropped in the selected season.
+  function renderMovers(season){
+    const card = document.getElementById('moversCard');
+    const list = document.getElementById('moversList');
+    const sub  = document.getElementById('moversSub');
+    const movers = seasonSwimmers(season)
+      .map(sw => ({ sw, drop: HHST.statsForSwimmer(sw, { season }).totalTimeDropSec }))
+      .filter(m => isFinite(m.drop) && m.drop > 0)
+      .sort((a, b) => b.drop - a.drop)
+      .slice(0, 5);
+    if(!movers.length){ card.style.display = 'none'; return; }
+    card.style.display = '';
+    sub.textContent = season ? `Biggest time drops · ${season}` : 'Biggest time drops · all-time';
+    list.innerHTML = movers.map((m, i) => {
+      const info = HHST.swimmerSeasonInfo(m.sw, season);
+      const grp = info && info.bracket && info.bracket !== 'Unknown' ? escapeHtml(info.bracket) : '';
+      return `<a class="ss-mover" href="dashboard.html?s=${encodeURIComponent(m.sw.key)}">
+        <span class="ss-mover-rank">${i + 1}</span>
+        <span class="ss-mover-name">${escapeHtml(m.sw.name || 'Unknown')}${grp ? `<span class="ss-mover-sub">${grp}</span>` : ''}</span>
+        <span class="ss-mover-drop">${fmtDrop(m.drop)}</span>
+        <span class="ss-mover-arrow" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      </a>`;
+    }).join('');
   }
 
   function renderByGroup(season){

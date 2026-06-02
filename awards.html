@@ -15,6 +15,117 @@
 <style>
   /* Hide everything until auth check completes — admins only. */
   body:not(.auth-ready) > *{visibility:hidden}
+
+  /* ====================================================================
+     awards.html on-screen polish (prefixed `aw-` so nothing collides).
+     Every selector below is non-print decoration: the @media print block
+     in styles.css already hides .awards-intro, .no-print, #loadingState and
+     #emptyState, and never targets these classes — so this CSS can't reach
+     the printed posters or touch the safePrint()/.award-card flow.
+     All colors are driven from the global CSS vars for dark+light theming.
+     ==================================================================== */
+
+  /* --- Season + count meta row, shown under the intro heading --- */
+  .aw-meta{
+    display:flex;flex-wrap:wrap;align-items:center;gap:8px;
+    margin-top:12px;position:relative;z-index:1;
+  }
+  .aw-badge{
+    display:inline-flex;align-items:center;gap:7px;
+    padding:5px 11px 5px 9px;border-radius:999px;
+    font-size:12px;font-weight:600;line-height:1;
+    background:var(--surface-glass);
+    border:1px solid var(--border-strong);
+    color:var(--text);
+    letter-spacing:.01em;
+    transition:border-color .2s ease, background .2s ease;
+  }
+  .aw-badge:hover{border-color:var(--accent)}
+  .aw-badge svg{width:13px;height:13px;flex-shrink:0;color:var(--accent)}
+  .aw-badge .aw-badge-label{
+    font-weight:700;text-transform:uppercase;letter-spacing:.08em;
+    font-size:10px;color:var(--text-subtle);
+  }
+  .aw-badge .aw-badge-val{
+    font-family:'Fraunces',serif;font-weight:700;font-size:13px;
+    color:var(--text);
+  }
+  .aw-badge.aw-badge-count svg{color:var(--amber-300)}
+  .aw-badge.aw-badge-improved svg{color:#34d399}
+  .aw-badge[hidden]{display:none}
+
+  /* --- Sticky "Print all" affordance, appears once posters render --- */
+  .aw-sticky{
+    position:fixed;right:20px;bottom:20px;z-index:40;
+    display:none;align-items:center;gap:10px;
+    padding:11px 16px;border-radius:14px;
+    background:linear-gradient(135deg,#1e40af,#3b82f6);
+    color:#fff;border:1px solid rgba(255,255,255,.18);
+    font-family:'Inter',sans-serif;font-weight:600;font-size:13.5px;
+    cursor:pointer;
+    box-shadow:0 16px 34px -14px rgba(30,64,175,.7), 0 2px 8px -4px rgba(15,23,42,.4);
+    transition:transform .22s cubic-bezier(.16,1,.3,1), box-shadow .22s, opacity .22s;
+    opacity:0;transform:translateY(8px);
+  }
+  .aw-sticky.aw-show{display:inline-flex;opacity:1;transform:translateY(0)}
+  .aw-sticky:hover{transform:translateY(-2px);box-shadow:0 20px 40px -14px rgba(30,64,175,.8), 0 3px 10px -4px rgba(15,23,42,.45)}
+  .aw-sticky:active{transform:translateY(0)}
+  .aw-sticky:focus-visible{outline:none;box-shadow:0 0 0 3px var(--ring),0 16px 34px -14px rgba(30,64,175,.7)}
+  .aw-sticky svg{width:16px;height:16px;flex-shrink:0}
+  .aw-sticky .aw-sticky-count{
+    display:inline-flex;align-items:center;justify-content:center;
+    min-width:20px;height:20px;padding:0 6px;border-radius:999px;
+    background:rgba(255,255,255,.22);font-size:11.5px;font-weight:700;
+    font-variant-numeric:tabular-nums;
+  }
+  @media (max-width:560px){
+    .aw-sticky{right:12px;bottom:12px;padding:10px 13px;font-size:12.5px}
+    .aw-sticky .aw-sticky-label{display:none}
+  }
+
+  /* --- Section header above each poster group --- */
+  .aw-section-head{
+    display:flex;align-items:baseline;gap:12px;
+    margin:6px 2px 0;
+  }
+  .aw-section-head .aw-section-rule{
+    flex:1;height:1px;
+    background:linear-gradient(90deg,var(--border-strong),transparent);
+  }
+  .aw-section-head .aw-section-eyebrow{
+    font-size:11px;font-weight:700;text-transform:uppercase;
+    letter-spacing:.14em;color:var(--text-subtle);
+    white-space:nowrap;
+  }
+
+  /* --- Richer empty states (replaces inline-styled blocks) --- */
+  .aw-empty{
+    text-align:center;padding:54px 28px;
+    display:flex;flex-direction:column;align-items:center;gap:6px;
+  }
+  .aw-empty .aw-empty-icon{
+    width:56px;height:56px;border-radius:16px;
+    display:grid;place-items:center;margin:0 auto 8px;
+    background:var(--surface-glass);border:1px solid var(--border-strong);
+    color:var(--accent);
+  }
+  .aw-empty .aw-empty-icon svg{width:26px;height:26px}
+  .aw-empty h2{
+    font-family:'Fraunces',serif;font-weight:800;font-size:21px;
+    color:var(--text);letter-spacing:-.01em;margin:0;
+  }
+  .aw-empty .lead{max-width:420px;margin:0 auto}
+  .aw-empty .btn{margin-top:14px}
+
+  /* In-host empty (no posters for a section) — reuse .empty look, add icon */
+  .aw-host-empty{
+    display:flex;flex-direction:column;align-items:center;gap:8px;
+    text-align:center;
+  }
+  .aw-host-empty svg{
+    width:34px;height:34px;color:var(--text-subtle);opacity:.6;margin-bottom:2px;
+  }
+  .aw-host-empty strong{color:var(--text);font-weight:700}
 </style>
 
 <!-- Firebase compat SDK -->
@@ -68,6 +179,18 @@
       <div>
         <h2>Print &amp; Hang</h2>
         <p class="lead">Each age group gets its signature freestyle distance: 15-yard for 6 &amp; Under, 25-yard for 7&ndash;8 and 9&ndash;10, 50-yard for 11&ndash;12 and up. Save the lot as a single PDF, or print just one card from its corner button.</p>
+        <div class="aw-meta">
+          <span class="aw-badge" id="seasonBadge" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+            <span class="aw-badge-label">Season</span>
+            <span class="aw-badge-val" id="seasonBadgeVal">—</span>
+          </span>
+          <span class="aw-badge aw-badge-count" id="fastestCountBadge" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+            <span class="aw-badge-val" id="fastestCountVal">0</span>
+            <span class="aw-badge-label" id="fastestCountLabel">posters</span>
+          </span>
+        </div>
       </div>
       <div class="awards-controls" style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
         <button class="btn" id="printAllAwards">
@@ -87,12 +210,19 @@
   </div>
   <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 
-  <div id="emptyState" class="card no-print" style="display:none;text-align:center;padding:60px 24px">
+  <div id="emptyState" class="card no-print aw-empty" style="display:none">
+    <div class="aw-empty-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/><path d="M2 17c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/><path d="M2 7c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/></svg>
+    </div>
     <h2>No times in the system yet</h2>
-    <p class="lead">Upload meet results from the Admin page and the Fastest Five will populate automatically.</p>
-    <a href="admin.html" class="btn lg" style="margin-top:8px;display:inline-flex">Open Admin</a>
+    <p class="lead">Upload meet results from the Admin page and the Fastest Five posters will populate automatically.</p>
+    <a href="admin.html" class="btn lg" style="display:inline-flex">Open Admin</a>
   </div>
 
+  <div class="aw-section-head no-print" id="fastestSectionHead" style="display:none">
+    <span class="aw-section-eyebrow">Fastest Five posters</span>
+    <span class="aw-section-rule" aria-hidden="true"></span>
+  </div>
   <section id="awardsHost" class="awards-host"></section>
 
   <!-- ============ MOST IMPROVED POSTERS ============ -->
@@ -102,12 +232,26 @@
         <h2 class="improved-h2">Most Improved</h2>
         <p class="lead">Top time-droppers from the most recent meet — total seconds shaved across every event each swimmer raced. One poster per age group with Boys + Girls side-by-side.</p>
         <p class="awards-intro-meet"><strong id="improvedMeetName">—</strong><span id="improvedMeetDate" class="awards-intro-meet-date"></span><span id="improvedVsMeet" class="awards-intro-meet-date"></span></p>
+        <div class="aw-meta">
+          <span class="aw-badge aw-badge-improved" id="improvedCountBadge" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+            <span class="aw-badge-val" id="improvedCountVal">0</span>
+            <span class="aw-badge-label" id="improvedCountLabel">posters</span>
+          </span>
+        </div>
       </div>
     </div>
   </div>
   <section id="improvedHost" class="awards-host awards-host-improved"></section>
 
 </main>
+
+<!-- Sticky Print-all affordance — appears once posters render, scrolls with the page. -->
+<button class="aw-sticky no-print" id="stickyPrintAll" type="button" aria-label="Print all posters">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+  <span class="aw-sticky-label">Print all</span>
+  <span class="aw-sticky-count" id="stickyPrintCount">0</span>
+</button>
 
 <footer>
   Highcroft Hurricanes Swim Team · <a href="leaderboards.html">Season Stats</a> · <a href="admin.html">Admin</a>
@@ -192,11 +336,49 @@
     return b;
   }
 
+  // ============ On-screen meta: season badge, poster counts, sticky print ============
+  const fastestSectionHead = document.getElementById('fastestSectionHead');
+
+  function setSeasonBadge(season){
+    const badge = document.getElementById('seasonBadge');
+    const val   = document.getElementById('seasonBadgeVal');
+    if(!badge || !val) return;
+    if(season){ val.textContent = season; badge.hidden = false; }
+    else { badge.hidden = true; }
+  }
+
+  function setBadgeCount(badgeId, valId, labelId, n){
+    const badge = document.getElementById(badgeId);
+    const val   = document.getElementById(valId);
+    const label = document.getElementById(labelId);
+    if(!badge || !val) return;
+    val.textContent = n;
+    if(label) label.textContent = (n === 1 ? 'poster' : 'posters');
+    badge.hidden = n === 0;
+  }
+  function setFastestCount(n){ setBadgeCount('fastestCountBadge','fastestCountVal','fastestCountLabel', n); }
+  function setImprovedCount(n){ setBadgeCount('improvedCountBadge','improvedCountVal','improvedCountLabel', n); }
+
+  // Keeps the sticky "Print all" pill in sync with the live poster count and
+  // only reveals it once there's at least one poster to print.
+  function updateStickyPrint(){
+    const sticky = document.getElementById('stickyPrintAll');
+    const countEl = document.getElementById('stickyPrintCount');
+    if(!sticky || !countEl) return;
+    const ff  = awardsHost ? awardsHost.querySelectorAll('.award-card').length : 0;
+    const imp = improvedHost ? improvedHost.querySelectorAll('.award-card').length : 0;
+    const total = ff + imp;
+    countEl.textContent = total;
+    sticky.setAttribute('aria-label', `Print all ${total} poster${total===1?'':'s'}`);
+    sticky.classList.toggle('aw-show', total > 0);
+  }
+
   function renderAwards(){
     if(!awardsHost) return;
     const today = new Date().toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'});
     const allSwimmers = Object.values(swimmers);
     const season = HHST.currentSeasonWithTimes(swimmers);
+    setSeasonBadge(season);
     const brackets = HHST.AGE_GROUP_ORDER.filter(b => b !== 'Unknown' && DIST_FOR_BRACKET[b]);
 
     const cards = brackets.map(bracket => {
@@ -265,10 +447,20 @@
     }).filter(Boolean).join('');
 
     if(!cards){
-      awardsHost.innerHTML = `<div class="card empty no-print" style="margin-top:16px">No freestyle times yet at the configured distances. Once results come in, posters generate automatically.</div>`;
+      awardsHost.innerHTML = `<div class="card empty aw-host-empty no-print" style="margin-top:16px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 1.5"/><path d="M5 3 2 6M19 3l3 3"/></svg>
+        <strong>No freestyle times yet at the configured distances.</strong>
+        <span>Once results come in, posters generate automatically — one per age group.</span>
+      </div>`;
+      fastestSectionHead.style.display = 'none';
+      setFastestCount(0);
+      updateStickyPrint();
       return;
     }
     awardsHost.innerHTML = cards;
+    fastestSectionHead.style.display = '';
+    setFastestCount(awardsHost.querySelectorAll('.award-card').length);
+    updateStickyPrint();
 
     // Wire single-card print buttons via the centralized safePrint() helper.
     // Scoping to `printing-awards` hides the Most Improved section; the
@@ -374,7 +566,7 @@
     // avoids blanking the board when a roster-only season exists with no swims.
     const season = HHST.currentSeasonWithTimes(swimmers);
     const { meet, date, boards, baselineMeet, baselineSeason } = HHST.mostImprovedAtMeet(Object.values(swimmers), { limit: 5, season });
-    if(!meet){ improvedHost.innerHTML = ''; return; }
+    if(!meet){ improvedHost.innerHTML = ''; setImprovedCount(0); updateStickyPrint(); return; }
 
     document.getElementById('improvedMeetName').textContent = meet;
     document.getElementById('improvedMeetDate').textContent = date ? ` · ${fmtMeetDate(date)}` : '';
@@ -404,7 +596,13 @@
 
     const brackets = HHST.AGE_GROUP_ORDER.filter(b => byBracket[b]);
     if(!brackets.length){
-      improvedHost.innerHTML = `<div class="card empty no-print" style="margin-top:16px">No improvements measurable at this meet yet — once swimmers have prior results, drops show up here.</div>`;
+      improvedHost.innerHTML = `<div class="card empty aw-host-empty no-print" style="margin-top:16px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 7-7"/><path d="M17 8h4v4"/></svg>
+        <strong>No improvements measurable at this meet yet.</strong>
+        <span>Once swimmers have prior results to compare against, time drops show up here.</span>
+      </div>`;
+      setImprovedCount(0);
+      updateStickyPrint();
       return;
     }
 
@@ -462,6 +660,8 @@
     }).filter(Boolean).join('');
 
     improvedHost.innerHTML = cards;
+    setImprovedCount(improvedHost.querySelectorAll('.award-card').length);
+    updateStickyPrint();
 
     improvedHost.querySelectorAll('[data-print]').forEach(btn => btn.addEventListener('click', () => {
       safePrint({
@@ -481,6 +681,11 @@
       return;
     }
     safePrint({ scopes: [] });
+  });
+
+  // Sticky pill mirrors the primary Print-all button (same validation + flow).
+  document.getElementById('stickyPrintAll')?.addEventListener('click', () => {
+    printAllAwards?.click();
   });
 
   // ============ safePrint() — bulletproof print flow ============

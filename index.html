@@ -13,6 +13,108 @@
 
 <link rel="stylesheet" href="assets/styles.css?v=20"/>
 
+<!-- Home-page polish — scoped to index.html. All selectors prefixed `idx-`
+     (or qualified under one) so they can't collide with assets/styles.css. -->
+<style>
+  /* ===== Hero: gentle layered water/wave motif ===== */
+  .idx-waves{
+    position:absolute;left:0;right:0;bottom:-1px;z-index:1;
+    height:160px;pointer-events:none;overflow:hidden;
+    -webkit-mask-image:linear-gradient(to bottom,transparent,#000 55%);
+            mask-image:linear-gradient(to bottom,transparent,#000 55%);
+  }
+  .idx-waves svg{position:absolute;left:0;bottom:0;width:200%;height:100%}
+  .idx-waves .idx-wave-a{
+    opacity:.16;color:var(--ice-300);
+    animation:idx-drift 22s linear infinite;
+  }
+  .idx-waves .idx-wave-b{
+    opacity:.10;color:var(--brand-300);
+    animation:idx-drift 34s linear infinite reverse;
+  }
+  @keyframes idx-drift{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+  /* ===== Lookup card: lift, halo, snappier inputs ===== */
+  .idx-lift{
+    transition:transform .35s cubic-bezier(.16,1,.3,1),
+               box-shadow .35s cubic-bezier(.16,1,.3,1);
+  }
+  .idx-lift::after{
+    content:'';position:absolute;inset:-1px;border-radius:inherit;
+    padding:1px;pointer-events:none;opacity:0;
+    background:linear-gradient(135deg,rgba(125,211,252,.55),rgba(96,165,250,.0) 55%);
+    -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+            mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+    -webkit-mask-composite:xor;mask-composite:exclude;
+    transition:opacity .35s ease;
+  }
+  .lookup-card.idx-lift:focus-within{
+    transform:translateY(-2px);
+    box-shadow:0 30px 60px -28px rgba(8,18,38,.6);
+  }
+  .lookup-card.idx-lift:focus-within::after{opacity:1}
+
+  /* The submit button sweeps a soft sheen on hover */
+  .idx-form .btn.lg.block{
+    position:relative;overflow:hidden;
+  }
+  .idx-form .btn.lg.block::before{
+    content:'';position:absolute;top:0;left:-130%;width:60%;height:100%;
+    background:linear-gradient(100deg,transparent,rgba(255,255,255,.28),transparent);
+    transform:skewX(-18deg);transition:none;
+  }
+  .idx-form .btn.lg.block:hover:not(:disabled)::before{
+    animation:idx-sheen .9s ease;
+  }
+  @keyframes idx-sheen{to{left:140%}}
+  .idx-form .btn.lg.block:active:not(:disabled){transform:translateY(1px) scale(.995)}
+
+  /* ===== Inline validation + helper text ===== */
+  .idx-input-wrap{position:relative;display:block}
+  .idx-hint{
+    font-size:11.5px;line-height:1.45;color:var(--text-subtle);
+    margin-top:5px;transition:color .2s ease;
+  }
+  .idx-form .field.idx-valid input{
+    border-color:rgba(52,211,153,.55);
+  }
+  /* Keep the valid-state helper text at the normal readable muted color
+     (green text fails contrast in light theme) — the green check + border
+     already signal "looks good". */
+  .idx-form .field.idx-invalid input:not(:focus){
+    border-color:rgba(248,113,113,.55);
+  }
+  .idx-form .field.idx-invalid .idx-hint{color:var(--red-light)}
+  /* A small check that fades in once a field looks good — anchored to the
+     input via its own wrapper so the helper line below doesn't shift it. */
+  .idx-check{
+    position:absolute;right:14px;top:50%;margin-top:-9px;
+    width:18px;height:18px;
+    color:var(--green-light);opacity:0;transform:scale(.6);
+    transition:opacity .2s ease,transform .2s cubic-bezier(.16,1,.3,1);
+    pointer-events:none;
+  }
+  .idx-form .field.idx-valid .idx-check{opacity:1;transform:scale(1)}
+  /* reserve room so the check never overlaps typed text */
+  .idx-form .idx-input-wrap input{padding-right:42px}
+
+  /* ===== Team pulse: count-up gets tabular alignment + pop ===== */
+  .tp-value.idx-pop{animation:idx-pop .5s cubic-bezier(.16,1,.3,1)}
+  @keyframes idx-pop{
+    0%{transform:translateY(6px) scale(.96);opacity:.4}
+    100%{transform:translateY(0) scale(1);opacity:1}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .idx-waves .idx-wave-a,.idx-waves .idx-wave-b{animation:none}
+    .idx-form .btn.lg.block:hover:not(:disabled)::before{animation:none}
+    .tp-value.idx-pop{animation:none}
+  }
+  @media (max-width:640px){
+    .idx-waves{height:110px}
+  }
+</style>
+
 <!-- Firebase compat SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
@@ -48,6 +150,14 @@
 
 <section class="hero">
   <div class="drops" id="drops"></div>
+  <div class="idx-waves" aria-hidden="true">
+    <svg class="idx-wave-a" viewBox="0 0 1440 120" preserveAspectRatio="none" fill="currentColor">
+      <path d="M0 60 C 180 20, 360 100, 540 60 C 720 20, 900 100, 1080 60 C 1260 20, 1440 100, 1620 60 L1620 120 L0 120 Z"/>
+    </svg>
+    <svg class="idx-wave-b" viewBox="0 0 1440 120" preserveAspectRatio="none" fill="currentColor">
+      <path d="M0 75 C 200 45, 380 105, 560 75 C 740 45, 920 105, 1100 75 C 1280 45, 1460 105, 1640 75 L1640 120 L0 120 Z"/>
+    </svg>
+  </div>
   <div class="hero-inner">
     <div class="kicker"><span class="pulse"></span> Highcroft Hurricanes Swim Team</div>
     <h1>Track your swimmer's <em>every stroke</em>.</h1>
@@ -56,31 +166,43 @@
       in seconds. Enter your swimmer's details below to open their dashboard.
     </p>
 
-    <div class="lookup-card">
+    <div class="lookup-card idx-lift">
       <h2>Find your swimmer</h2>
       <p class="sub">All three fields must match what we have on file. Names can be in either "First Last" or "Last, First" order.</p>
 
-      <form id="lookupForm" autocomplete="off">
+      <form id="lookupForm" class="idx-form" autocomplete="off">
         <div class="field">
           <label for="swName">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             Swimmer's full name
           </label>
-          <input type="text" id="swName" name="swName" placeholder="e.g. Riley Carter" required autocomplete="off" spellcheck="false"/>
+          <span class="idx-input-wrap">
+            <input type="text" id="swName" name="swName" placeholder="e.g. Riley Carter" required autocomplete="off" spellcheck="false"/>
+            <svg class="idx-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+          </span>
+          <p class="idx-hint" id="hintName">First and last name, as registered with the team.</p>
         </div>
         <div class="field">
           <label for="swEmail">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 7 9-7"/></svg>
             Email on file with the team
           </label>
-          <input type="email" id="swEmail" name="swEmail" placeholder="e.g. jordan@example.com" required autocomplete="email"/>
+          <span class="idx-input-wrap">
+            <input type="email" id="swEmail" name="swEmail" placeholder="e.g. jordan@example.com" required autocomplete="email"/>
+            <svg class="idx-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+          </span>
+          <p class="idx-hint" id="hintEmail">The email your family used to sign up.</p>
         </div>
         <div class="field">
           <label for="swParent">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
             A parent's name
           </label>
-          <input type="text" id="swParent" name="swParent" placeholder="e.g. Jordan Carter" required autocomplete="off"/>
+          <span class="idx-input-wrap">
+            <input type="text" id="swParent" name="swParent" placeholder="e.g. Jordan Carter" required autocomplete="off"/>
+            <svg class="idx-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+          </span>
+          <p class="idx-hint" id="hintParent">Any parent or guardian on the swimmer's account.</p>
         </div>
         <div class="error-msg" id="errMsg"></div>
         <button class="btn lg block" type="submit" id="submitBtn">
@@ -243,6 +365,38 @@
     }
   });
 
+  // Inline, public-safe validation. This only checks the SHAPE of what the
+  // family typed (non-empty name, plausible email). It never queries the
+  // roster, so it can't leak whether a swimmer exists — that stays behind the
+  // three-field match on submit.
+  (function(){
+    const nameEl   = document.getElementById('swName');
+    const emailEl  = document.getElementById('swEmail');
+    const parentEl = document.getElementById('swParent');
+    const emailRe  = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    const looksLikeName = v => v.trim().replace(/\s+/g,' ').length >= 2;
+    const checks = {
+      swName:   v => looksLikeName(v),
+      swEmail:  v => emailRe.test(v.trim()),
+      swParent: v => looksLikeName(v),
+    };
+    function grade(el){
+      const field = el.closest('.field');
+      const v = el.value;
+      if(!v.trim()){ field.classList.remove('idx-valid','idx-invalid'); return; }
+      const ok = checks[el.id](v);
+      field.classList.toggle('idx-valid', ok);
+      // Only flag as invalid once the user has moved on (on blur), so we don't
+      // nag mid-typing.
+      field.classList.toggle('idx-invalid', !ok && el.dataset.touched === '1');
+    }
+    [nameEl, emailEl, parentEl].forEach(el => {
+      el.addEventListener('input', () => grade(el));
+      el.addEventListener('blur', () => { el.dataset.touched = '1'; grade(el); });
+    });
+  })();
+
   // Live team pulse — scoped to the CURRENT season so the homepage reflects
   // what's happening right now, not lifetime totals. Falls back to all-time
   // if no season tags exist (pure legacy data).
@@ -286,9 +440,26 @@
         return;
       }
       const fmt = n => n.toLocaleString();
-      swEl.textContent = fmt(swimmerCount); swEl.classList.remove('is-loading');
-      mEl.textContent  = fmt(meetSet.size); mEl.classList.remove('is-loading');
-      rEl.textContent  = fmt(raceCount);    rEl.classList.remove('is-loading');
+      const reduce = window.matchMedia &&
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      // Animated count-up so the numbers feel alive when they land. Falls back
+      // to setting the value directly when motion is reduced.
+      function countUp(el, target){
+        el.classList.remove('is-loading');
+        el.classList.add('idx-pop');
+        if(reduce || target <= 0){ el.textContent = fmt(target); return; }
+        const dur = 900, t0 = performance.now();
+        const ease = t => 1 - Math.pow(1 - t, 3);
+        (function step(now){
+          const p = Math.min(1, (now - t0) / dur);
+          el.textContent = fmt(Math.round(ease(p) * target));
+          if(p < 1) requestAnimationFrame(step);
+          else el.textContent = fmt(target);
+        })(t0);
+      }
+      countUp(swEl, swimmerCount);
+      countUp(mEl,  meetSet.size);
+      countUp(rEl,  raceCount);
       // Reframe the labels around "this season" so the numbers can't be
       // misread as all-time totals.
       if(season){
