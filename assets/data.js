@@ -1376,6 +1376,66 @@
     return n;
   }
 
+  // -------- One-time fix: backfill distances onto stroke-only legacy times --------
+  // Older "best times" files imported as distanceless stroke buckets
+  // ("Freestyle", "Backstroke") that never appear on a distance-based
+  // leaderboard. This walks every embedded result and, for any that has a
+  // stroke but no distance, infers the distance from the swimmer's age group
+  // FOR THAT RESULT'S SEASON (6&U 15y, 7-8 & 9-10 25y, 11-12 and older 50y) and
+  // relabels the event to "<dist> <Stroke>" so it stacks with meet-file events.
+  // IM is left alone (no single signature distance), and a result that already
+  // has a distance is never touched.
+  // opts.apply (default false) = dry run that only counts what WOULD change.
+  // Returns { resultsScanned, swimmersAffected, resultsFixed, applied }.
+  async function inferMissingDistances(opts){
+    const apply = !!(opts && opts.apply);
+    const snap = await FB.db.collection('swimmers').get();
+    const writes = [];
+    let resultsScanned = 0, resultsFixed = 0;
+    snap.forEach(d => {
+      const sw = d.data() || {};
+      // Work on cloned result objects so a dry run never mutates anything and
+      // the originals are only replaced when we actually commit.
+      const results = (Array.isArray(sw.results) ? sw.results : []).map(r => (r && typeof r === 'object') ? { ...r } : r);
+      let changed = false;
+      results.forEach(r => {
+        if(!r) return;
+        resultsScanned++;
+        const hasDist = (r.distance != null && String(r.distance).trim() !== '');
+        if(hasDist) return;
+        const stroke = r.stroke || extractStroke(r.event);
+        if(!stroke || stroke === 'IM') return;
+        // If the event string itself already encodes a distance, just lift it
+        // into the empty distance field rather than inferring.
+        const fromEvent = extractDistance(r.event);
+        if(fromEvent){
+          r.distance = fromEvent;
+          if(!r.event || !/\d/.test(r.event)) r.event = `${fromEvent} ${STROKE_ABBREV[stroke] || stroke}`;
+          changed = true; resultsFixed++;
+          return;
+        }
+        const inferred = distanceForBracket(resolveBracket(swimmerSeasonInfo(sw, r.season)));
+        if(!inferred) return; // unknown age group → can't place it, leave as-is
+        r.distance = inferred;
+        r.stroke = stroke;
+        r.event = `${inferred} ${STROKE_ABBREV[stroke] || stroke}`;
+        changed = true; resultsFixed++;
+      });
+      if(changed) writes.push({ key: d.id, results });
+    });
+    if(apply){
+      for(let i=0;i<writes.length;i+=400){
+        const batch = FB.db.batch();
+        writes.slice(i, i+400).forEach(w => {
+          batch.set(FB.db.collection('swimmers').doc(w.key),
+            { results: w.results, updatedAt: FB.FieldValue.serverTimestamp() }, { merge: true });
+        });
+        await batch.commit();
+      }
+    }
+    return { resultsScanned, swimmersAffected: writes.length, resultsFixed, applied: apply };
+  }
+
   // Write the per-season {age,group,gender,bracket,ageGroup} into sw.seasonInfo
   // and re-mirror the most-recent season up to the top-level fields.
   function applySeasonInfo(sw, season, { age, group, gender, ageGroup } = {}){
@@ -2130,7 +2190,7 @@
     findSwimmer,
     deleteSwimmer, pruneNonRosterSwimmers, addSwimmerManual, updateSwimmer,
     getUploads, deleteUpload,
-    migrateSeasonAges, countSwimmersNeedingSeasonMigration,
+    migrateSeasonAges, countSwimmersNeedingSeasonMigration, inferMissingDistances,
     clearAll, clearRoster, clearMeetTimes,
     isAdminLoggedIn, loginAdmin, logoutAdmin, onAuthChanged,
     statsForSwimmer, rankSwimmerInAgeGroup, buildLeaderboards, teamStats, teamStatsBySeason,
