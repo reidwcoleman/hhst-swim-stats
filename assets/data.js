@@ -1647,6 +1647,49 @@
     const m = (s||'').toString().match(/(\d{4})/);
     return m ? parseInt(m[1], 10) : 0;
   }
+  // Parse the assorted date strings results carry — ISO "2025-06-14",
+  // US "07/15/25" / "7/15/2025" — into a sortable epoch ms. NaN when blank or
+  // unparseable. (Two-digit years map to 2000+.) Used to rank seasons by their
+  // most recent ACTUAL meet, so a season full of dateless legacy rows can't
+  // outrank a season with real, dated meets just because its label has a
+  // bigger year.
+  function parseFlexibleDate(s){
+    if(!s) return NaN;
+    const str = s.toString().trim();
+    if(!str) return NaN;
+    let m = str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+    if(m) return new Date(+m[1], +m[2]-1, +m[3]).getTime();
+    m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+    if(m){ let y = +m[3]; if(y < 100) y += 2000; return new Date(y, +m[1]-1, +m[2]).getTime(); }
+    const t = Date.parse(str);
+    return isFinite(t) ? t : NaN;
+  }
+  // Build a { season -> latest parseable result-date ms } map from a swimmer list.
+  function seasonLatestDates(list){
+    const latest = {};
+    list.forEach(sw => (sw.results || []).forEach(r => {
+      if(!r || !r.season) return;
+      const t = parseFlexibleDate(r.date);
+      if(isFinite(t) && (latest[r.season] === undefined || t > latest[r.season])) latest[r.season] = t;
+    }));
+    return latest;
+  }
+  // Comparator (most-recent-first) over season labels: a season with a real,
+  // dated meet always ranks above one without; among dated seasons the latest
+  // meet wins; dateless seasons fall back to the highest 4-digit year in the
+  // label, then numeric-aware locale compare. `latest` is the precomputed map
+  // from seasonLatestDates so callers don't rescan per comparison.
+  function seasonRecencyComparator(latest){
+    return function(a, b){
+      const ta = latest[a], tb = latest[b];
+      const aHas = ta !== undefined, bHas = tb !== undefined;
+      if(aHas && bHas){ if(tb !== ta) return tb - ta; }
+      else if(aHas !== bHas){ return aHas ? -1 : 1; }
+      const ya = seasonYearKey(a), yb = seasonYearKey(b);
+      if(yb !== ya) return yb - ya;
+      return b.localeCompare(a, undefined, { numeric:true, sensitivity:'base' });
+    };
+  }
   function getAllSeasons(allSwimmers){
     const seen = new Set();
     const list = Array.isArray(allSwimmers) ? allSwimmers : Object.values(allSwimmers || {});
@@ -1661,11 +1704,7 @@
         if(r && r.season) seen.add(r.season);
       });
     });
-    return Array.from(seen).sort((a,b) => {
-      const ya = seasonYearKey(a), yb = seasonYearKey(b);
-      if(yb !== ya) return yb - ya;
-      return b.localeCompare(a, undefined, { numeric:true, sensitivity:'base' });
-    });
+    return Array.from(seen).sort(seasonRecencyComparator(seasonLatestDates(list)));
   }
   function currentSeason(allSwimmers){
     const seasons = getAllSeasons(allSwimmers);
@@ -1676,17 +1715,15 @@
   // posters need a season that has results - a brand-new season with only a
   // roster uploaded would otherwise produce empty posters. Falls back to ''
   // when no result carries a season tag (pure legacy data -> show all-time).
+  // Ranked by most-recent ACTUAL meet date so a season of dated meets wins over
+  // a legacy season whose label year is higher but whose rows have no dates.
   function currentSeasonWithTimes(allSwimmers){
     const seen = new Set();
     const list = Array.isArray(allSwimmers) ? allSwimmers : Object.values(allSwimmers || {});
     list.forEach(sw => {
       (sw.results || []).forEach(r => { if(r && r.season) seen.add(r.season); });
     });
-    const sorted = Array.from(seen).sort((a,b) => {
-      const ya = seasonYearKey(a), yb = seasonYearKey(b);
-      if(yb !== ya) return yb - ya;
-      return b.localeCompare(a, undefined, { numeric:true, sensitivity:'base' });
-    });
+    const sorted = Array.from(seen).sort(seasonRecencyComparator(seasonLatestDates(list)));
     return sorted[0] || '';
   }
   // Return every distinct meet that's been imported, with its latest date
