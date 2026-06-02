@@ -600,10 +600,6 @@
       }
       if(touched) profileUpdated.add(key);
       if(rec.event && rec.time){
-        const eventLabel = normalizeEventLabel(rec);
-        const distance = (rec.distance||'').toString().trim() || extractDistance(rec.event);
-        const stroke = extractStroke(rec.event);
-        const timeStr = fmtTime(rec.time);
         // Per-row season can override the upload-level default — useful when
         // the spreadsheet has a `season` column (rec.season is grabbed below
         // from the header aliases). EXCEPTION: a named-meet upload is, by
@@ -611,6 +607,25 @@
         // Season/Year column in the file must NOT scatter that meet across
         // seasons. When meetName is set we pin every race to the upload season.
         const rowSeason = meetName ? season : ((rec.season || '').toString().trim() || season);
+        const stroke = extractStroke(rec.event);
+        let distance = (rec.distance||'').toString().trim() || extractDistance(rec.event);
+        // Stroke-only "best times" files carry a stroke ("Freestyle") but no
+        // distance. Infer the distance from the swimmer's age group FOR THIS
+        // SEASON (6&U 15y, 7-8 & 9-10 25y, 11-12 and older 50y) so the time
+        // lands on a real event ("50 Free") and shows on leaderboards / Fastest
+        // Five, instead of a distanceless "Freestyle" bucket. IM is skipped (it
+        // has no single signature distance). Only fills a MISSING distance —
+        // a file that already specifies one is never overridden.
+        if(!distance && stroke && stroke !== 'IM'){
+          const inferred = distanceForBracket(resolveBracket(swimmerSeasonInfo(sw, rowSeason)));
+          if(inferred) distance = inferred;
+        }
+        // Build the canonical "<dist> <Stroke>" label once we (maybe) inferred a
+        // distance, so the event stacks with the same event from meet files.
+        const eventLabel = (distance && stroke)
+          ? `${distance} ${STROKE_ABBREV[stroke] || stroke}`
+          : normalizeEventLabel(rec);
+        const timeStr = fmtTime(rec.time);
         const result = {
           event: eventLabel,
           distance,
@@ -1529,6 +1544,22 @@
     if(n <= 12) return '11-12';
     if(n <= 14) return '13-14';
     return '15-18';
+  }
+  // HHST's signature freestyle/stroke distance for each age group — used to
+  // infer a distance for stroke-only "best times" files that carry no distance
+  // column (6 & Under swim 15y, 7-8 and 9-10 swim 25y, 11-12 and older swim
+  // 50y). Returns '' for Unknown so we never fabricate a distance we can't
+  // place. (Matches the Fastest Five poster distances.)
+  function distanceForBracket(bracket){
+    switch(bracket){
+      case '6 & Under': return '15';
+      case '7-8':       return '25';
+      case '9-10':      return '25';
+      case '11-12':
+      case '13-14':
+      case '15-18':     return '50';
+      default:          return '';
+    }
   }
 
   // -------- Per-season swimmer attributes --------

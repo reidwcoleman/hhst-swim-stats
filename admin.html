@@ -343,6 +343,7 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
       <details style="margin-top:18px;color:var(--text-muted);font-size:13.5px">
         <summary style="cursor:pointer;font-weight:600;color:var(--text)">Results file columns the importer needs</summary>
         <p style="margin:12px 0 8px">Required: <code>Athlete</code> (or <code>Athlete First Name</code> + <code>Athlete Last Name</code>), <code>Event</code>, <code>Time</code>. Optional: <code>Date</code>, <code>Place</code>, <code>Age</code>, <code>Group</code>. You don't need a <code>Meet</code> column — the name you type above is used for every race. Names in <em>"Last, First"</em> format are flipped automatically.</p>
+        <p style="margin:0 0 8px"><strong>Stroke-only files work too:</strong> if a file just lists the <code>Stroke</code> (Freestyle, Backstroke, …) and a <code>Time</code> with no distance, the distance is filled in from each swimmer's age group automatically — <code>6 &amp; Under</code> 15y, <code>7-8</code> and <code>9-10</code> 25y, <code>11-12</code> and older 50y — so the time lands on the right event and leaderboard.</p>
 <pre style="background:var(--bg-alt);padding:14px;border-radius:10px;margin-top:12px;font-size:12.5px;overflow-x:auto;border:1px solid var(--border);color:var(--text)">Athlete,Event,Time,Date,Age,Group,Place
 "Carter, Riley",50 Free,28.42,2026-03-14,11,Bronze,3
 "Carter, Riley",100 Free,1:02.18,2026-03-14,11,Bronze,5
@@ -503,7 +504,7 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
   </div>
 </div>
 
-<script src="assets/data.js?v=16"></script>
+<script src="assets/data.js?v=17"></script>
 <script>
   HHST.initTheme();
 
