@@ -13,6 +13,172 @@
 
 <link rel="stylesheet" href="assets/styles.css?v=18"/>
 
+<!-- ============================================================
+     ADMIN PAGE POLISH — visual/UX refinements layered on top of
+     styles.css. All colors driven by the shared design tokens so the
+     light theme stays correct. Selectors are scoped to admin markup
+     (and prefixed .axp-* for new helpers) to avoid touching other pages.
+     CSS only — no JS hooks, ids, or class names the script relies on
+     are changed here.
+     ============================================================ -->
+<style>
+  /* ---- Page rhythm & section hierarchy ---- */
+  .admin-shell{padding-top:36px}
+  .admin-page-head{position:relative;padding-bottom:22px;margin-bottom:30px;
+    border-bottom:1px solid var(--border)}
+  .admin-page-head::after{content:"";position:absolute;left:0;bottom:-1px;
+    width:64px;height:2px;border-radius:2px;
+    background:linear-gradient(90deg,var(--accent),transparent)}
+  .admin-page-head h1{font-size:clamp(28px,4vw,36px)}
+  .admin-page-head p{max-width:60ch;line-height:1.55}
+
+  /* ---- Cards: a touch more lift + smooth hover, refined heading rule ---- */
+  main.admin-shell > .card,
+  main.admin-shell > details.card{
+    box-shadow:0 1px 2px rgba(8,18,38,.04);
+    transition:border-color .2s ease, box-shadow .25s ease, transform .25s ease;
+  }
+  main.admin-shell > .card:hover,
+  main.admin-shell > details.card:hover{
+    border-color:var(--border-strong);
+    box-shadow:var(--shadow-lg);
+  }
+  /* Give each plain card heading a subtle eyebrow accent bar */
+  .card > h2:first-child{position:relative;padding-left:14px}
+  .card > h2:first-child::before{content:"";position:absolute;left:0;top:50%;
+    transform:translateY(-50%);width:4px;height:20px;border-radius:3px;
+    background:linear-gradient(180deg,var(--accent),var(--accent-hover))}
+  .card .lead code,.collapsible-body code,.field-hint code{
+    background:var(--bg-alt);border:1px solid var(--border);
+    padding:1px 6px;border-radius:6px;font-size:.88em;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--text)}
+
+  /* ---- KPI cards: icon-aware layout, hover sheen, animated value ---- */
+  .kpi{position:relative;overflow:hidden;
+    transition:transform .2s ease, border-color .2s ease, box-shadow .25s ease}
+  .kpi::after{content:"";position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(120% 80% at 100% 0%,rgba(96,165,250,.10),transparent 60%);
+    opacity:0;transition:opacity .25s ease}
+  .kpi:hover{transform:translateY(-3px);border-color:var(--border-strong);
+    box-shadow:var(--shadow-lg)}
+  .kpi:hover::after{opacity:1}
+  .kpi:hover .kpi-icon{transform:scale(1.06) rotate(-3deg)}
+  .kpi-icon{transition:transform .25s cubic-bezier(.2,.9,.3,1.2);
+    box-shadow:0 6px 14px -6px rgba(8,18,38,.5)}
+  .kpi .delta{color:var(--text-muted)}
+
+  /* ---- Drop zones: layered depth, animated icon, accent on hover ---- */
+  .drop-zone{position:relative;overflow:hidden}
+  .drop-zone::before{content:"";position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(90% 120% at 50% -10%,rgba(96,165,250,.12),transparent 55%);
+    opacity:0;transition:opacity .25s ease}
+  .drop-zone:hover::before,.drop-zone.drag::before{opacity:1}
+  .drop-zone svg{transition:transform .3s cubic-bezier(.2,.9,.3,1.2)}
+  .drop-zone:hover svg{transform:translateY(-3px) scale(1.04)}
+  .drop-zone.drag{box-shadow:0 0 0 4px var(--ring) inset}
+  .drop-zone.drag svg{transform:translateY(-4px) scale(1.08)}
+  /* A small "primary action" tint for the named-meet zone */
+  .meet-drop{background:rgba(245,158,11,.05)}
+  .meet-drop:hover,.meet-drop.drag{border-color:var(--amber-500,#f59e0b);
+    background:rgba(245,158,11,.10)}
+  .meet-drop svg{color:var(--amber-500,#f59e0b)}
+
+  /* ---- Section inputs (season/meet pickers): unify focus ring ---- */
+  .axp-input:focus,
+  .season-picker input:focus,
+  .meet-form-grid input:focus,
+  #meetDateInput:focus{
+    outline:none;border-color:var(--accent)!important;
+    box-shadow:0 0 0 3px var(--ring)}
+  .meet-form-grid input,.season-picker input{transition:border-color .15s,box-shadow .15s}
+
+  /* ---- "Add a Meet" card: stronger identity ---- */
+  .meet-card{border-color:var(--border-strong)}
+  .meet-card-badge{box-shadow:0 8px 18px -8px rgba(245,158,11,.6)}
+
+  /* ---- Uploaded Files panel ---- */
+  #uploadsBody .upload-file-row{
+    transition:border-color .18s ease, transform .18s ease, box-shadow .18s ease}
+  #uploadsBody .upload-file-row:hover{
+    border-color:var(--border-strong)!important;
+    transform:translateX(2px);
+    box-shadow:0 6px 16px -10px rgba(8,18,38,.45)}
+  #uploadsBody .icon-trash{transition:all .15s ease}
+  #uploadsBody .icon-trash:hover{
+    color:var(--red-light)!important;border-color:var(--red,#ef4444)!important;
+    background:rgba(239,68,68,.08)!important}
+  #uploadsBody .icon-trash:focus-visible{outline:none;
+    box-shadow:0 0 0 3px var(--ring)}
+  .uploads-season + .uploads-season{padding-top:14px;
+    border-top:1px solid var(--border)}
+
+  /* ---- Roster table: cleaner section heads + race-count badge ---- */
+  .age-group-h{display:flex;align-items:center;gap:10px;
+    margin:26px 0 12px;font-family:'Fraunces',serif}
+  .age-group-h:first-child{margin-top:4px}
+  .age-group-count{font-size:12.5px;color:var(--text-muted);font-weight:500;
+    font-family:'Inter',sans-serif}
+  .race-count{display:inline-flex;align-items:center;justify-content:center;
+    min-width:26px;height:22px;padding:0 7px;border-radius:999px;
+    background:var(--bg-alt);border:1px solid var(--border);
+    font-size:12.5px;font-weight:600;color:var(--text-muted);
+    font-variant-numeric:tabular-nums}
+  .swimmer-name-cell{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+  .roster-table tbody tr{transition:background .12s ease}
+  .roster-table .row-actions button:focus-visible{outline:none;
+    box-shadow:0 0 0 3px var(--ring)}
+  .addr-missing{color:var(--text-subtle);font-style:italic;font-size:13px}
+  .email-more{display:inline-block;margin-left:5px;padding:0 6px;
+    border-radius:999px;background:var(--bg-alt);border:1px solid var(--border);
+    font-size:11px;font-weight:600;color:var(--text-muted)}
+
+  /* ---- Roster search row ---- */
+  .roster-search{padding:11px 14px;border-radius:10px;
+    background:var(--surface);color:var(--text);
+    border:1px solid var(--border-strong);font-size:14px;
+    transition:border-color .15s,box-shadow .15s}
+  .roster-search::placeholder{color:var(--text-subtle)}
+  .roster-search:focus{outline:none;border-color:var(--accent);
+    box-shadow:0 0 0 3px var(--ring)}
+
+  /* ---- Manual add form: align the submit, give fields breathing room ---- */
+  #manualForm .field input,#manualForm .field select{transition:border-color .15s,box-shadow .15s}
+
+  /* ---- Edit modal: nicer chips + footer separation ---- */
+  .modal-card .modal-actions{padding-top:18px;margin-top:20px;
+    border-top:1px solid var(--border)}
+  .chip{transition:transform .12s ease, box-shadow .12s ease}
+  .chip:hover{box-shadow:0 4px 10px -6px rgba(8,18,38,.5)}
+  .chip-x{transition:color .12s ease, background .12s ease}
+  .input-invalid{border-color:var(--red,#ef4444)!important;
+    box-shadow:0 0 0 3px rgba(239,68,68,.18)!important}
+
+  /* ---- Maintenance buttons: clearer danger affordance ---- */
+  .maintenance-btn{justify-content:flex-start;gap:9px;
+    transition:transform .15s ease, border-color .15s ease, background .15s ease}
+  .maintenance-btn:hover{transform:translateY(-1px)}
+  .maintenance-btn.danger{border-color:rgba(239,68,68,.4)}
+
+  /* ---- Quick-nav cards: subtle arrow nudge on hover ---- */
+  .quick-nav-card{transition:transform .2s ease, border-color .2s ease, box-shadow .25s ease}
+  .quick-nav-card:hover{transform:translateY(-2px)}
+  .quick-nav-card:hover .quick-nav-arrow{transform:translateX(3px)}
+  .quick-nav-arrow{transition:transform .2s ease}
+
+  /* ---- Loading shimmer helper (status while reading files) ---- */
+  @keyframes axpPulse{0%,100%{opacity:1}50%{opacity:.55}}
+  .upload-status.ok:not(:empty){animation:none}
+
+  /* ---- Reduced motion: respect user preference ---- */
+  @media (prefers-reduced-motion: reduce){
+    .kpi,.kpi-icon,.drop-zone svg,.quick-nav-card,.quick-nav-arrow,
+    .upload-file-row,.maintenance-btn,.chip,.card,details.card{
+      transition:none!important;animation:none!important}
+    .kpi:hover,.quick-nav-card:hover,.maintenance-btn:hover,
+    main.admin-shell > .card:hover{transform:none!important}
+  }
+</style>
+
 <!-- Firebase compat SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
@@ -270,7 +436,7 @@
       <div class="season-picker" style="margin:0 0 14px;display:flex;flex-wrap:wrap;align-items:flex-end;gap:14px">
         <div class="field" style="flex:1;min-width:220px;margin:0">
           <label for="rosterSeasonInput" style="display:block;margin-bottom:6px;font-weight:600;color:var(--text)">Season for this roster <span style="color:var(--accent)">*</span></label>
-          <input type="text" id="rosterSeasonInput" list="seasonOptions" placeholder="e.g. 2025 Summer" autocomplete="off"
+          <input type="text" id="rosterSeasonInput" list="seasonOptions" placeholder="e.g. 2025 Summer" autocomplete="off" class="axp-input"
                  style="width:100%;padding:12px 14px;border-radius:10px;background:var(--surface);color:var(--text);border:1px solid var(--border-strong);font-size:14.5px"/>
           <p class="field-hint" style="margin:6px 0 0;font-size:12.5px;color:var(--text-muted)">
             Every swimmer on this roster will be marked as "on the team" for the season you pick. When you later upload meet times for the same season, only those swimmers will match — old swimmers from previous seasons stay safely in the database for their own season's records.
@@ -312,18 +478,18 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
       <div class="meet-form-grid">
         <div class="field" style="margin:0">
           <label for="meetNameInput" style="display:block;margin-bottom:6px;font-weight:600;color:var(--text)">Meet name <span style="color:var(--accent)">*</span></label>
-          <input type="text" id="meetNameInput" list="meetNameOptions" placeholder="e.g. Highcroft at Riverstone" autocomplete="off"
+          <input type="text" id="meetNameInput" list="meetNameOptions" placeholder="e.g. Highcroft at Riverstone" autocomplete="off" class="axp-input"
                  style="width:100%;padding:12px 14px;border-radius:10px;background:var(--surface);color:var(--text);border:1px solid var(--border-strong);font-size:14.5px"/>
           <datalist id="meetNameOptions"></datalist>
         </div>
         <div class="field" style="margin:0">
           <label for="meetDateInput" style="display:block;margin-bottom:6px;font-weight:600;color:var(--text)">Meet date <span style="color:var(--text-muted);font-weight:400">(optional)</span></label>
-          <input type="date" id="meetDateInput"
+          <input type="date" id="meetDateInput" class="axp-input"
                  style="width:100%;padding:12px 14px;border-radius:10px;background:var(--surface);color:var(--text);border:1px solid var(--border-strong);font-size:14.5px"/>
         </div>
         <div class="field" style="margin:0">
           <label for="seasonInput" style="display:block;margin-bottom:6px;font-weight:600;color:var(--text)">Season <span style="color:var(--accent)">*</span></label>
-          <input type="text" id="seasonInput" list="seasonOptions" placeholder="e.g. 2025 Summer" autocomplete="off"
+          <input type="text" id="seasonInput" list="seasonOptions" placeholder="e.g. 2025 Summer" autocomplete="off" class="axp-input"
                  style="width:100%;padding:12px 14px;border-radius:10px;background:var(--surface);color:var(--text);border:1px solid var(--border-strong);font-size:14.5px"/>
           <datalist id="seasonOptions"></datalist>
         </div>
