@@ -101,7 +101,7 @@
       <div>
         <h2 class="improved-h2">Most Improved</h2>
         <p class="lead">Top time-droppers from the most recent meet — total seconds shaved across every event each swimmer raced. One poster per age group with Boys + Girls side-by-side.</p>
-        <p class="awards-intro-meet"><strong id="improvedMeetName">—</strong><span id="improvedMeetDate" class="awards-intro-meet-date"></span></p>
+        <p class="awards-intro-meet"><strong id="improvedMeetName">—</strong><span id="improvedMeetDate" class="awards-intro-meet-date"></span><span id="improvedVsMeet" class="awards-intro-meet-date"></span></p>
       </div>
     </div>
   </div>
@@ -113,7 +113,7 @@
   Highcroft Hurricanes Swim Team · <a href="leaderboards.html">Leaderboards</a> · <a href="admin.html">Admin</a>
 </footer>
 
-<script src="assets/data.js?v=19"></script>
+<script src="assets/data.js?v=20"></script>
 <script>
   HHST.initTheme();
   document.getElementById('themeToggle').addEventListener('click', HHST.toggleTheme);
@@ -373,11 +373,16 @@
     // also be chosen from this season's meets only. Using the season-with-times
     // avoids blanking the board when a roster-only season exists with no swims.
     const season = HHST.currentSeasonWithTimes(swimmers);
-    const { meet, date, boards } = HHST.mostImprovedAtMeet(Object.values(swimmers), { limit: 5, season });
+    const { meet, date, boards, baselineMeet, baselineSeason } = HHST.mostImprovedAtMeet(Object.values(swimmers), { limit: 5, season });
     if(!meet){ improvedHost.innerHTML = ''; return; }
 
     document.getElementById('improvedMeetName').textContent = meet;
     document.getElementById('improvedMeetDate').textContent = date ? ` · ${fmtMeetDate(date)}` : '';
+    // Say what the improvement is measured against (the previous meet — which may
+    // be last season's final meet when this season has only one meet so far).
+    document.getElementById('improvedVsMeet').textContent = baselineMeet
+      ? ` · vs ${baselineMeet}${baselineSeason && baselineSeason !== season ? ` (${baselineSeason})` : ''}`
+      : '';
     improvedIntro.style.display = '';
 
     function bracketOf(key){ return key.replace(/^(Boys|Girls)\s+/i, ''); }

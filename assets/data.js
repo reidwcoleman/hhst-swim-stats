@@ -864,43 +864,91 @@
   // Five printable certificates use leaderboardsByEvent above, which keeps
   // Swimtopia's gender-split age groups intact.)
 
-  // ---- Most Improved (per meet) ---------------------------------------
-  // Look at a single meet (defaults to the most recently dated one in the
-  // data) and rank swimmers by total seconds dropped across every event
-  // they raced. For each (swimmer, event), "drop" = best previous time in
-  // that event MINUS their meet-day time, only counted if the meet swim
-  // was actually faster. Returns { meet, date, boards } where boards is
-  // keyed by competitionGroup ("Boys 11-12" / "Girls 11-12" / bare bracket).
-  // opts.season — restrict BOTH the target-meet selection and the
-  // "best prior time" lookup to a single season. Time drops are then
-  // measured only against races within that season, so Most Improved is
-  // a clean per-season award (no cross-season carryover).
+  // Parse the assorted date strings results carry — ISO "2025-06-14" or
+  // US "07/15/25" / "7/15/2025" — into a sortable epoch ms. NaN when blank or
+  // unparseable. (Two-digit years map to 2000+.)
+  function parseFlexibleDate(s){
+    if(!s) return NaN;
+    const str = s.toString().trim();
+    if(!str) return NaN;
+    let m = str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+    if(m) return new Date(+m[1], +m[2]-1, +m[3]).getTime();
+    m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+    if(m){ let y = +m[3]; if(y < 100) y += 2000; return new Date(y, +m[1]-1, +m[2]).getTime(); }
+    const t = Date.parse(str);
+    return isFinite(t) ? t : NaN;
+  }
+  // Distinct meets within a season, each with a representative (latest) date,
+  // sorted OLDEST → NEWEST. A meet with no date (e.g. a preseason best-times
+  // "Practice Meet") sorts earliest, so a later real meet becomes the target.
+  function meetsInSeason(swimmers, season){
+    const byMeet = new Map();
+    swimmers.forEach(sw => (sw.results||[]).forEach(r => {
+      if(!r || !r.meet) return;
+      if(season && r.season !== season) return;
+      const ts = parseFlexibleDate(r.date);
+      const cur = byMeet.get(r.meet);
+      if(!cur){ byMeet.set(r.meet, { meet: r.meet, ts: isFinite(ts) ? ts : -Infinity, dateStr: r.date || '' }); }
+      else if(isFinite(ts) && ts > cur.ts){ cur.ts = ts; cur.dateStr = r.date || cur.dateStr; }
+    }));
+    return Array.from(byMeet.values()).sort((a, b) => a.ts - b.ts);
+  }
+  // The most-recent season (by label) BELOW `season` that actually has meets —
+  // used as the Most Improved baseline when the current season has only one meet.
+  function priorSeasonWithMeets(swimmers, season){
+    const withMeets = new Set();
+    swimmers.forEach(sw => (sw.results||[]).forEach(r => { if(r && r.meet && r.season) withMeets.add(r.season); }));
+    const sorted = Array.from(withMeets).sort(compareSeasonLabels); // newest label first
+    const idx = sorted.indexOf(season);
+    return idx === -1 ? (sorted[0] || '') : (sorted[idx + 1] || '');
+  }
+
+  // ---- Most Improved (latest meet vs the meet before it) ----------------
+  // Ranks swimmers by total seconds dropped between the current season's most
+  // recent meet (the "target") and the meet immediately before it (the
+  // "baseline"). The baseline is:
+  //   • the previous meet in the SAME season, when the season has ≥2 meets
+  //     ("compare the second meet to the first meet"), otherwise
+  //   • the most recent meet of the most recent PRIOR season that has meets
+  //     (so when the new season has only one meet, improvement is measured
+  //     against last season's last meet).
+  // For each (swimmer, event) swum at BOTH meets, drop = baseline time − target
+  // time, counted only when faster. Returns
+  // { meet, date, baselineMeet, baselineSeason, boards } where boards is keyed
+  // by competitionGroup ("Boys 11-12" / "Girls 11-12" / bare bracket).
+  // opts.season scopes the target meet (defaults handled by the caller).
   function mostImprovedAtMeet(allSwimmers, opts){
     opts = opts || {};
     const limit = opts.limit || 5;
     const splitByGender = opts.splitByGender !== false;
     const season = (opts.season || '').toString();
     const swimmers = Array.isArray(allSwimmers) ? allSwimmers : Object.values(allSwimmers);
-    const inSeason = r => !season || (r && r.season === season);
+    const empty = { meet:'', date:'', baselineMeet:'', baselineSeason:'', boards:{} };
 
-    // Resolve the target meet: explicit { meet, date } wins, otherwise pick
-    // whichever (meet, date) pair has the latest date across all in-season results.
-    let target = (opts.meet && opts.date) ? { meet: opts.meet, date: opts.date } : null;
-    if(!target){
-      let latest = '';
-      let latestName = '';
-      swimmers.forEach(sw => {
-        (sw.results||[]).forEach(r => {
-          if(!r.meet) return;
-          if(!inSeason(r)) return;
-          const d = r.date || '';
-          if(d > latest){ latest = d; latestName = r.meet; }
-        });
-      });
-      if(latestName) target = { meet: latestName, date: latest };
+    // 1) Target meet = the most recent meet in `season` (explicit override wins).
+    const seasonMeets = meetsInSeason(swimmers, season);
+    if(!seasonMeets.length) return empty;
+    let target = opts.meet
+      ? seasonMeets.find(m => m.meet === opts.meet) || { meet: opts.meet, ts: -Infinity, dateStr: opts.date || '' }
+      : seasonMeets[seasonMeets.length - 1];
+
+    // 2) Baseline meet = the meet just before target in this season, else the
+    //    most recent meet of the most recent prior season with meets.
+    let baseline = null, baselineSeason = season;
+    const tIdx = seasonMeets.findIndex(m => m.meet === target.meet);
+    if(tIdx > 0){
+      baseline = seasonMeets[tIdx - 1];
+    } else {
+      const ps = priorSeasonWithMeets(swimmers, season);
+      if(ps){
+        const pm = meetsInSeason(swimmers, ps);
+        if(pm.length){ baseline = pm[pm.length - 1]; baselineSeason = ps; }
+      }
     }
-    if(!target) return { meet:'', date:'', boards:{} };
+    if(!baseline) return { meet: target.meet, date: target.dateStr || '', baselineMeet:'', baselineSeason:'', boards:{} };
 
+    // 3) For each swimmer, compare their target-meet time to their baseline-meet
+    //    time, per event (best time at each meet when an event was swum twice).
     const drops = [];
     swimmers.forEach(sw => {
       // People filter: only rank swimmers on this season's roster (legacy
@@ -909,37 +957,24 @@
         const sws = Array.isArray(sw.seasons) ? sw.seasons : [];
         if(sws.length && !sws.includes(season)) return;
       }
-      const meetRaces = (sw.results||[]).filter(r =>
-        r.meet === target.meet && r.date === target.date && isFinite(r.seconds) && inSeason(r)
-      );
-      if(!meetRaces.length) return;
-
-      let totalDrop = 0;
-      const eventsDropped = [];
-      meetRaces.forEach(meetR => {
-        // Best prior time in this event (any prior race in any earlier
-        // meet, OR an earlier-dated race at the same meet). Restricted to
-        // the current season when season filter is on.
-        let bestPrior = Infinity;
-        (sw.results||[]).forEach(r => {
-          if(r.event !== meetR.event) return;
-          if(!isFinite(r.seconds)) return;
-          if(!inSeason(r)) return;
-          if(r.date >= target.date && r.meet === target.meet) return; // same meet skip
-          if(r.date > target.date) return; // future swim — shouldn't exist but guard
-          if(r.seconds < bestPrior) bestPrior = r.seconds;
-        });
-        if(!isFinite(bestPrior)) return;            // no prior history → can't measure improvement
-        const drop = bestPrior - meetR.seconds;
-        if(drop > 0){
-          totalDrop += drop;
-          eventsDropped.push({ event: meetR.event, drop });
+      const tgt = {}, base = {};
+      (sw.results||[]).forEach(r => {
+        if(!r || !isFinite(r.seconds)) return;
+        if(r.meet === target.meet && (!season || r.season === season)){
+          if(tgt[r.event] === undefined || r.seconds < tgt[r.event]) tgt[r.event] = r.seconds;
+        }
+        if(r.meet === baseline.meet && (!baselineSeason || r.season === baselineSeason)){
+          if(base[r.event] === undefined || r.seconds < base[r.event]) base[r.event] = r.seconds;
         }
       });
-
+      let totalDrop = 0;
+      const eventsDropped = [];
+      Object.keys(tgt).forEach(ev => {
+        if(base[ev] === undefined) return;        // not swum at the baseline meet → can't compare
+        const drop = base[ev] - tgt[ev];
+        if(drop > 0){ totalDrop += drop; eventsDropped.push({ event: ev, drop }); }
+      });
       if(totalDrop > 0){
-        // Bracket/gender from this season's info so the swimmer lands in the
-        // right age group for the season the meet belongs to.
         const info = swimmerSeasonInfo(sw, season);
         const bracket = resolveBracket(info);
         if(!bracket || bracket === 'Unknown') return;
@@ -970,7 +1005,13 @@
       byGroup[k] = byGroup[k].slice(0, limit);
     });
 
-    return { meet: target.meet, date: target.date, boards: byGroup };
+    return {
+      meet: target.meet,
+      date: target.dateStr || '',
+      baselineMeet: baseline.meet,
+      baselineSeason: baselineSeason,
+      boards: byGroup
+    };
   }
 
   // -------- Lookup --------
