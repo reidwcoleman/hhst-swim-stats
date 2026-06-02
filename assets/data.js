@@ -1436,6 +1436,51 @@
     return { resultsScanned, swimmersAffected: writes.length, resultsFixed, applied: apply };
   }
 
+  // Rename a meet everywhere it appears in the embedded results (and the
+  // meet-time mirror). Used to give a placeholder-named legacy import a real
+  // name, e.g. "Unknown Meet" -> "Practice Meet". opts.season optionally scopes
+  // the rename to a single season. Returns { resultsRenamed, swimmersAffected }.
+  async function renameMeet(fromMeet, toMeet, opts){
+    fromMeet = (fromMeet || '').toString();
+    toMeet   = (toMeet || '').toString();
+    if(!fromMeet || !toMeet || fromMeet === toMeet) return { resultsRenamed:0, swimmersAffected:0 };
+    const season = (opts && opts.season) || '';
+    const snap = await FB.db.collection('swimmers').get();
+    const writes = [];
+    let resultsRenamed = 0;
+    snap.forEach(d => {
+      const sw = d.data() || {};
+      const results = (Array.isArray(sw.results) ? sw.results : []).map(r => (r && typeof r === 'object') ? { ...r } : r);
+      let changed = false;
+      results.forEach(r => {
+        if(!r || r.meet !== fromMeet) return;
+        if(season && r.season !== season) return;
+        r.meet = toMeet; changed = true; resultsRenamed++;
+      });
+      if(changed) writes.push({ key: d.id, results });
+    });
+    for(let i=0;i<writes.length;i+=400){
+      const batch = FB.db.batch();
+      writes.slice(i, i+400).forEach(w => {
+        batch.set(FB.db.collection('swimmers').doc(w.key),
+          { results: w.results, updatedAt: FB.FieldValue.serverTimestamp() }, { merge: true });
+      });
+      await batch.commit();
+    }
+    // Best-effort: rename in the meet-time mirror too.
+    try {
+      const mt = await FB.db.collection('hhst_meet_times').where('meet','==',fromMeet).get();
+      const refs = [];
+      mt.forEach(doc => { if(!season || (doc.data()||{}).season === season) refs.push(doc.ref); });
+      for(let i=0;i<refs.length;i+=400){
+        const batch = FB.db.batch();
+        refs.slice(i, i+400).forEach(ref => batch.set(ref, { meet: toMeet }, { merge: true }));
+        await batch.commit();
+      }
+    } catch(e){}
+    return { resultsRenamed, swimmersAffected: writes.length };
+  }
+
   // Write the per-season {age,group,gender,bracket,ageGroup} into sw.seasonInfo
   // and re-mirror the most-recent season up to the top-level fields.
   function applySeasonInfo(sw, season, { age, group, gender, ageGroup } = {}){
@@ -1738,48 +1783,14 @@
     const m = (s||'').toString().match(/(\d{4})/);
     return m ? parseInt(m[1], 10) : 0;
   }
-  // Parse the assorted date strings results carry — ISO "2025-06-14",
-  // US "07/15/25" / "7/15/2025" — into a sortable epoch ms. NaN when blank or
-  // unparseable. (Two-digit years map to 2000+.) Used to rank seasons by their
-  // most recent ACTUAL meet, so a season full of dateless legacy rows can't
-  // outrank a season with real, dated meets just because its label has a
-  // bigger year.
-  function parseFlexibleDate(s){
-    if(!s) return NaN;
-    const str = s.toString().trim();
-    if(!str) return NaN;
-    let m = str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
-    if(m) return new Date(+m[1], +m[2]-1, +m[3]).getTime();
-    m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
-    if(m){ let y = +m[3]; if(y < 100) y += 2000; return new Date(y, +m[1]-1, +m[2]).getTime(); }
-    const t = Date.parse(str);
-    return isFinite(t) ? t : NaN;
-  }
-  // Build a { season -> latest parseable result-date ms } map from a swimmer list.
-  function seasonLatestDates(list){
-    const latest = {};
-    list.forEach(sw => (sw.results || []).forEach(r => {
-      if(!r || !r.season) return;
-      const t = parseFlexibleDate(r.date);
-      if(isFinite(t) && (latest[r.season] === undefined || t > latest[r.season])) latest[r.season] = t;
-    }));
-    return latest;
-  }
-  // Comparator (most-recent-first) over season labels: a season with a real,
-  // dated meet always ranks above one without; among dated seasons the latest
-  // meet wins; dateless seasons fall back to the highest 4-digit year in the
-  // label, then numeric-aware locale compare. `latest` is the precomputed map
-  // from seasonLatestDates so callers don't rescan per comparison.
-  function seasonRecencyComparator(latest){
-    return function(a, b){
-      const ta = latest[a], tb = latest[b];
-      const aHas = ta !== undefined, bHas = tb !== undefined;
-      if(aHas && bHas){ if(tb !== ta) return tb - ta; }
-      else if(aHas !== bHas){ return aHas ? -1 : 1; }
-      const ya = seasonYearKey(a), yb = seasonYearKey(b);
-      if(yb !== ya) return yb - ya;
-      return b.localeCompare(a, undefined, { numeric:true, sensitivity:'base' });
-    };
+  // Highest-year-label first (so "2026" leads "2025 Summer"), then numeric-aware
+  // locale compare so within a year "Summer"/"Winter" order sensibly. This is
+  // label-driven on purpose: the coach's newest season label is "current" even
+  // if its meets aren't dated (e.g. a best-times / practice season).
+  function compareSeasonLabels(a, b){
+    const ya = seasonYearKey(a), yb = seasonYearKey(b);
+    if(yb !== ya) return yb - ya;
+    return b.localeCompare(a, undefined, { numeric:true, sensitivity:'base' });
   }
   function getAllSeasons(allSwimmers){
     const seen = new Set();
@@ -1795,7 +1806,7 @@
         if(r && r.season) seen.add(r.season);
       });
     });
-    return Array.from(seen).sort(seasonRecencyComparator(seasonLatestDates(list)));
+    return Array.from(seen).sort(compareSeasonLabels);
   }
   function currentSeason(allSwimmers){
     const seasons = getAllSeasons(allSwimmers);
@@ -1806,15 +1817,13 @@
   // posters need a season that has results - a brand-new season with only a
   // roster uploaded would otherwise produce empty posters. Falls back to ''
   // when no result carries a season tag (pure legacy data -> show all-time).
-  // Ranked by most-recent ACTUAL meet date so a season of dated meets wins over
-  // a legacy season whose label year is higher but whose rows have no dates.
   function currentSeasonWithTimes(allSwimmers){
     const seen = new Set();
     const list = Array.isArray(allSwimmers) ? allSwimmers : Object.values(allSwimmers || {});
     list.forEach(sw => {
       (sw.results || []).forEach(r => { if(r && r.season) seen.add(r.season); });
     });
-    const sorted = Array.from(seen).sort(seasonRecencyComparator(seasonLatestDates(list)));
+    const sorted = Array.from(seen).sort(compareSeasonLabels);
     return sorted[0] || '';
   }
   // Return every distinct meet that's been imported, with its latest date
@@ -2190,7 +2199,7 @@
     findSwimmer,
     deleteSwimmer, pruneNonRosterSwimmers, addSwimmerManual, updateSwimmer,
     getUploads, deleteUpload,
-    migrateSeasonAges, countSwimmersNeedingSeasonMigration, inferMissingDistances,
+    migrateSeasonAges, countSwimmersNeedingSeasonMigration, inferMissingDistances, renameMeet,
     clearAll, clearRoster, clearMeetTimes,
     isAdminLoggedIn, loginAdmin, logoutAdmin, onAuthChanged,
     statsForSwimmer, rankSwimmerInAgeGroup, buildLeaderboards, teamStats, teamStatsBySeason,
