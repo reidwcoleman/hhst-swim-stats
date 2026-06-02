@@ -893,29 +893,16 @@
     }));
     return Array.from(byMeet.values()).sort((a, b) => a.ts - b.ts);
   }
-  // The most-recent season (by label) BELOW `season` that actually has meets —
-  // used as the Most Improved baseline when the current season has only one meet.
-  function priorSeasonWithMeets(swimmers, season){
-    const withMeets = new Set();
-    swimmers.forEach(sw => (sw.results||[]).forEach(r => { if(r && r.meet && r.season) withMeets.add(r.season); }));
-    const sorted = Array.from(withMeets).sort(compareSeasonLabels); // newest label first
-    const idx = sorted.indexOf(season);
-    return idx === -1 ? (sorted[0] || '') : (sorted[idx + 1] || '');
-  }
-
   // ---- Most Improved (latest meet vs the meet before it) ----------------
   // Ranks swimmers by total seconds dropped between the current season's most
-  // recent meet (the "target") and the meet immediately before it (the
-  // "baseline"). The baseline is:
-  //   • the previous meet in the SAME season, when the season has ≥2 meets
-  //     ("compare the second meet to the first meet"), otherwise
-  //   • the most recent meet of the most recent PRIOR season that has meets
-  //     (so when the new season has only one meet, improvement is measured
-  //     against last season's last meet).
-  // For each (swimmer, event) swum at BOTH meets, drop = baseline time − target
-  // time, counted only when faster. Returns
-  // { meet, date, baselineMeet, baselineSeason, boards } where boards is keyed
-  // by competitionGroup ("Boys 11-12" / "Girls 11-12" / bare bracket).
+  // recent meet (the "target") and the meet immediately before it within the
+  // SAME season (the "baseline" — "compare the second meet to the first meet").
+  // The season needs at least two meets: with only one, there's nothing to
+  // compare against and the function returns empty (the board stays hidden). It
+  // never reaches into a previous season. For each (swimmer, event) swum at
+  // BOTH meets, drop = baseline time − target time, counted only when faster.
+  // Returns { meet, date, baselineMeet, baselineSeason, boards } where boards is
+  // keyed by competitionGroup ("Boys 11-12" / "Girls 11-12" / bare bracket).
   // opts.season scopes the target meet (defaults handled by the caller).
   function mostImprovedAtMeet(allSwimmers, opts){
     opts = opts || {};
@@ -932,20 +919,14 @@
       ? seasonMeets.find(m => m.meet === opts.meet) || { meet: opts.meet, ts: -Infinity, dateStr: opts.date || '' }
       : seasonMeets[seasonMeets.length - 1];
 
-    // 2) Baseline meet = the meet just before target in this season, else the
-    //    most recent meet of the most recent prior season with meets.
-    let baseline = null, baselineSeason = season;
+    // 2) Baseline meet = the meet just before target IN THIS SEASON. Most
+    //    Improved only makes sense once the season has two meets to compare —
+    //    when there's just one, return empty so the board stays hidden (we do
+    //    NOT reach back into a previous season).
+    const baselineSeason = season;
     const tIdx = seasonMeets.findIndex(m => m.meet === target.meet);
-    if(tIdx > 0){
-      baseline = seasonMeets[tIdx - 1];
-    } else {
-      const ps = priorSeasonWithMeets(swimmers, season);
-      if(ps){
-        const pm = meetsInSeason(swimmers, ps);
-        if(pm.length){ baseline = pm[pm.length - 1]; baselineSeason = ps; }
-      }
-    }
-    if(!baseline) return { meet: target.meet, date: target.dateStr || '', baselineMeet:'', baselineSeason:'', boards:{} };
+    const baseline = tIdx > 0 ? seasonMeets[tIdx - 1] : null;
+    if(!baseline) return empty;
 
     // 3) For each swimmer, compare their target-meet time to their baseline-meet
     //    time, per event (best time at each meet when an event was swum twice).
