@@ -203,21 +203,60 @@
       </span>
       Highcroft <em>Hurricanes</em><span class="admin-pill">Admin</span>
     </a>
-    <h1>Coach Login</h1>
-    <p class="lead">Sign in to upload meet results and manage swimmers.</p>
 
-    <form id="loginForm" autocomplete="off">
+    <h1>Coach Sign-In</h1>
+    <p class="lead">Three separate logins — pick yours and sign in.</p>
+
+    <!-- ADMIN — full access -->
+    <form class="login-panel" data-role="admin" autocomplete="off">
+      <span class="login-panel-title">Admin</span>
       <div class="field">
-        <label for="user">Email</label>
-        <input type="email" id="user" placeholder="admin@hhststats.com" required/>
+        <label>Email</label>
+        <input type="email" class="lp-user" placeholder="admin@hhststats.com" required/>
       </div>
       <div class="field">
-        <label for="pass">Password</label>
-        <input type="password" id="pass" placeholder="••••••••••••" required/>
+        <label>Password</label>
+        <input type="password" class="lp-pass" placeholder="••••••••••••" required/>
       </div>
-      <div class="error-msg" id="loginErr"></div>
-      <button class="btn lg block" type="submit" id="loginBtn" style="margin-top:8px">
-        <span class="btn-label">Sign in</span>
+      <div class="error-msg lp-err"></div>
+      <button class="btn block lp-btn" type="submit">
+        <span class="btn-label">Admin sign in</span>
+        <svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </button>
+    </form>
+
+    <!-- HEAD COACH (Alyssa) — full access -->
+    <form class="login-panel" data-role="head" autocomplete="off">
+      <span class="login-panel-title">Head Coach</span>
+      <div class="field">
+        <label>Email</label>
+        <input type="email" class="lp-user" value="alyssa@hhststats.com" required/>
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" class="lp-pass" placeholder="••••••••••••" required/>
+      </div>
+      <div class="error-msg lp-err"></div>
+      <button class="btn block lp-btn" type="submit">
+        <span class="btn-label">Head Coach sign in</span>
+        <svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </button>
+    </form>
+
+    <!-- ASSISTANT COACH (Poppy) — lands straight on the Fastest Five printout -->
+    <form class="login-panel" data-role="assistant" autocomplete="off">
+      <span class="login-panel-title">Assistant Coach</span>
+      <div class="field">
+        <label>Email</label>
+        <input type="email" class="lp-user" value="poppy@hhststats.com" required/>
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" class="lp-pass" placeholder="••••••••••••" required/>
+      </div>
+      <div class="error-msg lp-err"></div>
+      <button class="btn block lp-btn" type="submit">
+        <span class="btn-label">Assistant Coach sign in</span>
         <svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
       </button>
     </form>
@@ -680,6 +719,14 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
   const loginView = document.getElementById('loginView');
   const adminView = document.getElementById('adminView');
 
+  // ============ Login roles ============
+  // Three fully separate sign-in forms, each against its own Firebase account:
+  //   Admin / Head Coach (Alyssa) — full admin experience.
+  //   Assistant Coach (Poppy)     — lands straight on the Fastest Five printout
+  //                                  (print dialog auto-opens), then can
+  //                                  navigate freely from there.
+  const ASSISTANT_COACH_EMAIL = 'poppy@hhststats.com';
+
   function showAdmin(){
     loginView.style.display = 'none';
     adminView.style.display = 'block';
@@ -700,34 +747,53 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
     return raw;
   }
 
+  // Set only when the user just submitted the login form (vs. a persisted
+  // session being restored on refresh). Lets us send the Assistant Coach to
+  // Fastest Five on login, while still letting her navigate back to the
+  // dashboard afterward without being bounced away again.
+  let freshLogin = false;
+
   // React to Firebase Auth state (handles refresh / persisted session)
   HHST.onAuthChanged(user => {
     if(user){
       const next = getSafeNext();
       if(next){ location.replace(next); return; }
+      if(freshLogin && (user.email || '').toLowerCase() === ASSISTANT_COACH_EMAIL){
+        freshLogin = false;
+        // Land directly on the Fastest Five printout — awards.html sees this
+        // flag and auto-opens the print dialog for the Fastest Five posters.
+        location.replace('awards.html?print=fastest');
+        return;
+      }
+      freshLogin = false;
       showAdmin();
     } else {
       showLogin();
     }
   });
 
-  // LOGIN
-  const loginBtn = document.getElementById('loginBtn');
-  const loginLabel = loginBtn.querySelector('.btn-label');
-  document.getElementById('loginForm').addEventListener('submit', async e => {
-    e.preventDefault();
-    const u = document.getElementById('user').value.trim();
-    const p = document.getElementById('pass').value;
-    const err = document.getElementById('loginErr');
-    err.classList.remove('show');
-    loginBtn.disabled = true; loginLabel.textContent = 'Signing in…';
-    const result = await HHST.loginAdmin(u, p);
-    loginBtn.disabled = false; loginLabel.textContent = 'Sign in';
-    if(!result.ok){
-      err.textContent = result.reason;
-      err.classList.add('show');
-    }
-    // showAdmin() is called by onAuthChanged on success
+  // LOGIN — each of the three panels is its own independent form.
+  document.querySelectorAll('.login-panel').forEach(form => {
+    const btn   = form.querySelector('.lp-btn');
+    const label = btn.querySelector('.btn-label');
+    const defaultLabel = label.textContent;
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      const u = form.querySelector('.lp-user').value.trim();
+      const p = form.querySelector('.lp-pass').value;
+      const err = form.querySelector('.lp-err');
+      err.classList.remove('show');
+      btn.disabled = true; label.textContent = 'Signing in…';
+      freshLogin = true;
+      const result = await HHST.loginAdmin(u, p);
+      if(!result.ok) freshLogin = false;
+      btn.disabled = false; label.textContent = defaultLabel;
+      if(!result.ok){
+        err.textContent = result.reason;
+        err.classList.add('show');
+      }
+      // showAdmin() / redirect handled by onAuthChanged on success
+    });
   });
   document.getElementById('logoutBtn').addEventListener('click', async ()=>{
     await HHST.logoutAdmin();

@@ -294,6 +294,17 @@
       if(total === 0){ empty.style.display = 'block'; return; }
       renderAwards();
       renderMostImproved();
+
+      // The Assistant Coach is sent here straight from login (admin.html adds
+      // ?print=fastest) to land directly on the Fastest Five printout. Open the
+      // print dialog once for the Fastest Five posters, then drop the flag so a
+      // refresh or back-navigation doesn't reprint.
+      if(new URLSearchParams(location.search).get('print') === 'fastest'){
+        history.replaceState(null, '', location.pathname);
+        if(awardsHost.querySelectorAll('.award-card').length){
+          setTimeout(() => safePrint({ scopes: ['printing-awards'] }), 400);
+        }
+      }
     } catch(err){
       console.error(err);
       loading.innerHTML = '<p class="lead" style="color:var(--red-light);margin:0">Couldn\'t load team data. Try refreshing.</p>';
