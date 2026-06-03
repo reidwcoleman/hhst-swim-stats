@@ -3041,8 +3041,10 @@ a.lb-entry-name:hover{color:var(--accent)!important;text-decoration:underline;te
 @media print {
   /* Landscape US Letter — the Fastest Five certificates have a swimmer-name
      column that wraps badly in portrait, so coaches asked for landscape
-     printing. 10in × 7.5in printable area after the 0.35in margins. */
-  @page { size: letter landscape; margin: 0.35in; }
+     printing. margin:0 removes the browser's auto header/footer (the page
+     date, the document name, and the website URL) and lets each poster fill
+     the entire sheet. */
+  @page { size: letter landscape; margin: 0; }
   *, *::before, *::after{
     -webkit-print-color-adjust:exact !important;
     print-color-adjust:exact !important;
@@ -3062,18 +3064,24 @@ a.lb-entry-name:hover{color:var(--accent)!important;text-decoration:underline;te
     display:block !important;margin:0 !important;gap:0 !important;
     grid-template-columns:none !important;
   }
-  /* Each award fills a landscape US Letter page (10in × 7.5in printable). */
+  /* Each award fills the entire landscape US Letter sheet (11in × 8.5in).
+     box-sizing:border-box keeps the card exactly one page tall so there are
+     no blank pages between posters; content is centered vertically. */
   .award-card{
     page-break-after:always;
     break-after:page;
     page-break-inside:avoid;
     break-inside:avoid;
-    margin:0 auto !important;
+    box-sizing:border-box !important;
+    margin:0 !important;
     box-shadow:none !important;
     border-color:#1e3a8a !important;
-    width:10in !important;max-width:10in !important;
-    padding:36px 56px 24px !important;
+    width:11in !important;max-width:11in !important;
+    min-height:8.5in !important;
+    padding:0.5in 0.7in !important;
+    display:flex !important;flex-direction:column !important;justify-content:center !important;
     transform:none !important;
+    overflow:hidden !important;
   }
   .award-card::after{
     background:linear-gradient(90deg,#fbbf24,#f59e0b,#fbbf24) !important;
