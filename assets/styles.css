@@ -427,33 +427,32 @@ footer a:hover{color:var(--accent)}
   font-size:14px;color:var(--text-muted);text-align:center;margin-bottom:24px;
 }
 
-/* Wider card so the three logins sit side-by-side */
-.login-card-wide{max-width:880px}
-
-/* Three separate, self-contained login forms, side-by-side (Admin /
-   Head Coach / Assistant Coach). Stack on narrow screens. */
-.login-panels{
-  display:flex;gap:16px;align-items:stretch;
-}
-.login-panel{
-  flex:1 1 0;min-width:0;display:flex;flex-direction:column;
+/* Chooser: one button per login (Admin / Head Coach / Assistant Coach) */
+.login-choices{display:flex;flex-direction:column;gap:12px;margin-top:4px}
+.login-choice{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  width:100%;appearance:none;cursor:pointer;text-align:left;
+  font-family:inherit;font-weight:600;font-size:15.5px;color:var(--text);
   background:var(--surface-2);
   border:1px solid var(--border);
-  border-radius:14px;
-  padding:20px 18px 18px;
+  border-radius:14px;padding:16px 18px;
+  transition:border-color .18s ease,background .18s ease,transform .18s ease,box-shadow .18s ease;
 }
-.login-panel-title{
-  display:block;font-family:'Fraunces',serif;font-weight:700;
-  font-size:16px;color:var(--text);letter-spacing:-.01em;
-  margin-bottom:14px;
+.login-choice:hover{
+  border-color:var(--accent);transform:translateY(-1px);box-shadow:var(--shadow-sm);
 }
-.login-panel .field:last-of-type{margin-bottom:12px}
-/* Push each panel's button to the bottom so all three line up. */
-.login-panel .lp-err:empty{margin:0}
-.login-panel .lp-btn{margin-top:auto}
-@media (max-width:680px){
-  .login-panels{flex-direction:column}
+.login-choice:focus-visible{outline:none;box-shadow:0 0 0 3px var(--ring)}
+.login-choice svg{width:18px;height:18px;color:var(--text-subtle);flex:none}
+.login-choice:hover svg{color:var(--accent)}
+
+/* Per-role sign-in page: a single form with a "back to chooser" link */
+.login-back{
+  appearance:none;border:0;background:transparent;cursor:pointer;
+  font-family:inherit;font-size:13px;font-weight:600;color:var(--text-muted);
+  padding:0;margin-bottom:16px;transition:color .18s ease;
 }
+.login-back:hover{color:var(--accent)}
+.login-step[hidden]{display:none}
 
 /* ============ ADMIN DASHBOARD ============ */
 .admin-shell{max-width:1180px;margin:0 auto;padding:32px 24px 64px}
