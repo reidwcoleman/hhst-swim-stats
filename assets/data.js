@@ -639,6 +639,15 @@
           season: rowSeason,
           uploadId: uploadId || ''
         };
+        // Skip an EXACT duplicate race (same meet + season + event + time).
+        // Re-uploading the same meet file then becomes idempotent instead of
+        // stacking a 2nd/3rd/4th identical time onto every swimmer. Genuinely
+        // different times (e.g. a prelim and a final) differ in `time`, so
+        // they're still kept.
+        const isExactDup = sw.results.some(r =>
+          r && r.meet === result.meet && (r.season || '') === (result.season || '')
+          && r.event === result.event && r.time === result.time);
+        if(isExactDup) continue;
         sw.results.push(result);
         added++;
         // Record the meet for the registry/summary — but don't let a meetless
@@ -798,6 +807,10 @@
     const limit = (opts && opts.limit) || 5;
     const splitByGender = !opts || opts.splitByGender !== false;
     const season = (opts && opts.season) || '';
+    // When opts.meet is set, the board is built ONLY from times swum at that
+    // meet (the Fastest Five posters use this to show the most recent meet's
+    // results, not a swimmer's season-best). Unset → best time of the season.
+    const meet = (opts && opts.meet) || '';
     const byGroup = {};
     for(const sw of swimmers){
       // Use the swimmer's age/bracket FOR THE SELECTED SEASON (so a kid who
@@ -815,6 +828,7 @@
       if(!group || group === 'Unknown') continue;
       const matching = (sw.results||[]).filter(r => {
         if(season && r.season !== season) return false;
+        if(meet && r.meet !== meet) return false;
         if(eventMatcher.stroke && r.stroke !== eventMatcher.stroke) return false;
         if(eventMatcher.distance && String(r.distance) !== String(eventMatcher.distance)) return false;
         return isFinite(r.seconds);
@@ -883,15 +897,28 @@
   // "Practice Meet") sorts earliest, so a later real meet becomes the target.
   function meetsInSeason(swimmers, season){
     const byMeet = new Map();
+    let seq = 0;
     swimmers.forEach(sw => (sw.results||[]).forEach(r => {
       if(!r || !r.meet) return;
       if(season && r.season !== season) return;
       const ts = parseFlexibleDate(r.date);
       const cur = byMeet.get(r.meet);
-      if(!cur){ byMeet.set(r.meet, { meet: r.meet, ts: isFinite(ts) ? ts : -Infinity, dateStr: r.date || '' }); }
+      if(!cur){ byMeet.set(r.meet, { meet: r.meet, ts: isFinite(ts) ? ts : -Infinity, dateStr: r.date || '', seq: seq++ }); }
       else if(isFinite(ts) && ts > cur.ts){ cur.ts = ts; cur.dateStr = r.date || cur.dateStr; }
     }));
-    return Array.from(byMeet.values()).sort((a, b) => a.ts - b.ts);
+    // Sort oldest → newest by date. Dateless meets (ts === -Infinity) sort
+    // earliest. Comparing two ts values with subtraction would yield NaN when
+    // both are -Infinity (the all-dateless case), leaving the order undefined —
+    // so fall back to first-seen order (`seq`) on any tie to keep "most recent
+    // meet" deterministic instead of dependent on swimmer iteration order.
+    return Array.from(byMeet.values()).sort((a, b) => {
+      if(a.ts !== b.ts){
+        if(!isFinite(a.ts)) return -1;
+        if(!isFinite(b.ts)) return 1;
+        return a.ts - b.ts;
+      }
+      return a.seq - b.seq;
+    });
   }
   // ---- Most Improved (latest meet vs the meet before it) ----------------
   // Ranks swimmers by total seconds dropped between the current season's most
@@ -938,37 +965,69 @@
         const sws = Array.isArray(sw.seasons) ? sw.seasons : [];
         if(sws.length && !sws.includes(season)) return;
       }
-      const tgt = {}, base = {};
+      // Index each meet's swims by STROKE, then by distance. Matching on stroke
+      // (not the raw event label) is what makes the comparison survive the
+      // common case where the earlier "practice meet" was uploaded WITHOUT a
+      // distance: that file's distance gets inferred from the swimmer's age
+      // bracket (6&U→15, 7-8/9-10→25, 11-12+→50), which can disagree with the
+      // real distance the swimmer actually raced at the later meet. Keying on
+      // the event label ("15 Free" vs "25 Free") would silently drop those
+      // swimmers from Most Improved entirely. tgtByStroke[stroke] is a Map of
+      // distance → { sec, ev } holding the swimmer's best swim of that stroke.
+      const strokeOf = r => r.stroke || extractStroke(r.event) || '';
+      const distOf   = r => ((r.distance != null ? String(r.distance) : '').trim() || extractDistance(r.event) || '');
+      const tgtByStroke = {}, baseByStroke = {};
+      function indexResult(into, r){
+        const st = strokeOf(r); if(!st) return;     // unstroked legacy row → can't compare
+        const d = distOf(r);
+        if(!into[st]) into[st] = new Map();
+        const cur = into[st].get(d);
+        if(cur === undefined || r.seconds < cur.sec) into[st].set(d, { sec: r.seconds, ev: r.event });
+      }
       (sw.results||[]).forEach(r => {
         if(!r || !isFinite(r.seconds)) return;
-        if(r.meet === target.meet && (!season || r.season === season)){
-          if(tgt[r.event] === undefined || r.seconds < tgt[r.event]) tgt[r.event] = r.seconds;
-        }
-        if(r.meet === baseline.meet && (!baselineSeason || r.season === baselineSeason)){
-          if(base[r.event] === undefined || r.seconds < base[r.event]) base[r.event] = r.seconds;
-        }
+        if(r.meet === target.meet && (!season || r.season === season)) indexResult(tgtByStroke, r);
+        if(r.meet === baseline.meet && (!baselineSeason || r.season === baselineSeason)) indexResult(baseByStroke, r);
       });
       // Plausibility guard for guessed-distance data: no stroke beats freestyle
       // over the same distance, so if a non-free TARGET time is faster than the
       // swimmer's own freestyle at that distance, the distance label is wrong
       // (a 25 mislabeled 50, etc.) — drop it rather than report a fake plunge.
-      const tgtFreeByDist = {};
-      Object.keys(tgt).forEach(ev => {
-        if(extractStroke(ev) !== 'Freestyle') return;
-        const d = extractDistance(ev);
-        if(d && (tgtFreeByDist[d] === undefined || tgt[ev] < tgtFreeByDist[d])) tgtFreeByDist[d] = tgt[ev];
-      });
+      const tgtFree = tgtByStroke['Freestyle']; // Map dist → { sec, ev } (may be undefined)
       let totalDrop = 0;
       const eventsDropped = [];
-      Object.keys(tgt).forEach(ev => {
-        if(base[ev] === undefined) return;        // not swum at the baseline meet → can't compare
-        const stroke = extractStroke(ev);
-        if(stroke && stroke !== 'Freestyle'){
-          const f = tgtFreeByDist[extractDistance(ev)];
-          if(f !== undefined && tgt[ev] < f) return; // impossible time → bad distance label, skip
-        }
-        const drop = base[ev] - tgt[ev];
-        if(drop > 0){ totalDrop += drop; eventsDropped.push({ event: ev, drop }); }
+      Object.keys(tgtByStroke).forEach(stroke => {
+        const tMap = tgtByStroke[stroke];
+        const bMap = baseByStroke[stroke];
+        if(!bMap) return;                          // stroke not swum at the baseline meet → can't compare
+        tMap.forEach((tEntry, dist) => {
+          if(stroke !== 'Freestyle' && tgtFree){
+            const f = tgtFree.get(dist);
+            if(f && tEntry.sec < f.sec) return;    // impossible time → bad distance label, skip
+          }
+          let bEntry = bMap.get(dist);
+          // Distance label diverged across the two meets — almost always because
+          // the baseline "practice/best-times" meet had no real distance, so the
+          // ingest inferred one from the swimmer's age bracket (6&U→15,
+          // 7-8/9-10→25, 11-12+→50) that disagrees with the distance actually
+          // raced at the target meet. Fall back to the single same-stroke swim
+          // at each meet so the swimmer isn't silently dropped — BUT only when
+          // the target race is at least as long as the baseline's (labelled)
+          // distance. A faster time over an equal-or-longer race is a genuine
+          // improvement; a faster time over a SHORTER race is just the shorter
+          // race and would manufacture a huge bogus drop (a 50-yd baseline paired
+          // with a 25-yd target reads as a ~20s "improvement"), so we refuse it.
+          // When either meet has multiple distances for this stroke we can't tell
+          // which swims pair up, so an exact distance match is required instead.
+          if(!bEntry && tMap.size === 1 && bMap.size === 1){
+            const [bDist, only] = bMap.entries().next().value;
+            const tNum = parseInt(dist, 10), bNum = parseInt(bDist, 10);
+            if(isFinite(tNum) && isFinite(bNum) && tNum >= bNum) bEntry = only;
+          }
+          if(!bEntry) return;                      // not swum at the baseline meet → can't compare
+          const drop = bEntry.sec - tEntry.sec;
+          if(drop > 0){ totalDrop += drop; eventsDropped.push({ event: tEntry.ev, drop }); }
+        });
       });
       if(totalDrop > 0){
         const info = swimmerSeasonInfo(sw, season);
@@ -1516,6 +1575,104 @@
       }
     } catch(e){}
     return { resultsRenamed, swimmersAffected: writes.length };
+  }
+
+  // Collapse duplicate times for ONE meet: keep only the FASTEST time per
+  // swimmer per stroke for that meet, deleting the rest from the embedded
+  // results AND the hhst_meet_times mirror. Built for cleaning up a meet that
+  // got uploaded several times (so each swimmer had the same stroke logged
+  // 2-4×). opts.season scopes the cleanup to a single season.
+  // opts.apply (default false) is a dry run that only COUNTS what would be
+  // removed — nothing is written.
+  // Returns { meet, resultsScanned, duplicatesRemoved, swimmersAffected, applied }.
+  async function dedupeMeetByStroke(meetName, opts){
+    meetName = (meetName || '').toString();
+    const season = (opts && opts.season) || '';
+    const apply  = !!(opts && opts.apply);
+    if(!meetName) return { meet:'', resultsScanned:0, duplicatesRemoved:0, swimmersAffected:0, applied:apply };
+    const snap = await FB.db.collection('swimmers').get();
+    const writes = []; // { key, results, kept:[...], sw }
+    let resultsScanned = 0, duplicatesRemoved = 0;
+    snap.forEach(d => {
+      const sw = d.data() || {};
+      const results = Array.isArray(sw.results) ? sw.results : [];
+      const matchIdx = [];
+      const bestByStroke = new Map(); // stroke -> { idx, seconds }
+      results.forEach((r, i) => {
+        if(!r || r.meet !== meetName) return;
+        if(season && r.season !== season) return;
+        resultsScanned++;
+        matchIdx.push(i);
+        const stroke = r.stroke || extractStroke(r.event) || r.event || '';
+        const sec = (typeof r.seconds === 'number' && isFinite(r.seconds))
+          ? r.seconds : timeToSeconds(r.time);
+        const cur = bestByStroke.get(stroke);
+        const better = !cur || (isFinite(sec) && (!isFinite(cur.seconds) || sec < cur.seconds));
+        if(better) bestByStroke.set(stroke, { idx:i, seconds: isFinite(sec) ? sec : Infinity });
+      });
+      if(!matchIdx.length) return;
+      const keepIdx = new Set(Array.from(bestByStroke.values()).map(v => v.idx));
+      const removeSet = new Set(matchIdx.filter(i => !keepIdx.has(i)));
+      if(!removeSet.size) return;
+      duplicatesRemoved += removeSet.size;
+      const newResults = results.filter((_, i) => !removeSet.has(i));
+      const kept = Array.from(keepIdx).map(i => results[i]);
+      writes.push({ key: d.id, results: newResults, kept, sw });
+    });
+
+    if(apply && writes.length){
+      // 1) Rewrite each affected swimmer's embedded results.
+      for(let i=0;i<writes.length;i+=400){
+        const batch = FB.db.batch();
+        writes.slice(i, i+400).forEach(w => {
+          batch.set(FB.db.collection('swimmers').doc(w.key),
+            { results: w.results, updatedAt: FB.FieldValue.serverTimestamp() }, { merge:true });
+        });
+        await batch.commit();
+      }
+      // 2) Best-effort: rebuild this meet's mirror docs for affected swimmers —
+      //    delete all their hhst_meet_times rows for this meet/season, then
+      //    re-write one per kept result.
+      try {
+        for(const w of writes){
+          const q = await FB.db.collection('hhst_meet_times')
+            .where('swimmerKey','==', w.key).where('meet','==', meetName).get();
+          const refs = [];
+          q.forEach(doc => { if(!season || (doc.data()||{}).season === season) refs.push(doc.ref); });
+          for(let i=0;i<refs.length;i+=400){
+            const batch = FB.db.batch();
+            refs.slice(i, i+400).forEach(ref => batch.delete(ref));
+            await batch.commit();
+          }
+          const sw = w.sw, key = w.key, name = sw.name || '';
+          const batch = FB.db.batch();
+          w.kept.forEach(r => {
+            if(!r || r.meet !== meetName) return;
+            if(season && r.season !== season) return;
+            const eventLabel = r.event || ((r.distance && r.stroke)
+              ? `${r.distance} ${STROKE_ABBREV[r.stroke] || r.stroke}` : (r.stroke || ''));
+            const rowSeason = r.season || '';
+            const mirrorBase = rowSeason
+              ? `${meetTimeDocId(key, eventLabel)}__${slugify(rowSeason)}`
+              : meetTimeDocId(key, eventLabel);
+            const mirrorId = r.uploadId ? `${mirrorBase}__${slugify(r.uploadId)}` : mirrorBase;
+            const mi = swimmerSeasonInfo(sw, rowSeason);
+            batch.set(FB.db.collection('hhst_meet_times').doc(mirrorId), {
+              swimmerKey:key, swimmerName:name, event:eventLabel,
+              distance:r.distance || '', stroke:r.stroke || '', time:r.time || '',
+              seconds:(typeof r.seconds === 'number' ? r.seconds : timeToSeconds(r.time)),
+              meet:r.meet, date:r.date || '', place:r.place || '',
+              ageGroup: mi.bracket || getAgeGroup(mi.age), gender: mi.gender || '',
+              competitionGroup: competitionGroup(sw, rowSeason),
+              season: rowSeason, uploadId: r.uploadId || ''
+            }, { merge:true });
+          });
+          await batch.commit();
+        }
+      } catch(e){ /* mirror cleanup is best-effort */ }
+    }
+
+    return { meet: meetName, resultsScanned, duplicatesRemoved, swimmersAffected: writes.length, applied: apply };
   }
 
   // Write the per-season {age,group,gender,bracket,ageGroup} into sw.seasonInfo
@@ -2236,7 +2393,7 @@
     findSwimmer,
     deleteSwimmer, pruneNonRosterSwimmers, addSwimmerManual, updateSwimmer,
     getUploads, deleteUpload,
-    migrateSeasonAges, countSwimmersNeedingSeasonMigration, inferMissingDistances, renameMeet,
+    migrateSeasonAges, countSwimmersNeedingSeasonMigration, inferMissingDistances, renameMeet, dedupeMeetByStroke,
     clearAll, clearRoster, clearMeetTimes,
     isAdminLoggedIn, loginAdmin, logoutAdmin, onAuthChanged,
     statsForSwimmer, rankSwimmerInAgeGroup, buildLeaderboards, teamStats, teamStatsBySeason,
@@ -2246,7 +2403,7 @@
     mapHeader, normHeaderKey,
     fixNameOrder, isValidEmail, ageFromDob,
     normalizeEventLabel,
-    leaderboardsByEvent, mostImprovedAtMeet, sortAgeGroups,
+    leaderboardsByEvent, mostImprovedAtMeet, meetsInSeason, sortAgeGroups,
     groupByBracket,
     parseGender, parseGenderFromAgeGroup, genderLabel, competitionGroup,
     swimmerSeasonInfo, mostRecentSeasonOf,

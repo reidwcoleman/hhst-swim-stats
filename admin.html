@@ -266,7 +266,7 @@
     </form>
 
     <!-- ============ ASSISTANT COACH (Poppy) sign-in page ============ -->
-    <!-- Lands straight on the Fastest Five printout after signing in. -->
+    <!-- Lands straight on the Fastest Five & Most Improved page after sign-in. -->
     <form class="login-step login-panel" data-role="assistant" autocomplete="off" hidden>
       <button type="button" class="login-back">← Choose a different login</button>
       <h1>Assistant Coach Login</h1>
@@ -593,6 +593,23 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
       <div id="uploadsBody" style="margin-top:16px"></div>
     </div>
 
+    <!-- DUPLICATE-TIME CLEANUP — collapse a meet that got uploaded more than
+         once (so swimmers have the same stroke logged several times) down to
+         one fastest time per stroke. Preview is a dry run; nothing changes
+         until "Remove duplicates" is clicked. -->
+    <div class="card" id="dedupeCard">
+      <h2>Clean up duplicate times</h2>
+      <p class="lead">If a meet got uploaded more than once, swimmers can end up with the same stroke logged several times. Pick that meet to keep only the <strong>fastest time per stroke</strong> for each swimmer. Preview first — nothing changes until you apply.</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:6px">
+        <select id="dedupeMeetSelect" class="lb-select" style="flex:1;min-width:240px" title="Pick the meet to clean up">
+          <option value="">Select a meet…</option>
+        </select>
+        <button class="btn ghost" id="dedupePreviewBtn" type="button">Preview</button>
+        <button class="btn" id="dedupeApplyBtn" type="button" disabled>Remove duplicates</button>
+      </div>
+      <div class="upload-status" id="dedupeStatus"></div>
+    </div>
+
     <!-- MANUAL ADD CARD -->
     <div class="card">
       <h2>Add or Update Swimmer Manually</h2>
@@ -729,7 +746,7 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
   </div>
 </div>
 
-<script src="assets/data.js?v=22"></script>
+<script src="assets/data.js?v=23"></script>
 <script>
   HHST.initTheme();
 
@@ -742,9 +759,9 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
   // ============ Login roles ============
   // Three fully separate sign-in forms, each against its own Firebase account:
   //   Admin / Head Coach (Alyssa) — full admin experience.
-  //   Assistant Coach (Poppy)     — lands straight on the Fastest Five printout
-  //                                  (print dialog auto-opens), then can
-  //                                  navigate freely from there.
+  //   Assistant Coach (Poppy)     — lands straight on the Fastest Five & Most
+  //                                  Improved page, then can navigate back to
+  //                                  the admin dashboard from there.
   const ASSISTANT_COACH_EMAIL = 'poppy@hhststats.com';
 
   function showAdmin(){
@@ -780,9 +797,10 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
       if(next){ location.replace(next); return; }
       if(freshLogin && (user.email || '').toLowerCase() === ASSISTANT_COACH_EMAIL){
         freshLogin = false;
-        // Land directly on the Fastest Five printout — awards.html sees this
-        // flag and auto-opens the print dialog for the Fastest Five posters.
-        location.replace('awards.html?print=fastest');
+        // Land directly on the Fastest Five & Most Improved page itself (no
+        // auto-print). From there the "Admin" link in the nav brings her back
+        // to the regular admin dashboard — the Firebase session is already live.
+        location.replace('awards.html');
         return;
       }
       freshLogin = false;
@@ -1214,6 +1232,56 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
     }
   });
 
+  // DUPLICATE-TIME CLEANUP — preview (dry run) then apply.
+  (function wireDedupe(){
+    const sel     = document.getElementById('dedupeMeetSelect');
+    const preview = document.getElementById('dedupePreviewBtn');
+    const apply   = document.getElementById('dedupeApplyBtn');
+    const status  = document.getElementById('dedupeStatus');
+    if(!sel || !preview || !apply || !status) return;
+    let previewedMeet = '';
+    function setMsg(kind, html){
+      status.innerHTML = html;
+      status.style.color = kind === 'err' ? 'var(--red,#dc2626)'
+        : kind === 'ok' ? 'var(--green,#16a34a)' : 'var(--text-muted)';
+    }
+    // Any change to the meet invalidates a prior preview.
+    sel.addEventListener('change', ()=>{ previewedMeet=''; apply.disabled=true; setMsg('', ''); });
+
+    preview.addEventListener('click', async ()=>{
+      const meet = sel.value;
+      if(!meet){ setMsg('err','Pick a meet first.'); return; }
+      preview.disabled = true; const orig = preview.textContent; preview.textContent = 'Checking…';
+      try{
+        const res = await HHST.dedupeMeetByStroke(meet, { apply:false });
+        if(res.duplicatesRemoved > 0){
+          previewedMeet = meet; apply.disabled = false;
+          setMsg('', `Found <strong>${res.duplicatesRemoved}</strong> duplicate time${res.duplicatesRemoved===1?'':'s'} across <strong>${res.swimmersAffected}</strong> swimmer${res.swimmersAffected===1?'':'s'} for “${escapeHtml(meet)}”. Click <strong>Remove duplicates</strong> to keep just the fastest time per stroke.`);
+        } else {
+          previewedMeet = ''; apply.disabled = true;
+          setMsg('ok', `No duplicate times found for “${escapeHtml(meet)}”. Nothing to clean up.`);
+        }
+      } catch(err){
+        console.error(err); setMsg('err','Could not check this meet: ' + (err.message || err));
+      } finally { preview.disabled = false; preview.textContent = orig; }
+    });
+
+    apply.addEventListener('click', async ()=>{
+      const meet = sel.value;
+      if(!meet || meet !== previewedMeet){ setMsg('err','Preview this meet first, then apply.'); return; }
+      if(!confirm(`Keep only the fastest time per stroke for “${meet}”? The slower duplicate times for this meet will be permanently removed. This cannot be undone.`)) return;
+      apply.disabled = true; const orig = apply.textContent; apply.textContent = 'Removing…';
+      try{
+        const res = await HHST.dedupeMeetByStroke(meet, { apply:true });
+        await refreshAll();
+        previewedMeet = '';
+        setMsg('ok', `Removed <strong>${res.duplicatesRemoved}</strong> duplicate time${res.duplicatesRemoved===1?'':'s'} from <strong>${res.swimmersAffected}</strong> swimmer${res.swimmersAffected===1?'':'s'}. Each stroke now keeps just its fastest time at “${escapeHtml(meet)}”.`);
+      } catch(err){
+        console.error(err); apply.disabled = false; setMsg('err','Could not remove duplicates: ' + (err.message || err));
+      } finally { apply.textContent = orig; }
+    });
+  })();
+
   // RESET
   document.getElementById('resetDataBtn').addEventListener('click', async ()=>{
     if(!confirm('Delete all swimmers, parents, and meet results? This cannot be undone.')) return;
@@ -1510,9 +1578,20 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
     // Suggest meet names already in use (so re-uploading a correction reuses the
     // exact same name instead of creating a near-duplicate meet).
     const meetList = document.getElementById('meetNameOptions');
+    const meetObjs = HHST.getAllMeets(cachedData.swimmers || {}).filter(m => m.meet && m.meet !== 'Unknown Meet');
     if(meetList){
-      const meets = HHST.getAllMeets(cachedData.swimmers || {}).map(m => m.meet).filter(Boolean).filter(m => m !== 'Unknown Meet');
+      const meets = meetObjs.map(m => m.meet);
       meetList.innerHTML = Array.from(new Set(meets)).map(m => `<option value="${escapeHtml(m)}"></option>`).join('');
+    }
+    // Populate the duplicate-time cleanup picker (preserve the current pick).
+    const dedupeSel = document.getElementById('dedupeMeetSelect');
+    if(dedupeSel){
+      const prev = dedupeSel.value;
+      const seen = new Set();
+      const opts = meetObjs.filter(m => { if(seen.has(m.meet)) return false; seen.add(m.meet); return true; })
+        .map(m => `<option value="${escapeHtml(m.meet)}">${escapeHtml(m.meet)}${m.date ? ' · ' + escapeHtml(m.date) : ''}</option>`).join('');
+      dedupeSel.innerHTML = '<option value="">Select a meet…</option>' + opts;
+      if(prev && seen.has(prev)) dedupeSel.value = prev;
     }
     // Pre-fill BOTH season inputs (roster + meet times): last-used season
     // (localStorage) → most recent known season → empty.
