@@ -119,6 +119,8 @@ nav{display:flex;align-items:center;justify-content:space-between;max-width:1180
 .nav-links a:focus-visible{outline:none;box-shadow:0 0 0 3px var(--ring);background:var(--bg-alt);color:var(--text)}
 .nav-links a.btn{color:var(--accent-contrast)!important}
 .nav-links a.btn:hover{background:var(--accent-hover)}
+.nav-links a.btn.ghost{color:var(--text)!important;background:transparent}
+.nav-links a.btn.ghost:hover{background:var(--bg-alt);border-color:var(--accent)}
 
 .theme-toggle{
   width:38px;height:38px;border-radius:10px;

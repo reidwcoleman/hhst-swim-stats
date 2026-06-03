@@ -823,6 +823,13 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
     back.addEventListener('click', showChooser);
   });
 
+  // Deep-link: the homepage buttons (admin.html?login=head, etc.) open
+  // straight on that role's sign-in page, skipping the chooser.
+  const initialLogin = new URLSearchParams(location.search).get('login');
+  if(['admin','head','assistant'].includes(initialLogin)){
+    showRoleForm(initialLogin);
+  }
+
   // LOGIN — each of the three panels is its own independent form.
   document.querySelectorAll('.login-panel').forEach(form => {
     const btn   = form.querySelector('.lp-btn');
