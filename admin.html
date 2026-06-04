@@ -554,7 +554,7 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
         </div>
       </div>
       <p class="field-hint" style="margin:0 0 14px;font-size:12.5px;color:var(--text-muted)">
-        Only swimmers already on this season's roster are matched — uploading a meet never changes who's on the roster, it just adds these times to their profiles. A meet date entered here applies to the whole meet; leave it blank to use the file's own dates.
+        If the file lists each swimmer's age group (like the Top Times export), anyone new is added to this season's roster automatically as their times import — no separate roster upload needed. A times-only file (just names + times) still only matches swimmers already on the roster. A meet date entered here applies to the whole meet; leave it blank to use the file's own dates.
       </p>
 
       <label class="drop-zone meet-drop" id="dropZone" for="csvFile">
@@ -1041,6 +1041,7 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
         racesPerFile: [],
         swimmerKeysTouched: new Set(),
         profileUpdates: 0,
+        newSwimmers: 0,
         meets: 0,
         errors: [],
         skippedSwimmers: new Set(),
@@ -1062,6 +1063,7 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
           const result = await HHST.ingestRows(rows, { mode, season: uploadSeason, uploadId, fileName: f.name, meetName, meetDate });
           totals.added         += result.added || 0;
           totals.profileUpdates += result.profileUpdates || 0;
+          totals.newSwimmers   += result.newSwimmers || 0;
           totals.meets         += result.meets || 0;
           totals.racesPerFile.push({ name: f.name, added: result.added || 0 });
           (result.errors || []).forEach(e => totals.errors.push(`${f.name}: ${e}`));
@@ -1111,6 +1113,9 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
           + '.';
       } else {
         body = `Added "${meetName}" to season "${uploadSeason}" — ${totals.added} race${totals.added===1?'':'s'} across ${touchedSwimmers} swimmer${touchedSwimmers===1?'':'s'}.`;
+        if(totals.newSwimmers){
+          body += ` Created ${totals.newSwimmers} new swimmer${totals.newSwimmers===1?'':'s'} from the file's roster info (name + age group).`;
+        }
         if(prunedNames.length){
           body += ` Removed ${prunedNames.length} orphan swimmer${prunedNames.length===1?'':'s'} (no roster, no times on file).`;
         }

@@ -423,19 +423,36 @@
     const skippedSwimmers = new Set();
     const writtenKeys = new Set();
     const meetTimeWrites = [];
+    // A row is "self-describing" when it carries enough to stand up a roster
+    // entry on its own: a name (always required) plus at least one real
+    // attribute — age, age group, gender, DOB, or training group. A meet file
+    // made of such rows (the team's Top Times export, where every line has an
+    // age + age_group) doubles as a roster, so we let it CREATE swimmers in the
+    // same pass instead of forcing a separate roster upload first. Times-only
+    // rows (just name + event + time) still require an existing roster, which
+    // preserves the old guard against a stray meet file inventing swimmers.
+    function hasRosterIdentity(rec){
+      const hasAge = !!(rec.age && /^\d{1,3}$/.test(rec.age.trim()));
+      return hasAge || !!rec.agegroup || !!rec.gender || !!rec.dob
+          || !!rec.rostergroup || !!rec.group;
+    }
     for(const rec of records){
       const key = rec.__key;
       const name = rec.__name;
-      // In results mode, never create a swimmer that isn't already on the roster.
-      if(mode === 'results' && !existing[key] && !updates[key]){
+      const selfDescribing = hasRosterIdentity(rec);
+      // In results mode we don't create a swimmer who isn't already on the
+      // roster — UNLESS the row is self-describing, in which case it carries its
+      // own roster identity and is created below (one-step self-contained meet).
+      if(mode === 'results' && !existing[key] && !updates[key] && !selfDescribing){
         skippedSwimmers.add(name);
         continue;
       }
       // Per-season roster gate: when uploading times for a specific season,
       // only match swimmers who were on THAT season's roster. Legacy
       // (untagged, no seasons array) swimmers still match as a wildcard so
-      // pre-seasons data keeps working.
-      if(mode === 'results' && season && existing[key] && !updates[key]){
+      // pre-seasons data keeps working. A self-describing row is exempt — it
+      // establishes the swimmer's membership for this season as it imports.
+      if(mode === 'results' && season && existing[key] && !updates[key] && !selfDescribing){
         const sw = existing[key];
         const sws = Array.isArray(sw.seasons) ? sw.seasons : [];
         if(sws.length && !sws.includes(season)){
@@ -789,6 +806,7 @@
     return {
       added,
       swimmers: writtenKeys.size,
+      newSwimmers: newSwimmerKeys.size,
       profileUpdates: profileUpdated.size,
       skippedSwimmers: Array.from(skippedSwimmers),
       meets: meetNames.size,
