@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="assets/styles.css?v=20"/>
+<link rel="stylesheet" href="assets/styles.css?v=21"/>
 <style>
   /* Progress-chart "time dropped" badge */
   .chart-drop{display:inline-flex;align-items:center;gap:8px;margin:2px 0 14px;padding:7px 13px;border-radius:999px;
@@ -229,6 +229,13 @@
       <div class="best-times-rich" id="bestTimes"></div>
     </div>
 
+    <!-- SEASON-OVER-SEASON PROGRESS -->
+    <div class="chart-card" id="seasonProgCard" style="display:none">
+      <h3>Season-over-Season Progress</h3>
+      <p class="lead">How your swimmer's best time in each event has changed from one season to the next — across every season on record, regardless of the filter above.</p>
+      <div id="seasonProg" class="season-prog"></div>
+    </div>
+
     <!-- TEAM RANKINGS -->
     <div class="chart-card">
       <h3>Where You Rank<span class="rank-suffix" id="rankAgeGroup"></span></h3>
@@ -248,15 +255,23 @@
       </div>
     </div>
 
-    <!-- PROGRESS CHART -->
+    <!-- EVENT DEEP DIVE (progress chart + per-event analytics) -->
     <div class="chart-card">
-      <h3>Progress by Event</h3>
-      <p class="lead">Pick an event to see how times have trended across meets. Each dot is a race; as times drop the line heads <strong>down</strong> — that's getting faster. The gold ⭐ dot is the current personal record.</p>
+      <h3>Event Deep Dive</h3>
+      <p class="lead">Pick an event for a full breakdown of every time. The chart trends <strong>down</strong> as your swimmer gets faster; the gold ⭐ dot is the current personal record.</p>
       <div class="tabs" id="eventTabs"></div>
+      <div id="eventDeepStats" class="event-deep"></div>
       <div id="chartDrop" class="chart-drop" style="display:none"></div>
       <div class="chart-host">
         <canvas id="progressChart"></canvas>
       </div>
+    </div>
+
+    <!-- RECORD BREAKERS (PR-setting swims, newest first) -->
+    <div class="chart-card" id="prCard">
+      <h3>Record Breakers</h3>
+      <p class="lead">Every personal best your swimmer has set — most recent first. Each green drop is a moment they got faster than ever before.</p>
+      <div id="prTimeline" class="pr-timeline"></div>
     </div>
 
     <!-- MEET HISTORY -->
@@ -513,6 +528,10 @@
     // Team rankings
     renderRanks(sw);
 
+    // Season-over-season progress + record-breaker timeline (deep stats)
+    renderSeasonProgress(sw);
+    renderRecordBreakers(stats);
+
     // Stroke chart
     renderStrokeChart(stats.strokeCounts);
 
@@ -520,6 +539,7 @@
     const tabs = document.getElementById('eventTabs');
     if(stats.bestTimes.length === 0){
       tabs.innerHTML = '';
+      document.getElementById('eventDeepStats').innerHTML = '';
       document.getElementById('progressChart').style.display = 'none';
     } else {
       tabs.innerHTML = stats.bestTimes.map((b,i)=>`<button data-i="${i}" class="${i===0?'active':''}">${escapeHtml(b.event)}</button>`).join('');
@@ -752,6 +772,7 @@
 
   let chart;
   function drawChart(eventData){
+    renderEventDeep(eventData);
     const ctx = document.getElementById('progressChart').getContext('2d');
     const sorted = eventData.history.slice().filter(r=>isFinite(r.seconds)).sort((a,b)=>{
       const da = new Date(a.date).getTime() || 0;
@@ -849,6 +870,150 @@
         }
       }
     });
+  }
+
+  // ===== Event Deep Dive: per-event analytics shown above the progress chart.
+  // `b` is a statsForSwimmer best-times entry (already season-filtered), so
+  // b.history holds every race for this event in the active season.
+  function renderEventDeep(b){
+    const host = document.getElementById('eventDeepStats');
+    if(!host) return;
+    const secs = (b.history||[]).map(r=>r.seconds).filter(x=>isFinite(x));
+    const n = secs.length;
+    if(!n){ host.innerHTML = ''; return; }
+    const best  = Math.min(...secs);
+    const worst = Math.max(...secs);
+    const avg   = secs.reduce((a,c)=>a+c,0)/n;
+    const sortedS = secs.slice().sort((a,b)=>a-b);
+    const median = n%2 ? sortedS[(n-1)/2] : (sortedS[n/2-1]+sortedS[n/2])/2;
+    const stdev = Math.sqrt(secs.reduce((a,c)=>a+(c-avg)*(c-avg),0)/n);
+    const spread = worst - best;
+    const cv = avg ? stdev/avg : 0;
+    let consistency = '—', consSub = 'Race it again to track';
+    if(n >= 2){
+      consistency = cv < 0.015 ? 'Rock solid' : cv < 0.04 ? 'Very consistent' : cv < 0.08 ? 'Consistent' : 'Wide range';
+      consSub = '±' + stdev.toFixed(2) + 's typical';
+    }
+    const latestGap = isFinite(b.latestSeconds) ? (b.latestSeconds - best) : null;
+    // Next round-second barrier just below the PR (a tangible goal).
+    let barrier = Math.floor(best);
+    if(best - barrier < 0.10) barrier -= 1;
+    const gap = best - barrier;
+
+    const cell = (label, value, sub, cls) =>
+      `<div class="ed-cell ${cls||''}"><div class="ed-label">${label}</div><div class="ed-value">${value}</div>${sub?`<div class="ed-sub">${sub}</div>`:''}</div>`;
+    const cells = [];
+    cells.push(cell('Personal Best', escapeHtml(b.time), `${n} race${n===1?'':'s'} on record`, 'ed-accent'));
+    cells.push(cell('Average', HHST.fmtTime(avg), 'Mean of all races'));
+    if(n >= 2) cells.push(cell('Median', HHST.fmtTime(median), 'Typical race'));
+    if(n >= 2) cells.push(cell('Range', spread.toFixed(2)+'s', `${HHST.fmtTime(best)} → ${HHST.fmtTime(worst)}`));
+    if(n >= 2) cells.push(cell('Consistency', consistency, consSub));
+    if(latestGap !== null){
+      if(latestGap <= 0.001) cells.push(cell('Latest Swim', 'At PR ⭐', 'Newest race is their best', 'ed-good'));
+      else cells.push(cell('Latest vs PR', '+'+latestGap.toFixed(2)+'s', 'Off their best time'));
+    }
+    if(gap > 0.001 && barrier > 0) cells.push(cell('Next Goal', 'Break '+HHST.fmtTime(barrier), 'Only '+gap.toFixed(2)+'s away', 'ed-goal'));
+    host.innerHTML = cells.join('');
+  }
+
+  // ===== Season-over-Season: best time per event for each season the swimmer
+  // raced it, oldest→newest, with the net change. Spans ALL seasons (ignores
+  // the season filter) so families can see year-to-year growth.
+  function renderSeasonProgress(sw){
+    const card = document.getElementById('seasonProgCard');
+    const host = document.getElementById('seasonProg');
+    if(!card || !host) return;
+    const seasonsNewestFirst = HHST.getAllSeasons([sw]) || [];
+    const byEvent = {};
+    (sw.results||[]).forEach(r=>{
+      if(!r || !isFinite(r.seconds) || !r.season) return;
+      const ev = r.event;
+      byEvent[ev] = byEvent[ev] || {};
+      const cur = byEvent[ev][r.season];
+      if(!cur || r.seconds < cur.sec) byEvent[ev][r.season] = { sec:r.seconds, time:r.time };
+    });
+    const rows = [];
+    Object.entries(byEvent).forEach(([ev, bySeason])=>{
+      const present = seasonsNewestFirst.filter(s=>bySeason[s]);
+      if(present.length < 2) return;
+      const steps = present.slice().reverse().map(s=>({ season:s, sec:bySeason[s].sec, time:bySeason[s].time }));
+      const delta = steps[0].sec - steps[steps.length-1].sec; // oldest − newest (>0 = faster now)
+      rows.push({ event: ev, stroke: HHST.extractStroke(ev), steps, delta });
+    });
+    if(!rows.length){ card.style.display = 'none'; return; }
+    rows.sort((a,b)=>HHST.compareEventLabel(a.event, b.event));
+    card.style.display = 'block';
+    host.innerHTML = rows.map(row=>{
+      const track = row.steps.map((st,i)=>{
+        const arrow = i < row.steps.length-1
+          ? '<svg class="sp-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>'
+          : '';
+        return `<div class="sp-step"><span class="sp-season">${escapeHtml(st.season)}</span><span class="sp-time">${escapeHtml(st.time)}</span></div>${arrow}`;
+      }).join('');
+      let deltaHtml;
+      if(row.delta > 0.001) deltaHtml = `<span class="sp-delta faster">−${row.delta.toFixed(2)}s faster</span>`;
+      else if(row.delta < -0.001) deltaHtml = `<span class="sp-delta slower">+${Math.abs(row.delta).toFixed(2)}s</span>`;
+      else deltaHtml = `<span class="sp-delta">Even</span>`;
+      const dot = STROKE_COLORS[row.stroke] || STROKE_COLORS.Other;
+      return `<div class="sp-row">
+        <div class="sp-event"><span class="sp-stroke-dot" style="background:${dot}"></span>${escapeHtml(row.event)}</div>
+        <div class="sp-track">${track}</div>
+        ${deltaHtml}
+      </div>`;
+    }).join('');
+  }
+
+  // ===== Record Breakers: every PR-setting swim (within the active season
+  // filter), newest first. Walks each event's history by date and records the
+  // moment a new best beat the prior best.
+  function renderRecordBreakers(stats){
+    const host = document.getElementById('prTimeline');
+    if(!host) return;
+    const prs = [];
+    (stats.bestTimes||[]).forEach(b=>{
+      const sorted = (b.history||[]).slice().filter(r=>isFinite(r.seconds))
+        .sort((a,b)=>(new Date(a.date).getTime()||0)-(new Date(b.date).getTime()||0));
+      let best = Infinity;
+      sorted.forEach(r=>{
+        if(r.seconds < best - 0.0001){
+          prs.push({ event:b.event, time:r.time, date:r.date, meet:r.meet,
+            drop: isFinite(best) ? (best - r.seconds) : 0, isFirst: !isFinite(best) });
+          best = r.seconds;
+        }
+      });
+    });
+    prs.sort((a,b)=>{
+      const d = (new Date(b.date).getTime()||0) - (new Date(a.date).getTime()||0);
+      return d !== 0 ? d : (b.drop - a.drop);
+    });
+    if(!prs.length){
+      host.innerHTML = '<div class="empty">No times yet. Personal bests will appear here as your swimmer races each event.</div>';
+      return;
+    }
+    const LIMIT = 16;
+    host.innerHTML = prs.slice(0, LIMIT).map(p=>{
+      const icon = p.isFirst
+        ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/></svg>'
+        : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M19 12l-7 7-7-7"/></svg>';
+      const right = p.isFirst
+        ? `<div class="pr-first">First recorded</div>`
+        : `<div class="pr-drop">−${p.drop.toFixed(2)}s</div>`;
+      return `<div class="pr-item">
+        <div class="pr-dot ${p.isFirst?'is-first':''}">${icon}</div>
+        <div class="pr-body">
+          <div class="pr-event">${escapeHtml(p.event)}</div>
+          <div class="pr-meta">${escapeHtml(p.meet||'—')} · ${fmtDate(p.date)}</div>
+        </div>
+        <div class="pr-right">
+          <div class="pr-time">${escapeHtml(p.time)}</div>
+          ${right}
+        </div>
+      </div>`;
+    }).join('');
+    if(prs.length > LIMIT){
+      host.insertAdjacentHTML('beforeend',
+        `<div class="pr-more" style="text-align:center;color:var(--text-muted);font-size:12.5px;padding:14px 0 2px">+${prs.length-LIMIT} more earlier personal best${prs.length-LIMIT===1?'':'s'}</div>`);
+    }
   }
 
   function escapeHtml(s){

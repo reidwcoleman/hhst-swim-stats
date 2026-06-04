@@ -3658,3 +3658,75 @@ a.lb-entry-name:hover{color:var(--accent)!important;text-decoration:underline;te
 @media (max-width:680px){
   .meet-form-grid{grid-template-columns:1fr}
 }
+
+/* ============================================================
+   Swimmer dashboard — deep-stats additions
+   (Event Deep Dive · Season-over-Season · Record Breakers)
+   ============================================================ */
+
+/* Event Deep Dive: per-event mini-stat grid above the progress chart */
+.event-deep{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));
+  gap:10px;margin:0 0 20px;
+}
+.ed-cell{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:12px 14px;
+}
+.ed-cell .ed-label{
+  font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--text-muted);
+}
+.ed-cell .ed-value{
+  font-family:'Fraunces',serif;font-weight:800;font-size:20px;color:var(--text);
+  letter-spacing:-.02em;margin-top:5px;line-height:1.05;
+}
+.ed-cell .ed-sub{font-size:11px;color:var(--text-subtle);margin-top:3px}
+.ed-cell.ed-accent{border-color:var(--border-strong);background:var(--bg-alt)}
+.ed-cell.ed-good .ed-value{color:#34d399}
+[data-theme="light"] .ed-cell.ed-good .ed-value{color:#047857}
+.ed-cell.ed-goal .ed-value{color:var(--accent)}
+
+/* Season-over-Season progress */
+.season-prog{display:flex;flex-direction:column;gap:10px}
+.sp-row{
+  display:grid;grid-template-columns:minmax(120px,1.1fr) 2fr auto;gap:14px;align-items:center;
+  padding:14px 16px;border-radius:12px;background:var(--surface);border:1px solid var(--border);
+  transition:border-color .2s,transform .2s;
+}
+.sp-row:hover{border-color:var(--border-strong);transform:translateY(-1px)}
+.sp-event{font-weight:700;color:var(--text);font-size:14px}
+.sp-event .sp-stroke-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px;vertical-align:middle}
+.sp-track{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.sp-step{display:flex;flex-direction:column;gap:1px}
+.sp-step .sp-season{font-size:10px;color:var(--text-muted);font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.sp-step .sp-time{font-family:'Fraunces',serif;font-weight:700;font-size:16px;color:var(--text)}
+.sp-arrow{color:var(--text-subtle);flex:0 0 auto}
+.sp-delta{font-weight:700;font-size:13px;white-space:nowrap;padding:5px 12px;border-radius:999px;
+  background:var(--bg-alt);color:var(--text-muted);border:1px solid var(--border)}
+.sp-delta.faster{background:rgba(16,185,129,.14);color:#34d399;border-color:rgba(16,185,129,.28)}
+[data-theme="light"] .sp-delta.faster{color:#047857;background:rgba(16,185,129,.1)}
+.sp-delta.slower{background:rgba(239,68,68,.12);color:#f87171;border-color:rgba(239,68,68,.26)}
+[data-theme="light"] .sp-delta.slower{color:#b91c1c;background:rgba(239,68,68,.08)}
+@media(max-width:640px){ .sp-row{grid-template-columns:1fr;gap:10px} }
+
+/* Record Breakers timeline */
+.pr-timeline{display:flex;flex-direction:column;gap:0}
+.pr-item{
+  display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;
+  padding:14px 4px;border-bottom:1px solid var(--border);
+}
+.pr-item:last-child{border-bottom:none}
+.pr-dot{
+  width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  background:rgba(251,191,36,.16);color:#fbbf24;border:1px solid rgba(251,191,36,.32);flex:0 0 auto;
+}
+[data-theme="light"] .pr-dot{color:#b45309}
+.pr-dot.is-first{background:var(--bg-alt);color:var(--text-muted);border-color:var(--border)}
+.pr-body .pr-event{font-weight:700;color:var(--text);font-size:14px}
+.pr-body .pr-meta{font-size:12px;color:var(--text-muted);margin-top:2px}
+.pr-right{text-align:right}
+.pr-right .pr-time{font-family:'Fraunces',serif;font-weight:800;font-size:18px;color:var(--text);letter-spacing:-.01em}
+.pr-right .pr-drop{font-size:12.5px;font-weight:700;color:#34d399;margin-top:2px}
+[data-theme="light"] .pr-right .pr-drop{color:#047857}
+.pr-right .pr-first{font-size:11px;font-weight:600;color:var(--text-subtle);margin-top:2px}
