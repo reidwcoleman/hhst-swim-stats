@@ -3078,8 +3078,9 @@ a.lb-entry-name:hover{color:var(--accent)!important;text-decoration:underline;te
     border-color:#1e3a8a !important;
     width:11in !important;max-width:11in !important;
     min-height:8.5in !important;
-    padding:0.5in 0.7in !important;
-    display:flex !important;flex-direction:column !important;justify-content:center !important;
+    padding:0.45in 0.65in !important;
+    display:flex !important;flex-direction:column !important;
+    justify-content:space-between !important;align-items:stretch !important;
     transform:none !important;
     overflow:hidden !important;
   }
@@ -3149,6 +3150,49 @@ a.lb-entry-name:hover{color:var(--accent)!important;text-decoration:underline;te
   body.printing-awards #improvedHost,
   body.printing-awards .awards-host-improved { display: none !important; }
   body.printing-improved #awardsHost { display: none !important; }
+
+  /* ---- Print typography scale-up --------------------------------------
+     On screen the poster is a ~700px card, but printed it becomes a full
+     11in × 8.5in landscape sheet. At the on-screen font sizes the swimmer
+     names and times looked tiny and floated in the middle of the page.
+     Scale every element up so one poster fills the whole sheet and the
+     names + times read from across a room — the whole point of a printed
+     award. These overrides apply to both Fastest Five and Most Improved
+     posters since they share the .award-* classes. */
+  .award-header{ gap:20px !important; margin-bottom:2px !important; }
+  .award-logo-frame{ width:106px !important; height:106px !important; }
+  .award-logo-frame .award-logo,
+  .award-logo{ width:94px !important; height:94px !important; }
+  .award-kicker{ font-size:14px !important; letter-spacing:.34em !important; margin-bottom:4px !important; }
+  .award-title{ font-size:54px !important; }
+  .award-title-rule{ width:76px !important; height:4px !important; }
+  .award-group{ font-size:38px !important; margin-bottom:4px !important; }
+  /* align-self:center lets the distance/meet pills hug their text and stay
+     centered while the boards and footer still stretch full width. */
+  .award-event{ font-size:17px !important; padding:8px 26px !important; align-self:center !important; }
+  .award-event-meet{ font-size:13.5px !important; margin-top:-9px !important; margin-bottom:4px !important; padding:5px 18px !important; align-self:center !important; }
+
+  /* Boards: roomier cells, much larger name + time text. */
+  .award-cols{ gap:0.4in !important; margin-bottom:4px !important; }
+  .award-cols-single{ max-width:6in !important; }
+  .award-col{ padding:12px 12px 10px !important; }
+  .award-col-head{ font-size:19px !important; letter-spacing:.18em !important; padding:3px 0 9px !important; margin-bottom:8px !important; }
+  .award-card .award-table td{ padding:8px 6px !important; }
+  .award-rank-cell{ width:44px !important; }
+  .award-rank{ width:34px !important; height:34px !important; font-size:17px !important; }
+  .award-medal{ width:36px !important; height:36px !important; font-size:18px !important; }
+  /* Names wrap rather than truncate — never cut off a swimmer's name on an
+     award. white-space:normal lets a long name flow to a second line. */
+  .award-card .award-name-cell{
+    font-size:22px !important; max-width:none !important;
+    white-space:normal !important; overflow:visible !important;
+    line-height:1.12 !important;
+  }
+  .award-card .award-time-cell{ font-size:25px !important; }
+  .award-card .improved-drop{ font-size:23px !important; }
+  .improved-events-sub{ font-size:12px !important; margin-top:2px !important; }
+  .award-col-empty-msg{ font-size:16px !important; }
+  .award-footer{ font-size:13.5px !important; padding-top:12px !important; }
 }
 
 /* ============================================================
