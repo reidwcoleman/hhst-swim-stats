@@ -3083,6 +3083,12 @@ a.lb-entry-name:hover{color:var(--accent)!important;text-decoration:underline;te
     box-shadow:none !important;
     border-color:#1e3a8a !important;
     width:11in !important;max-width:11in !important;
+    /* Hard one-page ceiling: height + max-height (not just min-height) means a
+       card can NEVER grow past a single landscape sheet. Combined with the
+       overflow:hidden below, worst-case content is clipped at the page edge
+       instead of spilling onto a blank second page. */
+    height:8.5in !important;
+    max-height:8.5in !important;
     min-height:8.5in !important;
     padding:0.45in 0.65in !important;
     display:flex !important;flex-direction:column !important;
@@ -3180,21 +3186,35 @@ a.lb-entry-name:hover{color:var(--accent)!important;text-decoration:underline;te
 
   /* Boards: roomier cells, much larger name + time text. */
   .award-cols{ gap:0.4in !important; margin-bottom:4px !important; }
-  .award-cols-single{ max-width:6in !important; }
+  .award-cols-single{ max-width:7.5in !important; }
   .award-col{ padding:12px 12px 10px !important; }
   .award-col-head{ font-size:19px !important; letter-spacing:.18em !important; padding:3px 0 9px !important; margin-bottom:8px !important; }
+  /* table-layout:fixed so a very long name ellipsizes INSIDE its fixed-width
+     cell instead of stretching the column and shoving the time off the
+     (clipped) page edge. The time column gets a fixed width sized for the
+     longest value ("-2:08.88"); the name cell takes the remaining width. */
+  .award-card .award-table{ table-layout:fixed !important; }
   .award-card .award-table td{ padding:8px 6px !important; }
   .award-rank-cell{ width:44px !important; }
   .award-rank{ width:34px !important; height:34px !important; font-size:17px !important; }
   .award-medal{ width:36px !important; height:36px !important; font-size:18px !important; }
-  /* Names wrap rather than truncate — never cut off a swimmer's name on an
-     award. white-space:normal lets a long name flow to a second line. */
+  /* Keep each name on ONE line so row height is deterministic. The earlier
+     "white-space:normal; overflow:visible" let very long hyphenated names wrap
+     to 3+ lines and push a Most Improved poster onto a second page. Clamping to
+     one line with an ellipsis (the base on-screen behaviour) makes rows a fixed
+     height; the name still gets the FULL column width here (max-width:none), so
+     at 22px every realistic first+last name fits and only an extreme name
+     ellipsizes. (We keep display:table-cell — a -webkit-box clamp would drop
+     the cell out of the table and break the name/time column alignment.) */
   .award-card .award-name-cell{
-    font-size:22px !important; max-width:none !important;
-    white-space:normal !important; overflow:visible !important;
-    line-height:1.12 !important;
+    font-size:22px !important;
+    line-height:1.18 !important;
+    max-width:none !important;
+    white-space:nowrap !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
   }
-  .award-card .award-time-cell{ font-size:25px !important; }
+  .award-card .award-time-cell{ font-size:25px !important; width:1.2in !important; }
   .award-card .improved-drop{ font-size:23px !important; }
   .improved-events-sub{ font-size:12px !important; margin-top:2px !important; }
   .award-col-empty-msg{ font-size:16px !important; }

@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="assets/styles.css?v=21"/>
+<link rel="stylesheet" href="assets/styles.css?v=22"/>
 <style>
   /* Hide everything until auth check completes — admins only. */
   body:not(.auth-ready) > *{visibility:hidden}
@@ -126,6 +126,40 @@
     width:34px;height:34px;color:var(--text-subtle);opacity:.6;margin-bottom:2px;
   }
   .aw-host-empty strong{color:var(--text);font-weight:700}
+
+  /* ====================================================================
+     Tab polish — on-screen only. Every selector below is .no-print or is
+     already display:none in @media print, so none of it can reach the
+     printed posters.
+     ==================================================================== */
+
+  /* Respect reduced-motion: drop the card hover lifts and the sticky-pill
+     slide-in for users who ask for less animation. */
+  @media (prefers-reduced-motion: reduce){
+    .aw-sticky, .aw-badge, .award-card, #printAllAwards, .award-print-one{
+      transition:none !important;
+    }
+    .aw-sticky{ transform:none; }
+    .award-card:hover, #printAllAwards:hover, .aw-sticky:hover,
+    .award-print-one:hover{ transform:none !important; }
+  }
+
+  /* Keyboard focus ring on the per-card print buttons (matches .btn + pill). */
+  .award-print-one:focus-visible{ outline:none; box-shadow:0 0 0 3px var(--ring); }
+
+  /* Optically center each section eyebrow against its hairline (was baseline,
+     which let the 1px rule float a hair high). */
+  .aw-section-head{ align-items:center; }
+  .aw-section-head .aw-section-rule{ position:relative; top:1px; }
+  #improvedSectionHead{ margin-top:14px; }
+
+  /* Badges: a faint resting lift + surface tint on hover so the border and
+     surface move together instead of the border colour changing alone. */
+  .aw-badge{ box-shadow:0 1px 2px -1px rgba(15,23,42,.12); }
+  .aw-badge:hover{ background:var(--surface-2); border-color:var(--accent); }
+
+  /* Anchored scrolls (e.g. the ?print=fastest deep-link) clear the header. */
+  .aw-section-head, .awards-host, .awards-host-improved{ scroll-margin-top:80px; }
 </style>
 
 <!-- Firebase compat SDK -->
@@ -241,6 +275,10 @@
         </div>
       </div>
     </div>
+  </div>
+  <div class="aw-section-head no-print" id="improvedSectionHead" style="display:none">
+    <span class="aw-section-eyebrow">Most Improved posters</span>
+    <span class="aw-section-rule" aria-hidden="true"></span>
   </div>
   <section id="improvedHost" class="awards-host awards-host-improved"></section>
 
@@ -528,6 +566,7 @@
   // ============ Most Improved posters ============
   const improvedHost = document.getElementById('improvedHost');
   const improvedIntro = document.getElementById('mostImprovedIntro');
+  const improvedSectionHead = document.getElementById('improvedSectionHead');
 
   function fmtDrop(sec){
     if(!isFinite(sec) || sec <= 0) return '—';
@@ -588,7 +627,7 @@
     // avoids blanking the board when a roster-only season exists with no swims.
     const season = HHST.currentSeasonWithTimes(swimmers);
     const { meet, date, boards, baselineMeet, baselineSeason } = HHST.mostImprovedAtMeet(Object.values(swimmers), { limit: 5, season });
-    if(!meet){ improvedHost.innerHTML = ''; setImprovedCount(0); updateStickyPrint(); return; }
+    if(!meet){ improvedHost.innerHTML = ''; if(improvedSectionHead) improvedSectionHead.style.display = 'none'; setImprovedCount(0); updateStickyPrint(); return; }
 
     document.getElementById('improvedMeetName').textContent = meet;
     document.getElementById('improvedMeetDate').textContent = date ? ` · ${fmtMeetDate(date)}` : '';
@@ -623,6 +662,7 @@
         <strong>No improvements measurable at this meet yet.</strong>
         <span>Once swimmers have prior results to compare against, time drops show up here.</span>
       </div>`;
+      if(improvedSectionHead) improvedSectionHead.style.display = 'none';
       setImprovedCount(0);
       updateStickyPrint();
       return;
@@ -682,6 +722,7 @@
     }).filter(Boolean).join('');
 
     improvedHost.innerHTML = cards;
+    if(improvedSectionHead) improvedSectionHead.style.display = '';
     setImprovedCount(improvedHost.querySelectorAll('.award-card').length);
     updateStickyPrint();
 
