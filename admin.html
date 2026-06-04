@@ -567,13 +567,13 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
 
       <details style="margin-top:18px;color:var(--text-muted);font-size:13.5px">
         <summary style="cursor:pointer;font-weight:600;color:var(--text)">Results file columns the importer needs</summary>
-        <p style="margin:12px 0 8px">Required: <code>Athlete</code> (or <code>Athlete First Name</code> + <code>Athlete Last Name</code>), <code>Event</code>, <code>Time</code>. Optional: <code>Date</code>, <code>Place</code>, <code>Age</code>, <code>Group</code>. You don't need a <code>Meet</code> column — the name you type above is used for every race. Names in <em>"Last, First"</em> format are flipped automatically.</p>
+        <p style="margin:12px 0 8px">The team's <strong>Top Times export</strong> drops in directly — its columns (<code>age_group</code>, <code>distance</code>, <code>stroke</code>, <code>place</code>, <code>converted_time</code>/<code>original_time</code>, <code>last_name</code>, <code>first_name</code>, <code>age</code>, <code>date</code>, <code>swim_meet</code>) are all recognized. Course-code suffixes on times (<code>18.06Y</code>, <code>1:00.42Y</code>) are handled automatically, and the gender + age bracket are read from the <code>age_group</code> label (e.g. <em>"Girls 6 &amp; Under"</em>).</p>
+        <p style="margin:0 0 8px">At minimum the importer needs a name (<code>first_name</code> + <code>last_name</code>, or a single <code>Athlete</code> column in <em>"Last, First"</em> form), a <code>stroke</code> (or <code>Event</code>), and a time. The <strong>meet name and date you type above win over the file's own <code>swim_meet</code>/<code>date</code> columns</strong>, so one upload becomes one named meet. Older exports (<code>Athlete,Event,Time,…</code>) still work too.</p>
         <p style="margin:0 0 8px"><strong>Stroke-only files work too:</strong> if a file just lists the <code>Stroke</code> (Freestyle, Backstroke, …) and a <code>Time</code> with no distance, the distance is filled in from each swimmer's age group automatically — <code>6 &amp; Under</code> 15y, <code>7-8</code> and <code>9-10</code> 25y, <code>11-12</code> and older 50y — so the time lands on the right event and leaderboard.</p>
-<pre style="background:var(--bg-alt);padding:14px;border-radius:10px;margin-top:12px;font-size:12.5px;overflow-x:auto;border:1px solid var(--border);color:var(--text)">Athlete,Event,Time,Date,Age,Group,Place
-"Carter, Riley",50 Free,28.42,2026-03-14,11,Bronze,3
-"Carter, Riley",100 Free,1:02.18,2026-03-14,11,Bronze,5
-"Rivera, Mateo",50 Free,30.10,2026-03-14,10,Silver,7
-"Thompson, Ava",50 Fly,35.20,2026-03-14,12,Gold,2</pre>
+<pre style="background:var(--bg-alt);padding:14px;border-radius:10px;margin-top:12px;font-size:12.5px;overflow-x:auto;border:1px solid var(--border);color:var(--text)">age_group,distance,stroke,place,converted_time,converted_hundredths,original_time,last_name,first_name,age,team_abbr,team_name,date,swim_meet
+Girls 6 &amp; Under,15,Freestyle,1,18.06Y,1806,18.06Y,Purcell,Rylee,6,HHST,Highcroft Hurricanes Swim Team,06/02/26,Practice Meet vs. The Reserve
+Boys 13-14,50,Freestyle,3,32.18Y,3218,32.18Y,Coleman,Reid,14,HHST,Highcroft Hurricanes Swim Team,06/02/26,Practice Meet vs. The Reserve
+Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hurricanes Swim Team,06/02/26,Practice Meet vs. The Reserve</pre>
       </details>
     </div>
 
