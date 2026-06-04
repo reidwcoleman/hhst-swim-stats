@@ -167,7 +167,7 @@
     <div class="leaderboard-hero-content">
       <div class="kicker"><span class="pulse"></span> Printable Awards · Coaches View</div>
       <h1>Fastest Five</h1>
-      <p class="lb-sub">One poster per age group with the top five girls and top five boys ranked side-by-side in their season's headline freestyle. Ready to print or save as PDF.</p>
+      <p class="lb-sub">One poster per age group with the top five girls and top five boys ranked side-by-side in their headline freestyle at the most recent meet. Ready to print or save as PDF.</p>
     </div>
   </div>
 </section>
@@ -257,7 +257,7 @@
   Highcroft Hurricanes Swim Team · <a href="leaderboards.html">Season Stats</a> · <a href="admin.html">Admin</a>
 </footer>
 
-<script src="assets/data.js?v=22"></script>
+<script src="assets/data.js?v=23"></script>
 <script>
   HHST.initTheme();
   document.getElementById('themeToggle').addEventListener('click', HHST.toggleTheme);
@@ -392,12 +392,22 @@
     setSeasonBadge(season);
     const brackets = HHST.AGE_GROUP_ORDER.filter(b => b !== 'Unknown' && DIST_FOR_BRACKET[b]);
 
+    // Fastest Five shows the most recent meet's times, not season-bests. Find
+    // that meet once (newest in the current season) and scope every board to it.
+    const seasonMeets = HHST.meetsInSeason(allSwimmers, season);
+    const latestMeet = seasonMeets.length ? seasonMeets[seasonMeets.length - 1] : null;
+    const targetMeet = latestMeet ? latestMeet.meet : '';
+    const targetMeetLabel = latestMeet
+      ? escapeHtml(latestMeet.meet) + (latestMeet.dateStr ? ' · ' + escapeHtml(fmtMeetDate(latestMeet.dateStr)) : '')
+      : '';
+
     const cards = brackets.map(bracket => {
       const dist = DIST_FOR_BRACKET[bracket];
       // leaderboardsByEvent splits Boys/Girls automatically when gender is on file.
       // Scoped to the most recent season that has times so older seasons' times
-      // don't carry over (and a roster-only season with no swims doesn't blank it out).
-      const boards = HHST.leaderboardsByEvent(allSwimmers, { stroke: 'Freestyle', distance: dist }, { limit: 5, season });
+      // don't carry over, then to the most recent meet so the poster reflects
+      // how everyone swam at that meet (not their season-best).
+      const boards = HHST.leaderboardsByEvent(allSwimmers, { stroke: 'Freestyle', distance: dist }, { limit: 5, season, meet: targetMeet });
 
       // Only entries that actually belong to THIS bracket — strip the gender prefix.
       const boysKey  = `Boys ${bracket}`;
@@ -445,6 +455,7 @@
         </div>
         <div class="award-group">${escapeHtml(bracketLabel(bracket))}</div>
         <div class="award-event">${escapeHtml(eventLabel)}</div>
+        ${targetMeetLabel ? `<div class="award-event award-event-meet">${targetMeetLabel}</div>` : ''}
         ${inner}
         <div class="award-footer">
           <span class="award-team">Hurricanes Swim Team</span>
