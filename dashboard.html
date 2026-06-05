@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="assets/styles.css?v=25"/>
+<link rel="stylesheet" href="assets/styles.css?v=26"/>
 <style>
   /* Progress-chart "time dropped" badge */
   .chart-drop{display:inline-flex;align-items:center;gap:8px;margin:2px 0 14px;padding:7px 13px;border-radius:999px;
@@ -312,7 +312,7 @@
   Highcroft Hurricanes Swim Team · <a href="index.html">Back to home</a>
 </footer>
 
-<script src="assets/data.js?v=25"></script>
+<script src="assets/data.js?v=26"></script>
 <script>
   HHST.initTheme();
   document.getElementById('themeToggle').addEventListener('click', HHST.toggleTheme);
@@ -453,12 +453,14 @@
       }
     }
 
-    // Tagline (one-liner summary)
+    // Tagline (one-liner summary) — clear AND hide when empty (e.g. switching to
+    // a roster-only season with 0 races) so a stale tagline from the previously
+    // viewed season doesn't linger under the swimmer's name.
     const tagline = buildTagline(stats);
-    if(tagline){
-      const el = document.getElementById('swimmerTagline');
-      el.textContent = tagline;
-      el.style.display = 'block';
+    const taglineEl = document.getElementById('swimmerTagline');
+    if(taglineEl){
+      taglineEl.textContent = tagline || '';
+      taglineEl.style.display = tagline ? 'block' : 'none';
     }
 
     // Headline stats
@@ -508,7 +510,7 @@
             </div>
             <div class="bt-time">${escapeHtml(b.time)}</div>
             <div class="bt-meta">
-              ${b.bestDate ? `<span>Set at ${escapeHtml(b.bestMeet||'')} · ${fmtDateShort(b.bestDate)}</span>` : ''}
+              ${b.bestDate ? `<span>Set at ${escapeHtml(b.bestMeet||'')} · ${escapeHtml(fmtDateShort(b.bestDate))}</span>` : ''}
             </div>
             <div class="bt-chips">${dropChip}${prBadge}</div>
           </button>`;
@@ -649,13 +651,20 @@
 
   let strokeChart;
   function renderStrokeChart(counts){
-    const host = document.getElementById('strokeChart').getContext('2d');
+    const canvas = document.getElementById('strokeChart');
+    const legend = document.getElementById('strokeLegend');
     const entries = Object.entries(counts).sort((a,b)=> b[1]-a[1]);
     if(!entries.length){
-      strokeChart && strokeChart.destroy();
-      document.querySelector('.stroke-mix').innerHTML = '<div class="empty">No stroke data yet — upload meet results to see distribution.</div>';
+      // Don't replace .stroke-mix's innerHTML — that deletes the #strokeChart
+      // canvas, and the next render WITH data throws on getContext() of null.
+      // Hide the canvas and put the empty message in the legend slot instead.
+      if(strokeChart){ strokeChart.destroy(); strokeChart = null; }
+      if(canvas) canvas.style.display = 'none';
+      if(legend) legend.innerHTML = '<div class="empty">No stroke data yet — upload meet results to see distribution.</div>';
       return;
     }
+    if(canvas) canvas.style.display = '';
+    const host = canvas.getContext('2d');
     const labels = entries.map(e=>e[0]);
     const data   = entries.map(e=>e[1]);
     const colors = labels.map(l => STROKE_COLORS[l] || STROKE_COLORS.Other);
@@ -678,7 +687,6 @@
       }
     });
     const total = data.reduce((s,n)=>s+n,0);
-    const legend = document.getElementById('strokeLegend');
     legend.innerHTML = entries.map(([label, count]) => {
       const pct = total ? Math.round(count/total*100) : 0;
       return `
@@ -753,7 +761,7 @@
         if(r.split) notes.push(`<span class="note-split">Splits: ${escapeHtml(r.split)}</span>`);
         return `
           <tr>
-            <td>${fmtDate(r.date)}</td>
+            <td>${escapeHtml(fmtDate(r.date))}</td>
             <td>${escapeHtml(r.meet || '—')}</td>
             <td>${escapeHtml(r.event)}</td>
             <td class="time-cell">${escapeHtml(r.time)}</td>
@@ -1002,7 +1010,7 @@
         <div class="pr-dot ${p.isFirst?'is-first':''}">${icon}</div>
         <div class="pr-body">
           <div class="pr-event">${escapeHtml(p.event)}</div>
-          <div class="pr-meta">${escapeHtml(p.meet||'—')} · ${fmtDate(p.date)}</div>
+          <div class="pr-meta">${escapeHtml(p.meet||'—')} · ${escapeHtml(fmtDate(p.date))}</div>
         </div>
         <div class="pr-right">
           <div class="pr-time">${escapeHtml(p.time)}</div>

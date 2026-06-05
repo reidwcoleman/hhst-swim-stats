@@ -28,16 +28,30 @@
   // "S" (short-course meters), "M" (meters). Strip a single trailing
   // course-code letter before parsing so the time still parses.
   function stripCourseCode(s){
-    return (s == null ? '' : s.toString()).trim().replace(/\s*[YSLM]\s*$/i, '').trim();
+    // Strip a trailing course letter (Y/S/L/M) ONLY when it follows a digit, so
+    // real times clean up ("28.42Y"→"28.42", "1:02.18 L"→"1:02.18") but status
+    // codes that merely end in one of those letters are left intact ("NS", "DFS",
+    // "SCR M"… ). Without the digit guard, "NS"→"N" and "DFS"→"DF" got mangled.
+    return (s == null ? '' : s.toString()).trim().replace(/(\d)\s*[YSLM]\s*$/i, '$1').trim();
   }
+  // Colon time grammar, shared by fmtTime + timeToSeconds so the formatted
+  // string and the seconds value ALWAYS agree. The old /^\d{1,2}:\d{2}\.\d{1,2}$/
+  // hard-required a literal "." and exactly two seconds digits, so "1:05",
+  // "2:30", "1:5", "1:4.50" and "1:05.456" all FELL THROUGH to parseFloat(),
+  // which stops at the ":" and returned just the minute integer ("1:05"→1s) —
+  // silently corrupting result.seconds at ingest and the Most Improved drops
+  // built from them. The grammar below makes the fraction optional, allows 1–2
+  // seconds digits and 1–3 minute digits, and reads the fraction as hundredths
+  // (single tenths → ".40", 3-decimals truncate — swim timing never rounds up).
+  const COLON_TIME = /^(\d{1,3}):(\d{1,2})(?:\.(\d{1,3}))?$/;
+  function fracHundredths(frac){ return frac ? frac.padEnd(2,'0').slice(0,2) : '00'; }
   function fmtTime(t){
     if(t==null) return '';
     let s = stripCourseCode(t);
     if(!s) return '';
-    if(/^\d{1,2}:\d{2}\.\d{1,2}$/.test(s)){
-      const [m, rest] = s.split(':');
-      const [sec, hh] = rest.split('.');
-      return `${parseInt(m,10)}:${sec.padStart(2,'0')}.${(hh||'00').padEnd(2,'0').slice(0,2)}`;
+    const mm = s.match(COLON_TIME);
+    if(mm){
+      return `${parseInt(mm[1],10)}:${mm[2].padStart(2,'0')}.${fracHundredths(mm[3])}`;
     }
     const num = parseFloat(s);
     if(!isFinite(num)) return s;
@@ -50,10 +64,9 @@
     if(t==null) return NaN;
     const s = stripCourseCode(t);
     if(!s) return NaN;
-    if(/^\d{1,2}:\d{2}\.\d{1,2}$/.test(s)){
-      const [m, rest] = s.split(':');
-      const [sec, hh] = rest.split('.');
-      return parseInt(m,10)*60 + parseInt(sec,10) + (parseInt(hh||0,10)/100);
+    const mm = s.match(COLON_TIME);
+    if(mm){
+      return parseInt(mm[1],10)*60 + parseInt(mm[2],10) + parseInt(fracHundredths(mm[3]),10)/100;
     }
     const n = parseFloat(s);
     return isFinite(n) ? n : NaN;
@@ -506,7 +519,11 @@
       // keeps working. We OVERWRITE within the season (so re-uploading a roster
       // corrects a wrong age) but only when the incoming cell actually has a
       // value — a blank age column must never wipe a good one.
-      const sSeason = (rec.season || '').toString().trim() || season;
+      // A named-meet upload is one meet in the one season the coach picked, so
+      // attributes must land on THAT season — mirror the rowSeason guard below,
+      // or a stray Season/Year column would scatter age/group/membership into a
+      // different season than the result it describes.
+      const sSeason = meetName ? season : ((rec.season || '').toString().trim() || season);
       // Lazily get-or-create the per-season record — only when we actually have
       // an attribute to write. A times-only row (no age/group/gender columns)
       // never creates a record, so we don't litter seasonInfo with empty
@@ -649,12 +666,18 @@
           ? `${distance} ${STROKE_ABBREV[stroke] || stroke}`
           : normalizeEventLabel(rec);
         const timeStr = fmtTime(rec.time);
+        const seconds = timeToSeconds(timeStr);
+        // Skip rows whose "time" cell isn't a real time. Meet exports put status
+        // codes (NS, DNS, DQ, NT, SCR, DFS, …) in the time column for swims that
+        // posted no time; without this they become phantom races (NaN seconds, a
+        // junk event label) that clutter the swimmer's meet-history table.
+        if(!isFinite(seconds)) continue;
         const result = {
           event: eventLabel,
           distance,
           stroke,
           time: timeStr,
-          seconds: timeToSeconds(timeStr),
+          seconds,
           meet: meetName || rec.meet || 'Unknown Meet',
           date: meetDate || rec.date || '',
           place: rec.place || '',
@@ -935,17 +958,19 @@
       else if(isFinite(ts) && ts > cur.ts){ cur.ts = ts; cur.dateStr = r.date || cur.dateStr; }
     }));
     // Sort oldest → newest by date. Dateless meets (ts === -Infinity) sort
-    // earliest. Comparing two ts values with subtraction would yield NaN when
-    // both are -Infinity (the all-dateless case), leaving the order undefined —
-    // so fall back to first-seen order (`seq`) on any tie to keep "most recent
-    // meet" deterministic instead of dependent on swimmer iteration order.
+    // earliest. On a TIE (same date, or both dateless) break on the meet NAME —
+    // a data-intrinsic, deterministic key — NOT first-seen `seq` (iteration
+    // order). With `seq`, a season holding two dateless meets picked its "most
+    // recent meet" (and therefore the whole Most Improved board) from whichever
+    // swimmer happened to be processed first; the name tiebreak makes the board
+    // identical regardless of swimmer order.
     return Array.from(byMeet.values()).sort((a, b) => {
       if(a.ts !== b.ts){
         if(!isFinite(a.ts)) return -1;
         if(!isFinite(b.ts)) return 1;
         return a.ts - b.ts;
       }
-      return a.seq - b.seq;
+      return a.meet < b.meet ? -1 : a.meet > b.meet ? 1 : 0;
     });
   }
   // ---- Most Improved (latest meet vs the meet before it) ----------------
@@ -1032,7 +1057,15 @@
         tMap.forEach((tEntry, dist) => {
           if(stroke !== 'Freestyle' && tgtFree){
             const f = tgtFree.get(dist);
-            if(f && tEntry.sec < f.sec) return;    // impossible time → bad distance label, skip
+            // Only discard a non-free time that is IMPOSSIBLY faster than the
+            // swimmer's own free at this distance — i.e. a wrong distance label
+            // (a 25 mislabeled 50 reads ~40-50% fast). The old test (`< f.sec`)
+            // also deleted a LEGITIMATE drop whenever a back/fly specialist swam
+            // an easy/warm-down freestyle slower than their hard stroke (back
+            // 28.0 vs an easy free 29.0 is real, not a label error). Require a
+            // >30% gap so true mislabels are still caught but normal effort
+            // differences survive.
+            if(f && tEntry.sec < f.sec * 0.70) return;
           }
           let bEntry = bMap.get(dist);
           // Distance label diverged across the two meets — almost always because
@@ -1051,7 +1084,15 @@
           if(!bEntry && tMap.size === 1 && bMap.size === 1){
             const [bDist, only] = bMap.entries().next().value;
             const tNum = parseInt(dist, 10), bNum = parseInt(bDist, 10);
-            if(isFinite(tNum) && isFinite(bNum) && tNum >= bNum) bEntry = only;
+            // Only rescue when the BASELINE distance is one the ingest could have
+            // INFERRED from an age bracket (15 / 25 / 50) — that is the only reason
+            // the two labels legitimately diverge. A baseline of 100/200 was never
+            // inferred, so pairing e.g. a 100 baseline with a 200 target is two
+            // DIFFERENT real races, not a relabel, and must not be fused into a
+            // fake drop. (Still require target >= baseline so a shorter target
+            // can't manufacture a plunge.)
+            const inferable = (bNum === 15 || bNum === 25 || bNum === 50);
+            if(isFinite(tNum) && isFinite(bNum) && tNum >= bNum && inferable) bEntry = only;
           }
           if(!bEntry) return;                      // not swum at the baseline meet → can't compare
           const drop = bEntry.sec - tEntry.sec;
@@ -1117,41 +1158,59 @@
     const swapped = parts.length === 2 ? `${parts[1]} ${parts[0]}` : null;
 
     const snap = await FB.db.collection('swimmers').get();
-    let match = null;
+    // Collect EVERY name-matching swimmer, tagged by match strength. We must not
+    // commit to the first substring hit: when one normalized name is a substring
+    // of another ("Nathan Reed" inside "Jonathan Reed", "Ann Lee" inside "Mary
+    // Ann Lee"), the first-seen one would win and then fail the email/parent
+    // check — locking out the real family, or (if those fields were blank)
+    // handing back the wrong child. So gather all, prefer EXACT name matches, and
+    // let the email/parent check pick among them.
+    const targetsToCheck = [targetName, swapped].filter(Boolean);
+    const exactMatches = [];
+    const looseMatches = [];
     snap.forEach(doc => {
-      if(match) return;
       const sw = doc.data();
       const swName = norm(sw.name);
-      // Build the preferred-name variant (e.g. "Maddy Cakerice" when sw.name is "Madelyn Cakerice")
+      // Preferred-name variant (e.g. "Maddy Cakerice" when sw.name is "Madelyn Cakerice")
       let swPref = '';
       if(sw.preferredName){
         const lastWord = (sw.name||'').split(' ').filter(Boolean).pop() || '';
         swPref = norm(`${sw.preferredName} ${lastWord}`);
       }
       const candidates = [swName, swPref].filter(Boolean);
-      const targetsToCheck = [targetName, swapped].filter(Boolean);
+      let exact = false, loose = false;
       for(const cand of candidates){
         for(const t of targetsToCheck){
-          if(cand === t || cand.includes(t) || t.includes(cand)){ match = sw; return; }
+          if(cand === t) exact = true;
+          else if(cand.includes(t) || t.includes(cand)) loose = true;
         }
       }
+      if(exact) exactMatches.push(sw);
+      else if(loose) looseMatches.push(sw);
     });
-    if(!match) return { ok:false, reason:'We couldn\'t find a swimmer with that name. Double-check the spelling.' };
-    if(match.emails && match.emails.length){
-      const emailOk = !targetEmail || match.emails.some(e => e.toLowerCase() === targetEmail);
-      if(!emailOk) return { ok:false, reason:'The email you entered doesn\'t match the one we have on file for this swimmer.' };
-    } else if(targetEmail){
-      // Swimmer has no email yet on file — fall back to parent name as the verifier so legacy records still work.
-      // (Roster CSV upload should fill this in going forward.)
+    if(!exactMatches.length && !looseMatches.length){
+      return { ok:false, reason:'We couldn\'t find a swimmer with that name. Double-check the spelling.' };
     }
-    if(match.parents && match.parents.length){
-      const parentOk = !targetParent || match.parents.some(p => {
+    // Verify a candidate against the family's email/parent (the real
+    // authenticator). A swimmer with no email AND no parent on file passes by
+    // name alone, preserving legacy records.
+    function verify(sw){
+      if(sw.emails && sw.emails.length && targetEmail
+         && !sw.emails.some(e => e.toLowerCase() === targetEmail)) return false;
+      if(sw.parents && sw.parents.length && targetParent && !sw.parents.some(p => {
         const np = norm(p);
         return np === targetParent || np.includes(targetParent) || targetParent.includes(np);
-      });
-      if(!parentOk) return { ok:false, reason:'The parent name you entered doesn\'t match our records.' };
+      })) return false;
+      return true;
     }
-    return { ok:true, swimmer: match };
+    // Prefer exact-name matches; within a tier return the one the family's
+    // email/parent verifies, so a name collision can't hand back the wrong swimmer.
+    for(const tier of [exactMatches, looseMatches]){
+      const verified = tier.filter(verify);
+      if(verified.length) return { ok:true, swimmer: verified[0] };
+    }
+    // A name matched but no candidate's email/parent lined up.
+    return { ok:false, reason:'The email or parent name you entered doesn\'t match our records for that swimmer.' };
   }
 
   // -------- Admin ops (require auth) --------
@@ -1634,21 +1693,30 @@
       const sw = d.data() || {};
       const results = Array.isArray(sw.results) ? sw.results : [];
       const matchIdx = [];
-      const bestByStroke = new Map(); // stroke -> { idx, seconds }
+      const bestByEvent = new Map(); // "<dist>|<stroke>" -> { idx, seconds }
       results.forEach((r, i) => {
         if(!r || r.meet !== meetName) return;
         if(season && r.season !== season) return;
         resultsScanned++;
         matchIdx.push(i);
-        const stroke = r.stroke || extractStroke(r.event) || r.event || '';
+        const stroke = r.stroke || extractStroke(r.event) || '';
+        const dist = (r.distance != null && String(r.distance).trim() !== '')
+          ? String(r.distance).trim() : (extractDistance(r.event) || '');
+        // Key by the FULL event identity (distance + stroke), never stroke alone:
+        // a swimmer who raced two distances of one stroke at this meet (e.g. 50
+        // Free AND 100 Free) must keep BOTH. Only genuine duplicates — the same
+        // distance+stroke logged more than once from a double upload — collapse
+        // to the fastest. An unidentifiable row (no stroke/distance/event label)
+        // gets a per-row key so it's never merged away.
+        const key = (dist || stroke) ? `${dist}|${stroke}` : (r.event || `__row${i}`);
         const sec = (typeof r.seconds === 'number' && isFinite(r.seconds))
           ? r.seconds : timeToSeconds(r.time);
-        const cur = bestByStroke.get(stroke);
+        const cur = bestByEvent.get(key);
         const better = !cur || (isFinite(sec) && (!isFinite(cur.seconds) || sec < cur.seconds));
-        if(better) bestByStroke.set(stroke, { idx:i, seconds: isFinite(sec) ? sec : Infinity });
+        if(better) bestByEvent.set(key, { idx:i, seconds: isFinite(sec) ? sec : Infinity });
       });
       if(!matchIdx.length) return;
-      const keepIdx = new Set(Array.from(bestByStroke.values()).map(v => v.idx));
+      const keepIdx = new Set(Array.from(bestByEvent.values()).map(v => v.idx));
       const removeSet = new Set(matchIdx.filter(i => !keepIdx.has(i)));
       if(!removeSet.size) return;
       duplicatesRemoved += removeSet.size;
@@ -1804,14 +1872,43 @@
   }
   async function clearAll(opts){
     opts = opts || { roster:true, meetTimes:true };
-    if(opts.roster !== false){
-      // Roster wipe also drops the embedded results in swimmers/{key}.
+    const wipeRoster = opts.roster !== false;
+    const wipeTimes  = opts.meetTimes !== false;
+    if(wipeRoster && wipeTimes){
+      // Full reset: swimmer docs (with their embedded results) and every mirror.
       await clearCollection('swimmers');
       await clearCollection('hhst_rosters');
       await clearCollection('hhst_meet_times');
-      // Everyone's gone, so every uploaded-file row is moot.
       await clearCollection('hhst_uploads');
-    } else if(opts.meetTimes !== false){
+      try{ await FB.db.collection('meta').doc('stats').delete(); }catch(e){}
+    } else if(wipeRoster){
+      // Roster-only wipe — honor the "meet times will be kept" promise. Times
+      // live EMBEDDED in swimmers/{key}, so we must NOT delete those docs (the
+      // old code did `clearCollection('swimmers')` here, wiping every result
+      // despite meetTimes:false). Instead strip the roster-identity fields but
+      // keep name/key/results and the meet-times mirror.
+      const snap = await FB.db.collection('swimmers').get();
+      const docs = [];
+      snap.forEach(d => docs.push({ ref: d.ref, data: d.data() || {} }));
+      while(docs.length){
+        const batch = FB.db.batch();
+        docs.splice(0,400).forEach(({ ref, data }) => {
+          batch.set(ref, {
+            key: data.key || ref.id,
+            name: data.name || '',
+            preferredName: data.preferredName || '',
+            results: Array.isArray(data.results) ? data.results : [],
+            address:'', emails:[], parents:[], age:'', group:'', ageGroup:'',
+            gender:'', bracket:'', seasons:[], seasonInfo:{}, rosterUploads:{},
+            updatedAt: FB.FieldValue.serverTimestamp()
+          });
+        });
+        await batch.commit();
+      }
+      await clearCollection('hhst_rosters');
+      // Drop only the roster upload rows; meet-times upload rows stay.
+      await deleteUploadsByMode('roster');
+    } else if(wipeTimes){
       // Times-only wipe: keep swimmer docs, but null out the embedded results.
       const snap = await FB.db.collection('swimmers').get();
       const refs = [];
@@ -1824,9 +1921,6 @@
       await clearCollection('hhst_meet_times');
       // Drop only the meet-times upload rows; roster upload rows stay.
       await deleteUploadsByMode('results');
-    }
-    if(opts.roster !== false && opts.meetTimes !== false){
-      try{ await FB.db.collection('meta').doc('stats').delete(); }catch(e){}
     }
   }
   async function clearRoster(){ return clearAll({ roster:true, meetTimes:false }); }
@@ -2119,7 +2213,7 @@
     const events = {};
     const meets = new Set();
     results.forEach(r=>{
-      meets.add(r.meet);
+      if(r.meet) meets.add(r.meet); // guard so a blank meet doesn't inflate meetCount vs recentMeets
       const evKey = r.event;
       if(!events[evKey]) events[evKey] = [];
       events[evKey].push(r);
