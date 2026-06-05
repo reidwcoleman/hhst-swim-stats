@@ -1010,7 +1010,7 @@
         const d = distOf(r);
         if(!into[st]) into[st] = new Map();
         const cur = into[st].get(d);
-        if(cur === undefined || r.seconds < cur.sec) into[st].set(d, { sec: r.seconds, ev: r.event });
+        if(cur === undefined || r.seconds < cur.sec) into[st].set(d, { sec: r.seconds, ev: r.event, time: r.time });
       }
       (sw.results||[]).forEach(r => {
         if(!r || !isFinite(r.seconds)) return;
@@ -1055,7 +1055,15 @@
           }
           if(!bEntry) return;                      // not swum at the baseline meet → can't compare
           const drop = bEntry.sec - tEntry.sec;
-          if(drop > 0){ totalDrop += drop; eventsDropped.push({ event: tEntry.ev, drop }); }
+          if(drop > 0){
+            totalDrop += drop;
+            eventsDropped.push({
+              event: tEntry.ev, drop,
+              fromSec: bEntry.sec, toSec: tEntry.sec,
+              fromTime: bEntry.time || fmtTime(bEntry.sec),
+              toTime:   tEntry.time || fmtTime(tEntry.sec)
+            });
+          }
         });
       });
       if(totalDrop > 0){

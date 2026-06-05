@@ -2582,11 +2582,20 @@ table:not(.roster-table) td, table:not(.roster-table) th{word-break:break-word}
   letter-spacing:-.02em;
 }
 .improved-events-sub{
-  display:block;font-family:'Inter',sans-serif;font-weight:500;
-  font-size:11px;color:#64748b;letter-spacing:0;text-transform:none;
-  margin-top:2px;
+  display:block;font-family:'Inter',sans-serif;font-weight:600;
+  font-size:10.5px;color:#64748b;letter-spacing:.02em;text-transform:uppercase;
+  margin-top:3px;
 }
-.award-card-improved .award-name-cell{font-size:14px}
+.award-card-improved .award-name-cell{font-size:14px;max-width:none;white-space:normal;overflow:visible;vertical-align:top}
+.award-card-improved .award-table td{vertical-align:top}
+/* Per-event first-meet → second-meet time breakdown on the Most Improved poster */
+.improved-evlist{margin-top:5px;display:flex;flex-direction:column;gap:3px}
+.improved-evline{display:flex;align-items:baseline;gap:8px;font-family:'Inter',sans-serif;
+  font-size:11px;line-height:1.25;white-space:nowrap}
+.improved-evline .iev-name{font-weight:700;color:#0b1c36;min-width:62px}
+.improved-evline .iev-times{font-variant-numeric:tabular-nums;color:#334155;font-weight:600}
+.improved-evline .iev-arrow{color:#94a3b8;margin:0 4px}
+.improved-evline .iev-drop{font-weight:800;color:#047857;margin-left:auto}
 
 /* Most Improved medal #1 glows green instead of gold */
 .award-card-improved .award-table tr:first-child .award-medal{

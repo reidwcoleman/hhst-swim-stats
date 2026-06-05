@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="assets/styles.css?v=22"/>
+<link rel="stylesheet" href="assets/styles.css?v=25"/>
 <style>
   /* Hide everything until auth check completes — admins only. */
   body:not(.auth-ready) > *{visibility:hidden}
@@ -295,7 +295,7 @@
   Highcroft Hurricanes Swim Team · <a href="leaderboards.html">Season Stats</a> · <a href="admin.html">Admin</a>
 </footer>
 
-<script src="assets/data.js?v=24"></script>
+<script src="assets/data.js?v=25"></script>
 <script>
   HHST.initTheme();
   document.getElementById('themeToggle').addEventListener('click', HHST.toggleTheme);
@@ -584,6 +584,9 @@
     if(isNaN(d)) return s;
     return d.toLocaleDateString(undefined, { year:'numeric', month:'long', day:'numeric' });
   }
+  // Trim a leading "0:" from sub-minute times so the breakdown reads "34.78"
+  // instead of "0:34.78" on the poster. Minute-plus times stay as "1:02.18".
+  function prettyTime(t){ return (t||'').toString().replace(/^0:(?=\d)/, ''); }
 
   function improvedColumnHtml(entries, gender){
     if(!entries || !entries.length){
@@ -598,11 +601,19 @@
         ? `<span class="award-medal" style="background:${color}">${i+1}</span>`
         : `<span class="award-rank">${i+1}</span>`;
       const eventCount = e.eventCount || (e.eventsDropped ? e.eventsDropped.length : 0);
+      const evlist = (e.eventsDropped || []).slice()
+        .sort((a,b)=> b.drop - a.drop)
+        .map(ev => `<div class="improved-evline">
+          <span class="iev-name">${escapeHtml(ev.event)}</span>
+          <span class="iev-times">${escapeHtml(prettyTime(ev.fromTime))}<span class="iev-arrow">→</span>${escapeHtml(prettyTime(ev.toTime))}</span>
+          <span class="iev-drop">−${ev.drop.toFixed(2)}</span>
+        </div>`).join('');
       return `<tr>
         <td class="award-rank-cell">${rankCell}</td>
         <td class="award-name-cell">
           ${escapeHtml(displayName(e))}
-          <span class="improved-events-sub">across ${eventCount} event${eventCount===1?'':'s'}</span>
+          <span class="improved-events-sub">${eventCount} event${eventCount===1?'':'s'} improved</span>
+          <div class="improved-evlist">${evlist}</div>
         </td>
         <td class="award-time-cell improved-drop">${fmtDrop(e.totalDrop)}</td>
       </tr>`;
