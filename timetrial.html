@@ -99,6 +99,52 @@
   .tt-hero p{color:var(--text-muted);font-size:15px;margin:0 0 20px;max-width:640px}
   .kbd{display:inline-block;padding:1px 7px;border-radius:6px;border:1px solid var(--border-strong);
     background:var(--bg-alt);font-family:'Inter';font-size:12px;font-weight:700;color:var(--text-muted)}
+
+  /* Info note (explains time trials don't affect competitive boards) */
+  .tt-note{display:flex;gap:10px;align-items:flex-start;padding:12px 15px;border-radius:12px;
+    background:rgba(96,165,250,.08);border:1px solid var(--border-strong);color:var(--text-muted);font-size:13px;line-height:1.5;margin-top:16px}
+  .tt-note svg{flex:0 0 auto;color:var(--accent);margin-top:1px}
+  .tt-note strong{color:var(--text);font-weight:700}
+
+  /* Progress bar on the timing screen */
+  .tt-pbar{height:8px;border-radius:999px;background:var(--bg-alt);overflow:hidden;border:1px solid var(--border)}
+  .tt-pbar-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--brand-500,#3b82f6),var(--ice-400,#7dd3fc));transition:width .35s ease;width:0}
+  .tt-pbar-label{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;color:var(--text-muted);font-weight:700;letter-spacing:.04em;margin:8px 0 20px}
+  .tt-pbar-label .ev{color:var(--accent)}
+
+  /* Big lane number for the current swimmer */
+  .tt-bignum{width:50px;height:50px;border-radius:15px;background:var(--accent);color:var(--accent-contrast);
+    font-weight:800;font-size:23px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:12px;
+    box-shadow:0 6px 18px rgba(37,99,235,.25)}
+
+  /* Clock panel with state-based framing */
+  .tt-clockwrap{display:flex;flex-direction:column;align-items:center;gap:6px;padding:24px 18px 16px;border-radius:22px;
+    background:var(--bg-alt);border:1px solid var(--border);margin:6px auto 4px;max-width:540px;
+    transition:border-color .25s,box-shadow .25s,background .25s}
+  .tt-clockwrap.running{border-color:var(--accent);box-shadow:0 0 0 4px rgba(96,165,250,.12)}
+  .tt-clockwrap.captured{border-color:rgba(16,185,129,.5);box-shadow:0 0 0 4px rgba(16,185,129,.10)}
+  .tt-clock.captured{color:#16a34a}
+  [data-theme="light"] .tt-clock.captured{color:#15803d}
+
+  /* Next-up preview */
+  .tt-nextup{margin-top:16px;font-size:13.5px;color:var(--text-muted)}
+  .tt-nextup strong{color:var(--text)}
+  .tt-nextup.last{color:var(--text-subtle)}
+
+  /* Review summary strip */
+  .tt-summary{display:flex;gap:22px;flex-wrap:wrap;padding:14px 18px;border-radius:14px;background:var(--bg-alt);
+    border:1px solid var(--border);margin-bottom:18px}
+  .tt-summary .s-item{display:flex;flex-direction:column}
+  .tt-summary .s-label{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted)}
+  .tt-summary .s-val{font-family:'Fraunces',serif;font-weight:800;font-size:21px;color:var(--text);margin-top:3px;letter-spacing:-.02em}
+
+  /* Mobile: full-width tactile controls, single-column picker */
+  @media(max-width:560px){
+    .tt-controls{flex-direction:column}
+    .tt-bigbtn,.tt-secbtn{width:100%;min-width:0}
+    .tt-picker{grid-template-columns:1fr}
+    .tt-clock-hint{display:none}
+  }
 </style>
 
 <!-- Firebase compat SDK -->
@@ -166,6 +212,10 @@
       </div>
 
       <div class="card">
+        <div class="tt-note">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+          <span>Time trials show up on each swimmer's profile — best times, history and charts — but <strong>don't count toward Fastest Five, Most Improved, leaderboards or records.</strong> They're for tracking practice swims.</span>
+        </div>
         <div class="tt-grid">
           <div class="tt-field"><label>Trial name</label><input id="cfgName" type="text" placeholder="Time Trial"/></div>
           <div class="tt-field"><label>Season</label><input id="cfgSeason" list="cfgSeasonList" type="text" placeholder="2026"/><datalist id="cfgSeasonList"></datalist></div>
@@ -214,16 +264,21 @@
     <!-- STEP 2: TIMING -->
     <section id="timeStep" style="display:none">
       <div class="card">
+        <div class="tt-pbar"><div class="tt-pbar-fill" id="ttPbar"></div></div>
+        <div class="tt-pbar-label"><span id="ttProgress">Swimmer 1 of 1</span><span class="ev" id="ttEventLabel"></span></div>
         <div class="tt-stage">
-          <div class="tt-progress" id="ttProgress">Swimmer 1 of 1</div>
+          <div class="tt-bignum" id="ttLaneNum">1</div>
           <div class="tt-current" id="ttCurrent">—</div>
           <div class="tt-current-sub" id="ttCurrentSub"></div>
-          <div class="tt-clock" id="ttClock">0:00.00</div>
-          <div class="tt-clock-hint">Tap <span class="kbd">Space</span> to start / stop · <span class="kbd">Enter</span> to save &amp; go to next</div>
+          <div class="tt-clockwrap" id="ttClockWrap">
+            <div class="tt-clock" id="ttClock">0:00.00</div>
+            <div class="tt-clock-hint">Tap <span class="kbd">Space</span> to start / stop · <span class="kbd">Enter</span> to save &amp; go to next</div>
+          </div>
           <div class="tt-controls" id="ttControls"></div>
+          <div class="tt-nextup" id="ttNextUp"></div>
         </div>
         <div class="tt-done" id="ttDone"></div>
-        <div style="margin-top:20px;text-align:center">
+        <div style="margin-top:22px;text-align:center">
           <button class="tt-secbtn" id="finishBtn" style="min-width:auto">Finish &amp; review →</button>
         </div>
       </div>
@@ -234,6 +289,7 @@
       <div class="card">
         <h2 style="margin-top:0">Review &amp; save</h2>
         <p class="lead" id="reviewLead">Check each time, fix any with a typo, then save them all to the swimmers' profiles.</p>
+        <div id="reviewSummary" class="tt-summary"></div>
         <div class="table-wrap">
           <table>
             <thead><tr><th>#</th><th>Swimmer</th><th>Event</th><th>Time (m:ss.hh or seconds)</th></tr></thead>
@@ -258,7 +314,7 @@
   Highcroft Hurricanes Swim Team · <a href="admin.html">Admin</a> · <a href="index.html">Home</a>
 </footer>
 
-<script src="assets/data.js?v=23"></script>
+<script src="assets/data.js?v=24"></script>
 <script>
   HHST.initTheme();
   document.getElementById('themeToggle').addEventListener('click', HHST.toggleTheme);
@@ -288,9 +344,10 @@
     $('ttClock').textContent = fmtClock(ms);
     if(swRunning) rafId = requestAnimationFrame(tick);
   }
-  function swReset(){ swRunning=false; swElapsedMs=0; swCaptured=false; if(rafId) cancelAnimationFrame(rafId); rafId=null; $('ttClock').textContent='0:00.00'; $('ttClock').classList.remove('running'); }
-  function swStart(){ if(swRunning||swCaptured) return; swRunning=true; swStartTs=performance.now(); $('ttClock').classList.add('running'); tick(); renderControls(); }
-  function swStop(){ if(!swRunning) return; swElapsedMs += performance.now()-swStartTs; swRunning=false; swCaptured=true; if(rafId) cancelAnimationFrame(rafId); rafId=null; $('ttClock').classList.remove('running'); $('ttClock').textContent=fmtClock(swElapsedMs); renderControls(); }
+  function setClockState(s){ const c=$('ttClock'), w=$('ttClockWrap'); c.classList.remove('running','captured'); if(w) w.classList.remove('running','captured'); if(s){ c.classList.add(s); if(w) w.classList.add(s); } }
+  function swReset(){ swRunning=false; swElapsedMs=0; swCaptured=false; if(rafId) cancelAnimationFrame(rafId); rafId=null; $('ttClock').textContent='0:00.00'; setClockState(''); }
+  function swStart(){ if(swRunning||swCaptured) return; swRunning=true; swStartTs=performance.now(); setClockState('running'); tick(); renderControls(); }
+  function swStop(){ if(!swRunning) return; swElapsedMs += performance.now()-swStartTs; swRunning=false; swCaptured=true; if(rafId) cancelAnimationFrame(rafId); rafId=null; setClockState('captured'); $('ttClock').textContent=fmtClock(swElapsedMs); renderControls(); }
 
   // ---------- Init / auth ----------
   HHST.onAuthChanged(async user => {
@@ -432,9 +489,16 @@
     if(curIdx >= lineup.length){ buildReview(); gotoStep(3); return; }
     const l = lineup[curIdx];
     $('ttProgress').textContent = `Swimmer ${curIdx+1} of ${lineup.length}`;
+    $('ttEventLabel').textContent = cfg.distance + ' ' + strokeShort(cfg.stroke);
+    $('ttPbar').style.width = Math.round((curIdx/lineup.length)*100) + '%';
+    $('ttLaneNum').textContent = curIdx+1;
     $('ttCurrent').textContent = l.name;
     const ag = ageLabelFor(roster[l.key]);
-    $('ttCurrentSub').textContent = [cfg.distance + ' ' + strokeShort(cfg.stroke), ag].filter(Boolean).join(' · ');
+    $('ttCurrentSub').textContent = ag || '';
+    const next = lineup[curIdx+1];
+    const nu = $('ttNextUp');
+    if(next){ nu.className='tt-nextup'; nu.innerHTML = `Next up: <strong>${escapeHtml(next.name)}</strong>`; }
+    else { nu.className='tt-nextup last'; nu.textContent = 'Last swimmer in the lineup'; }
     renderControls();
     renderDoneList();
   }
@@ -527,6 +591,14 @@
       </tr>`;
     }).join('');
     $('reviewLead').textContent = `${cfg.name} · ${evLabel} · ${cfg.season}. Check each time, fix any typos, then save them all to the swimmers' profiles. Leave a box blank to skip that swimmer.`;
+    // Summary strip
+    const timed = lineup.filter(l => times[l.key] && times[l.key].status==='done' && isFinite(times[l.key].seconds));
+    const fastest = timed.slice().sort((a,b)=> times[a.key].seconds - times[b.key].seconds)[0];
+    $('reviewSummary').innerHTML = [
+      `<div class="s-item"><span class="s-label">Event</span><span class="s-val">${escapeHtml(evLabel)}</span></div>`,
+      `<div class="s-item"><span class="s-label">Swimmers timed</span><span class="s-val">${timed.length} of ${lineup.length}</span></div>`,
+      fastest ? `<div class="s-item"><span class="s-label">Fastest</span><span class="s-val">${fmtClock(times[fastest.key].seconds*1000)}</span></div><div class="s-item"><span class="s-label">By</span><span class="s-val" style="font-size:16px">${escapeHtml(fastest.name)}</span></div>` : ''
+    ].join('');
     $('saveStatus').textContent=''; $('saveStatus').className='upload-status';
     $('afterSave').style.display='none';
     $('saveAllBtn').disabled=false;
@@ -558,7 +630,8 @@
       const res = await HHST.ingestRows(rows, {
         mode:'results', season:cfg.season, uploadId,
         fileName: cfg.name + ' (time trial)',
-        meetName: cfg.name, meetDate: cfg.date
+        meetName: cfg.name, meetDate: cfg.date,
+        timeTrial: true
       });
       let msg = `Saved ${res.added} time${res.added===1?'':'s'} to ${res.swimmers} swimmer profile${res.swimmers===1?'':'s'} under "${cfg.name}".`;
       if(res.newSwimmers) msg += ` Added ${res.newSwimmers} new swimmer${res.newSwimmers===1?'':'s'} to the roster.`;

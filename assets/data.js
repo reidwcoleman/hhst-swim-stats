@@ -312,6 +312,12 @@
     // column-driven meet imports, which fall back to the file's own columns.
     const meetName = (opts.meetName || '').toString().trim();
     const meetDate = (opts.meetDate || '').toString().trim();
+    // Time-trial flag: when set, every result this upload creates is stamped
+    // timeTrial:true. Such results still live on the swimmer's profile (best
+    // times, meet history, charts) but are EXCLUDED from all team/competitive
+    // boards — Fastest Five, Most Improved, season leaderboards, team stats,
+    // and profile rankings — so an informal practice swim never tops a board.
+    const timeTrial = !!opts.timeTrial;
     if(!rows || rows.length < 2) return { added:0, swimmers:0, profileUpdates:0, skippedSwimmers:[], errors:['Empty file'] };
     const rawHeaders = rows[0];
     const headers = rawHeaders.map(mapHeader);
@@ -656,6 +662,7 @@
           season: rowSeason,
           uploadId: uploadId || ''
         };
+        if(timeTrial) result.timeTrial = true;
         // Skip an EXACT duplicate race (same meet + season + event + time).
         // Re-uploading the same meet file then becomes idempotent instead of
         // stacking a 2nd/3rd/4th identical time onto every swimmer. Genuinely
@@ -786,6 +793,7 @@
           fileName: fileName || '',
           season,
           mode,
+          timeTrial,
           meetName: meetName || '',
           meetDate: meetDate || '',
           addedResults: added,
@@ -845,6 +853,7 @@
       const group = splitByGender ? competitionGroup(sw, season) : bracket;
       if(!group || group === 'Unknown') continue;
       const matching = (sw.results||[]).filter(r => {
+        if(r.timeTrial) return false; // time trials excluded from Fastest Five / leaderboards
         if(season && r.season !== season) return false;
         if(meet && r.meet !== meet) return false;
         if(eventMatcher.stroke && r.stroke !== eventMatcher.stroke) return false;
@@ -918,6 +927,7 @@
     let seq = 0;
     swimmers.forEach(sw => (sw.results||[]).forEach(r => {
       if(!r || !r.meet) return;
+      if(r.timeTrial) return; // time trials never count as a meet (keeps them out of Fastest Five / Most Improved targeting)
       if(season && r.season !== season) return;
       const ts = parseFlexibleDate(r.date);
       const cur = byMeet.get(r.meet);
@@ -1004,6 +1014,7 @@
       }
       (sw.results||[]).forEach(r => {
         if(!r || !isFinite(r.seconds)) return;
+        if(r.timeTrial) return; // time trials excluded from Most Improved
         if(r.meet === target.meet && (!season || r.season === season)) indexResult(tgtByStroke, r);
         if(r.meet === baseline.meet && (!baselineSeason || r.season === baselineSeason)) indexResult(baseByStroke, r);
       });
@@ -2209,7 +2220,7 @@
     const inSeason = r => !season || (r && r.season === season);
     const myEvents = {};
     (sw.results||[]).forEach(r => {
-      if(!isFinite(r.seconds) || !inSeason(r)) return;
+      if(!isFinite(r.seconds) || !inSeason(r) || r.timeTrial) return;
       if(!(r.event in myEvents) || r.seconds < myEvents[r.event]) myEvents[r.event] = r.seconds;
     });
     const ranks = {};
@@ -2222,7 +2233,7 @@
         if(myGender && oInfo.gender && oInfo.gender !== myGender) return;
         let best = Infinity;
         (other.results||[]).forEach(r => {
-          if(r.event === event && isFinite(r.seconds) && inSeason(r) && r.seconds < best) best = r.seconds;
+          if(r.event === event && isFinite(r.seconds) && inSeason(r) && !r.timeTrial && r.seconds < best) best = r.seconds;
         });
         if(isFinite(best)) competitors.push({ key: other.key, sec: best });
       });
@@ -2257,6 +2268,7 @@
       const byEvent = {};
       (sw.results||[]).forEach(r => {
         if(!isFinite(r.seconds)) return;
+        if(r.timeTrial) return; // time trials excluded from team leaderboards
         if(season && r.season !== season) return;
         if(meet && r.meet !== meet) return;
         const evStroke = r.stroke || extractStroke(r.event);
@@ -2312,6 +2324,7 @@
     const swimmers = Object.values(allSwimmers);
     const filteredResults = sw => (sw.results||[]).filter(r => {
       if(!r) return false;
+      if(r.timeTrial) return false; // time trials excluded from team aggregates
       if(season && r.season !== season) return false;
       if(meet && r.meet !== meet) return false;
       return true;
