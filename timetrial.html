@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="theme-color" content="#0b1d3a"/>
+<title>Time Trial Stopwatch — Highcroft Hurricanes</title>
+<meta name="robots" content="noindex,nofollow"/>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="assets/styles.css?v=21"/>
+<style>
+  /* ---- Time Trial page-specific styles ---- */
+  .tt-steps{display:flex;gap:8px;align-items:center;margin-bottom:18px;flex-wrap:wrap}
+  .tt-step-pill{display:inline-flex;align-items:center;gap:8px;padding:7px 14px;border-radius:999px;
+    font-size:12.5px;font-weight:600;color:var(--text-muted);background:var(--surface);border:1px solid var(--border)}
+  .tt-step-pill.active{color:var(--accent-contrast);background:var(--accent);border-color:var(--accent)}
+  .tt-step-pill.done{color:#34d399;border-color:rgba(16,185,129,.35);background:rgba(16,185,129,.10)}
+  .tt-step-pill .n{width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;
+    font-size:11px;font-weight:800;background:rgba(255,255,255,.18)}
+  .tt-step-sep{color:var(--text-subtle);font-size:13px}
+
+  .tt-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:8px}
+  .tt-field label{display:block;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+    color:var(--text-muted);margin-bottom:6px}
+  .tt-field input,.tt-field select{width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--border-strong);
+    background:var(--surface);color:var(--text);font-family:inherit;font-size:15px}
+  .tt-field input:focus,.tt-field select:focus{outline:none;border-color:var(--accent)}
+
+  .tt-choice-row{display:flex;gap:8px;flex-wrap:wrap}
+  .tt-choice{padding:10px 16px;border-radius:10px;border:1px solid var(--border-strong);background:var(--surface);
+    color:var(--text);font-weight:600;font-size:14px;cursor:pointer;font-family:inherit;transition:all .15s}
+  .tt-choice:hover{border-color:var(--accent);transform:translateY(-1px)}
+  .tt-choice.active{background:var(--accent);color:var(--accent-contrast);border-color:var(--accent)}
+
+  .tt-picker{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:8px}
+  @media(max-width:760px){ .tt-picker{grid-template-columns:1fr} }
+  .tt-pick-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+  .tt-pick-head h4{font-family:'Fraunces',serif;font-size:16px;color:var(--text);margin:0}
+  .tt-pick-head .cnt{font-size:12px;color:var(--text-muted)}
+  .tt-search input{width:100%;padding:11px 14px;border-radius:10px;border:1px solid var(--border-strong);
+    background:var(--surface);color:var(--text);font-family:inherit;font-size:14px;margin-bottom:10px}
+  .tt-list{max-height:340px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;padding-right:4px}
+  .tt-row{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;background:var(--surface);
+    border:1px solid var(--border)}
+  .tt-row .nm{font-weight:600;color:var(--text);font-size:14px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tt-row .ag{font-size:11px;color:var(--text-muted);flex:0 0 auto}
+  .tt-row.is-added{opacity:.45}
+  .tt-iconbtn{width:30px;height:30px;border-radius:8px;border:1px solid var(--border-strong);background:var(--bg-alt);
+    color:var(--text-muted);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}
+  .tt-iconbtn:hover{color:var(--text);border-color:var(--accent)}
+  .tt-iconbtn.add{color:var(--accent)}
+  .tt-iconbtn.danger:hover{color:#f87171;border-color:#f87171}
+  .tt-lane-num{width:26px;height:26px;border-radius:50%;background:var(--accent);color:var(--accent-contrast);
+    font-weight:800;font-size:12px;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}
+  .tt-empty{padding:24px;text-align:center;color:var(--text-muted);font-size:13.5px;border:1px dashed var(--border-strong);border-radius:12px}
+
+  /* Timing stage */
+  .tt-stage{text-align:center;padding:8px 0 4px}
+  .tt-progress{font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted)}
+  .tt-current{font-family:'Fraunces',serif;font-weight:800;font-size:clamp(28px,6vw,46px);letter-spacing:-.02em;
+    color:var(--text);margin:6px 0 2px;line-height:1.05}
+  .tt-current-sub{font-size:14px;color:var(--text-muted);margin-bottom:18px}
+  .tt-clock{font-family:'Inter',sans-serif;font-variant-numeric:tabular-nums;font-weight:800;
+    font-size:clamp(56px,16vw,128px);line-height:1;letter-spacing:-.02em;color:var(--text);
+    margin:6px 0 4px;transition:color .2s}
+  .tt-clock.running{color:var(--accent)}
+  .tt-clock-hint{font-size:12.5px;color:var(--text-subtle);margin-bottom:20px}
+  .tt-controls{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:8px}
+  .tt-bigbtn{padding:18px 34px;border-radius:14px;border:none;font-family:inherit;font-weight:800;font-size:18px;
+    cursor:pointer;transition:transform .12s,box-shadow .2s;min-width:170px}
+  .tt-bigbtn:active{transform:scale(.97)}
+  .tt-start{background:#16a34a;color:#fff}
+  .tt-start:hover{background:#15803d}
+  .tt-stop{background:#dc2626;color:#fff}
+  .tt-stop:hover{background:#b91c1c}
+  .tt-save{background:var(--accent);color:var(--accent-contrast)}
+  .tt-save:hover{background:var(--accent-hover)}
+  .tt-secbtn{padding:18px 22px;border-radius:14px;border:1px solid var(--border-strong);background:var(--surface);
+    color:var(--text);font-family:inherit;font-weight:700;font-size:15px;cursor:pointer;min-width:120px}
+  .tt-secbtn:hover{border-color:var(--accent);color:var(--accent)}
+
+  .tt-done{margin-top:26px;display:flex;flex-direction:column;gap:7px}
+  .tt-done-row{display:grid;grid-template-columns:26px 1fr auto auto;gap:12px;align-items:center;padding:10px 14px;
+    border-radius:10px;background:var(--surface);border:1px solid var(--border)}
+  .tt-done-row .nm{font-weight:600;color:var(--text);font-size:14px}
+  .tt-done-row .tm{font-family:'Inter';font-variant-numeric:tabular-nums;font-weight:800;font-size:17px;color:var(--accent)}
+  .tt-done-row .tm.dns{color:var(--text-subtle);font-weight:600;font-size:13px}
+
+  /* Review table */
+  .tt-review-row td{vertical-align:middle}
+  .tt-time-input{width:120px;padding:8px 10px;border-radius:8px;border:1px solid var(--border-strong);
+    background:var(--surface);color:var(--text);font-family:'Inter';font-variant-numeric:tabular-nums;font-size:15px;font-weight:700}
+  .tt-time-input:focus{outline:none;border-color:var(--accent)}
+  .tt-hero h1{font-family:'Fraunces',serif;font-weight:800;font-size:clamp(26px,5vw,40px);letter-spacing:-.02em;margin:0 0 6px;color:var(--text)}
+  .tt-hero p{color:var(--text-muted);font-size:15px;margin:0 0 20px;max-width:640px}
+  .kbd{display:inline-block;padding:1px 7px;border-radius:6px;border:1px solid var(--border-strong);
+    background:var(--bg-alt);font-family:'Inter';font-size:12px;font-weight:700;color:var(--text-muted)}
+</style>
+
+<!-- Firebase compat SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="assets/firebase-init.js"></script>
+</head>
+<body>
+
+<header>
+  <nav>
+    <a class="brand" href="index.html">
+      <span class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2 12c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/><path d="M2 17c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/><path d="M2 7c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/>
+        </svg>
+      </span>
+      Highcroft <em>Hurricanes</em>
+    </a>
+    <ul class="nav-links">
+      <li><a href="admin.html">Admin</a></li>
+      <li><a href="index.html">View Site</a></li>
+      <li>
+        <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+          <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+          <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+      </li>
+    </ul>
+  </nav>
+</header>
+
+<main class="admin-shell">
+
+  <!-- Loading -->
+  <div id="loading" class="card" style="text-align:center;padding:48px 24px">
+    <div style="display:inline-block;width:32px;height:32px;border:3px solid var(--border-strong);border-top-color:var(--accent);border-radius:50%;animation:ttspin .8s linear infinite;margin-bottom:14px"></div>
+    <p class="lead" style="margin:0">Loading…</p>
+  </div>
+  <style>@keyframes ttspin{to{transform:rotate(360deg)}}</style>
+
+  <!-- Auth gate -->
+  <div id="authGate" class="card" style="display:none;text-align:center;padding:44px 24px">
+    <h2 style="margin-top:0">Coaches only</h2>
+    <p class="lead" style="margin:0 auto 18px;max-width:440px">Log in on the Admin page first — the time trial saves directly to swimmers' profiles, so it needs a coach sign-in.</p>
+    <a class="btn lg" href="admin.html" style="display:inline-flex">Go to Admin login</a>
+  </div>
+
+  <div id="tool" style="display:none">
+
+    <div class="tt-steps">
+      <span class="tt-step-pill active" id="pill1"><span class="n">1</span> Set up</span>
+      <span class="tt-step-sep">›</span>
+      <span class="tt-step-pill" id="pill2"><span class="n">2</span> Time</span>
+      <span class="tt-step-sep">›</span>
+      <span class="tt-step-pill" id="pill3"><span class="n">3</span> Save</span>
+    </div>
+
+    <!-- STEP 1: SETUP -->
+    <section id="setupStep">
+      <div class="tt-hero">
+        <h1>Time Trial Stopwatch</h1>
+        <p>Pick the stroke and distance, build your lineup in swim order, then time each swimmer one tap at a time. Save the whole set straight to their profiles.</p>
+      </div>
+
+      <div class="card">
+        <div class="tt-grid">
+          <div class="tt-field"><label>Trial name</label><input id="cfgName" type="text" placeholder="Time Trial"/></div>
+          <div class="tt-field"><label>Season</label><input id="cfgSeason" list="cfgSeasonList" type="text" placeholder="2026"/><datalist id="cfgSeasonList"></datalist></div>
+          <div class="tt-field"><label>Date</label><input id="cfgDate" type="date"/></div>
+        </div>
+
+        <div style="margin-top:16px">
+          <label style="display:block;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px">Stroke</label>
+          <div class="tt-choice-row" id="strokeRow">
+            <button class="tt-choice" data-stroke="Freestyle">Freestyle</button>
+            <button class="tt-choice" data-stroke="Backstroke">Backstroke</button>
+            <button class="tt-choice" data-stroke="Breaststroke">Breaststroke</button>
+            <button class="tt-choice" data-stroke="Butterfly">Butterfly</button>
+            <button class="tt-choice" data-stroke="IM">IM</button>
+          </div>
+        </div>
+
+        <div style="margin-top:16px">
+          <label style="display:block;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px">Distance (yards)</label>
+          <div class="tt-choice-row" id="distRow">
+            <button class="tt-choice" data-dist="15">15</button>
+            <button class="tt-choice" data-dist="25">25</button>
+            <button class="tt-choice" data-dist="50">50</button>
+            <button class="tt-choice" data-dist="100">100</button>
+            <input id="cfgDistCustom" type="number" min="1" step="1" placeholder="Other" style="width:110px;padding:10px 12px;border-radius:10px;border:1px solid var(--border-strong);background:var(--surface);color:var(--text);font-family:inherit;font-size:14px"/>
+          </div>
+        </div>
+
+        <div class="tt-picker">
+          <div>
+            <div class="tt-pick-head"><h4>Roster</h4><span class="cnt" id="rosterCnt"></span></div>
+            <div class="tt-search"><input id="rosterSearch" type="text" placeholder="Search swimmers…"/></div>
+            <div class="tt-list" id="rosterList"></div>
+          </div>
+          <div>
+            <div class="tt-pick-head"><h4>Lineup (swim order)</h4><span class="cnt" id="lineupCnt">0 swimmers</span></div>
+            <div class="tt-list" id="lineupList"><div class="tt-empty">Tap swimmers on the left to add them. Use ↑ ↓ to set the order they'll swim.</div></div>
+          </div>
+        </div>
+
+        <div id="setupError" style="color:var(--red,#dc2626);font-size:13.5px;margin-top:14px;display:none"></div>
+        <button id="startBtn" class="btn lg block" style="margin-top:18px">Start timing →</button>
+      </div>
+    </section>
+
+    <!-- STEP 2: TIMING -->
+    <section id="timeStep" style="display:none">
+      <div class="card">
+        <div class="tt-stage">
+          <div class="tt-progress" id="ttProgress">Swimmer 1 of 1</div>
+          <div class="tt-current" id="ttCurrent">—</div>
+          <div class="tt-current-sub" id="ttCurrentSub"></div>
+          <div class="tt-clock" id="ttClock">0:00.00</div>
+          <div class="tt-clock-hint">Tap <span class="kbd">Space</span> to start / stop · <span class="kbd">Enter</span> to save &amp; go to next</div>
+          <div class="tt-controls" id="ttControls"></div>
+        </div>
+        <div class="tt-done" id="ttDone"></div>
+        <div style="margin-top:20px;text-align:center">
+          <button class="tt-secbtn" id="finishBtn" style="min-width:auto">Finish &amp; review →</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 3: REVIEW & SAVE -->
+    <section id="reviewStep" style="display:none">
+      <div class="card">
+        <h2 style="margin-top:0">Review &amp; save</h2>
+        <p class="lead" id="reviewLead">Check each time, fix any with a typo, then save them all to the swimmers' profiles.</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>#</th><th>Swimmer</th><th>Event</th><th>Time (m:ss.hh or seconds)</th></tr></thead>
+            <tbody id="reviewBody"></tbody>
+          </table>
+        </div>
+        <div id="saveStatus" class="upload-status" style="margin-top:16px"></div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:16px">
+          <button class="tt-secbtn" id="backToTimeBtn" style="min-width:auto">← Back to timing</button>
+          <button class="btn lg" id="saveAllBtn" style="flex:1;min-width:200px">Save all times to profiles</button>
+        </div>
+        <div id="afterSave" style="display:none;margin-top:18px;text-align:center">
+          <a class="btn ghost" href="timetrial.html">Run another time trial</a>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<footer>
+  Highcroft Hurricanes Swim Team · <a href="admin.html">Admin</a> · <a href="index.html">Home</a>
+</footer>
+
+<script src="assets/data.js?v=23"></script>
+<script>
+  HHST.initTheme();
+  document.getElementById('themeToggle').addEventListener('click', HHST.toggleTheme);
+
+  const $ = id => document.getElementById(id);
+  function escapeHtml(s){ return (s||'').toString().replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+  // ---------- State ----------
+  let roster = {};        // key -> swimmer object
+  let rosterArr = [];     // [{key,name,ageLabel}]
+  let lineup = [];        // ordered [{key,name}]
+  const cfg = { name:'', season:'', date:'', stroke:'', distance:'' };
+  const times = {};       // key -> { seconds, status:'done'|'dns' }
+  let curIdx = 0;
+
+  // ---------- Stopwatch ----------
+  let swElapsedMs = 0, swStartTs = 0, swRunning = false, rafId = null, swCaptured = false;
+  function fmtClock(ms){
+    const cs = Math.max(0, Math.round(ms/10));   // centiseconds
+    const h = cs % 100;
+    const totalSec = Math.floor(cs/100);
+    const s = totalSec % 60, m = Math.floor(totalSec/60);
+    return `${m}:${String(s).padStart(2,'0')}.${String(h).padStart(2,'0')}`;
+  }
+  function tick(){
+    const ms = swElapsedMs + (swRunning ? (performance.now() - swStartTs) : 0);
+    $('ttClock').textContent = fmtClock(ms);
+    if(swRunning) rafId = requestAnimationFrame(tick);
+  }
+  function swReset(){ swRunning=false; swElapsedMs=0; swCaptured=false; if(rafId) cancelAnimationFrame(rafId); rafId=null; $('ttClock').textContent='0:00.00'; $('ttClock').classList.remove('running'); }
+  function swStart(){ if(swRunning||swCaptured) return; swRunning=true; swStartTs=performance.now(); $('ttClock').classList.add('running'); tick(); renderControls(); }
+  function swStop(){ if(!swRunning) return; swElapsedMs += performance.now()-swStartTs; swRunning=false; swCaptured=true; if(rafId) cancelAnimationFrame(rafId); rafId=null; $('ttClock').classList.remove('running'); $('ttClock').textContent=fmtClock(swElapsedMs); renderControls(); }
+
+  // ---------- Init / auth ----------
+  HHST.onAuthChanged(async user => {
+    if(!user){ $('loading').style.display='none'; $('authGate').style.display='block'; $('tool').style.display='none'; return; }
+    try {
+      const data = await HHST.readAll();
+      roster = data.swimmers || {};
+      buildRoster();
+      prefillConfig();
+      $('loading').style.display='none';
+      $('authGate').style.display='none';
+      $('tool').style.display='block';
+    } catch(e){
+      console.error(e);
+      $('loading').innerHTML = '<p class="lead" style="margin:0;color:var(--red-light)">Could not load the roster. Reload the page to try again.</p>';
+    }
+  });
+
+  function prefillConfig(){
+    const today = new Date();
+    const iso = today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
+    $('cfgDate').value = iso;
+    const pretty = today.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'});
+    $('cfgName').value = 'Time Trial — ' + pretty;
+    // Season options + default
+    const seasons = HHST.getAllSeasons(Object.values(roster)) || [];
+    $('cfgSeasonList').innerHTML = seasons.map(s=>`<option value="${escapeHtml(s)}"></option>`).join('');
+    let remembered = '';
+    try { remembered = localStorage.getItem('hhst.lastSeason') || ''; } catch(_){}
+    $('cfgSeason').value = remembered || seasons[0] || String(today.getFullYear());
+  }
+
+  function ageLabelFor(sw){
+    const info = HHST.swimmerSeasonInfo(sw, $('cfgSeason') ? $('cfgSeason').value.trim() : '');
+    const g = info.gender === 'F' ? 'Girls' : info.gender === 'M' ? 'Boys' : '';
+    const b = (info.bracket && info.bracket !== 'Unknown') ? info.bracket : '';
+    return [g, b].filter(Boolean).join(' ');
+  }
+
+  function buildRoster(){
+    rosterArr = Object.values(roster)
+      .filter(sw => sw && sw.name)
+      .map(sw => ({ key: sw.key || HHST.swimmerKey(sw.name), name: sw.name }))
+      .sort((a,b)=> a.name.localeCompare(b.name));
+    $('rosterCnt').textContent = rosterArr.length + ' on roster';
+    renderRosterList();
+  }
+
+  function renderRosterList(){
+    const q = ($('rosterSearch').value||'').trim().toLowerCase();
+    const inLineup = new Set(lineup.map(l=>l.key));
+    const rows = rosterArr.filter(r => !q || r.name.toLowerCase().includes(q));
+    if(!rows.length){ $('rosterList').innerHTML = '<div class="tt-empty">No swimmers match that search.</div>'; return; }
+    $('rosterList').innerHTML = rows.map(r=>{
+      const added = inLineup.has(r.key);
+      const ag = ageLabelFor(roster[r.key]);
+      return `<div class="tt-row ${added?'is-added':''}">
+        <span class="nm">${escapeHtml(r.name)}</span>
+        ${ag?`<span class="ag">${escapeHtml(ag)}</span>`:''}
+        <button class="tt-iconbtn add" data-add="${escapeHtml(r.key)}" title="Add to lineup" ${added?'disabled':''}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+        </button>
+      </div>`;
+    }).join('');
+    $('rosterList').querySelectorAll('[data-add]').forEach(b=> b.addEventListener('click', ()=> addToLineup(b.dataset.add)));
+  }
+
+  function renderLineup(){
+    $('lineupCnt').textContent = lineup.length + (lineup.length===1?' swimmer':' swimmers');
+    if(!lineup.length){ $('lineupList').innerHTML = '<div class="tt-empty">Tap swimmers on the left to add them. Use ↑ ↓ to set the order they\'ll swim.</div>'; renderRosterList(); return; }
+    $('lineupList').innerHTML = lineup.map((l,i)=>{
+      const ag = ageLabelFor(roster[l.key]);
+      return `<div class="tt-row">
+        <span class="tt-lane-num">${i+1}</span>
+        <span class="nm">${escapeHtml(l.name)}</span>
+        ${ag?`<span class="ag">${escapeHtml(ag)}</span>`:''}
+        <button class="tt-iconbtn" data-up="${i}" title="Move up" ${i===0?'disabled':''}><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg></button>
+        <button class="tt-iconbtn" data-down="${i}" title="Move down" ${i===lineup.length-1?'disabled':''}><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+        <button class="tt-iconbtn danger" data-rm="${escapeHtml(l.key)}" title="Remove"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+      </div>`;
+    }).join('');
+    $('lineupList').querySelectorAll('[data-up]').forEach(b=> b.addEventListener('click', ()=> moveLineup(+b.dataset.up,-1)));
+    $('lineupList').querySelectorAll('[data-down]').forEach(b=> b.addEventListener('click', ()=> moveLineup(+b.dataset.down,1)));
+    $('lineupList').querySelectorAll('[data-rm]').forEach(b=> b.addEventListener('click', ()=> removeFromLineup(b.dataset.rm)));
+    renderRosterList();
+  }
+  function addToLineup(key){ if(lineup.some(l=>l.key===key)) return; lineup.push({key, name: roster[key].name}); renderLineup(); }
+  function removeFromLineup(key){ lineup = lineup.filter(l=>l.key!==key); renderLineup(); }
+  function moveLineup(i, dir){ const j=i+dir; if(j<0||j>=lineup.length) return; const t=lineup[i]; lineup[i]=lineup[j]; lineup[j]=t; renderLineup(); }
+
+  $('rosterSearch').addEventListener('input', renderRosterList);
+  $('cfgSeason').addEventListener('change', ()=>{ renderLineup(); });
+
+  // Stroke / distance choosers
+  $('strokeRow').querySelectorAll('[data-stroke]').forEach(b=> b.addEventListener('click', ()=>{
+    $('strokeRow').querySelectorAll('.tt-choice').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active'); cfg.stroke = b.dataset.stroke;
+  }));
+  function clearDistActive(){ $('distRow').querySelectorAll('.tt-choice').forEach(x=>x.classList.remove('active')); }
+  $('distRow').querySelectorAll('[data-dist]').forEach(b=> b.addEventListener('click', ()=>{
+    clearDistActive(); b.classList.add('active'); cfg.distance = b.dataset.dist; $('cfgDistCustom').value='';
+  }));
+  $('cfgDistCustom').addEventListener('input', ()=>{ clearDistActive(); cfg.distance = ($('cfgDistCustom').value||'').trim(); });
+
+  // ---------- Start timing ----------
+  $('startBtn').addEventListener('click', ()=>{
+    cfg.name = ($('cfgName').value||'').trim();
+    cfg.season = ($('cfgSeason').value||'').trim();
+    cfg.date = ($('cfgDate').value||'').trim();
+    const errs = [];
+    if(!cfg.name) errs.push('a trial name');
+    if(!cfg.season) errs.push('a season');
+    if(!cfg.stroke) errs.push('a stroke');
+    if(!cfg.distance) errs.push('a distance');
+    if(!lineup.length) errs.push('at least one swimmer');
+    const e = $('setupError');
+    if(errs.length){ e.textContent = 'Please add ' + errs.join(', ') + '.'; e.style.display='block'; return; }
+    e.style.display='none';
+    try { localStorage.setItem('hhst.lastSeason', cfg.season); } catch(_){}
+    // reset run state
+    Object.keys(times).forEach(k=>delete times[k]);
+    curIdx = 0;
+    gotoStep(2);
+    loadCurrent();
+  });
+
+  function gotoStep(n){
+    $('setupStep').style.display = n===1?'block':'none';
+    $('timeStep').style.display  = n===2?'block':'none';
+    $('reviewStep').style.display= n===3?'block':'none';
+    [['pill1',1],['pill2',2],['pill3',3]].forEach(([id,k])=>{
+      const el=$(id); el.classList.toggle('active', k===n); el.classList.toggle('done', k<n);
+    });
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+
+  function loadCurrent(){
+    swReset();
+    if(curIdx >= lineup.length){ buildReview(); gotoStep(3); return; }
+    const l = lineup[curIdx];
+    $('ttProgress').textContent = `Swimmer ${curIdx+1} of ${lineup.length}`;
+    $('ttCurrent').textContent = l.name;
+    const ag = ageLabelFor(roster[l.key]);
+    $('ttCurrentSub').textContent = [cfg.distance + ' ' + strokeShort(cfg.stroke), ag].filter(Boolean).join(' · ');
+    renderControls();
+    renderDoneList();
+  }
+  function strokeShort(s){ return ({Freestyle:'Free',Backstroke:'Back',Breaststroke:'Breast',Butterfly:'Fly',IM:'IM'})[s]||s; }
+
+  function renderControls(){
+    const c = $('ttControls');
+    if(!swCaptured && !swRunning){
+      c.innerHTML = `<button class="tt-bigbtn tt-start" id="cStart">Start</button>
+        <button class="tt-secbtn" id="cSkip">Skip (DNS)</button>`;
+      $('cStart').onclick = swStart;
+      $('cSkip').onclick = skipCurrent;
+    } else if(swRunning){
+      c.innerHTML = `<button class="tt-bigbtn tt-stop" id="cStop">Stop</button>`;
+      $('cStop').onclick = swStop;
+    } else { // captured
+      c.innerHTML = `<button class="tt-bigbtn tt-save" id="cSave">Save &amp; next →</button>
+        <button class="tt-secbtn" id="cRedo">Redo</button>`;
+      $('cSave').onclick = saveCurrent;
+      $('cRedo').onclick = ()=>{ swReset(); renderControls(); };
+    }
+  }
+
+  function saveCurrent(){
+    if(!swCaptured) return;
+    const l = lineup[curIdx];
+    times[l.key] = { seconds: swElapsedMs/1000, status:'done' };
+    curIdx++;
+    loadCurrent();
+  }
+  function skipCurrent(){
+    const l = lineup[curIdx];
+    times[l.key] = { status:'dns' };
+    curIdx++;
+    loadCurrent();
+  }
+
+  function renderDoneList(){
+    const done = lineup.slice(0, curIdx);
+    if(!done.length){ $('ttDone').innerHTML=''; return; }
+    $('ttDone').innerHTML = done.map((l,i)=>{
+      const t = times[l.key];
+      const tm = (t && t.status==='done') ? `<span class="tm">${fmtClock(t.seconds*1000)}</span>` : `<span class="tm dns">DNS</span>`;
+      return `<div class="tt-done-row">
+        <span class="tt-lane-num">${i+1}</span>
+        <span class="nm">${escapeHtml(l.name)}</span>
+        ${tm}
+        <button class="tt-iconbtn" data-retime="${i}" title="Re-time this swimmer"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9"/><path d="M3 4v8h8"/></svg></button>
+      </div>`;
+    }).join('');
+    $('ttDone').querySelectorAll('[data-retime]').forEach(b=> b.addEventListener('click', ()=>{ curIdx = +b.dataset.retime; loadCurrent(); }));
+  }
+
+  $('finishBtn').addEventListener('click', ()=>{ buildReview(); gotoStep(3); });
+
+  // Keyboard shortcuts during timing
+  document.addEventListener('keydown', (ev)=>{
+    if($('timeStep').style.display!=='block') return;
+    if(ev.target && /^(INPUT|TEXTAREA|SELECT)$/.test(ev.target.tagName)) return;
+    if(ev.code==='Space'){ ev.preventDefault(); if(swRunning) swStop(); else if(!swCaptured) swStart(); }
+    else if(ev.code==='Enter'){ ev.preventDefault(); if(swCaptured) saveCurrent(); }
+  });
+
+  // ---------- Review & save ----------
+  function parseClock(str){
+    str = (str||'').toString().trim();
+    if(!str) return NaN;
+    if(str.indexOf(':')>=0){
+      const [mm, rest] = str.split(':');
+      const sec = parseFloat(rest);
+      const m = parseInt(mm,10);
+      if(!isFinite(m)||!isFinite(sec)) return NaN;
+      return m*60 + sec;
+    }
+    const n = parseFloat(str);
+    return isFinite(n) ? n : NaN;
+  }
+
+  function buildReview(){
+    const body = $('reviewBody');
+    const evLabel = cfg.distance + ' ' + strokeShort(cfg.stroke);
+    body.innerHTML = lineup.map((l,i)=>{
+      const t = times[l.key];
+      const val = (t && t.status==='done') ? fmtClock(t.seconds*1000) : '';
+      return `<tr class="tt-review-row">
+        <td>${i+1}</td>
+        <td>${escapeHtml(l.name)}</td>
+        <td>${escapeHtml(evLabel)}</td>
+        <td><input class="tt-time-input" data-key="${escapeHtml(l.key)}" value="${escapeHtml(val)}" placeholder="—"/></td>
+      </tr>`;
+    }).join('');
+    $('reviewLead').textContent = `${cfg.name} · ${evLabel} · ${cfg.season}. Check each time, fix any typos, then save them all to the swimmers' profiles. Leave a box blank to skip that swimmer.`;
+    $('saveStatus').textContent=''; $('saveStatus').className='upload-status';
+    $('afterSave').style.display='none';
+    $('saveAllBtn').disabled=false;
+  }
+
+  $('backToTimeBtn').addEventListener('click', ()=>{ gotoStep(2); loadCurrent(); });
+
+  $('saveAllBtn').addEventListener('click', async ()=>{
+    const inputs = Array.from($('reviewBody').querySelectorAll('.tt-time-input'));
+    const headers = ['name','stroke','distance','original_time','age','age_group'];
+    const rows = [headers];
+    let counted = 0;
+    inputs.forEach(inp=>{
+      const sec = parseClock(inp.value);
+      if(!isFinite(sec) || sec<=0) return;
+      const key = inp.dataset.key;
+      const sw = roster[key]; if(!sw) return;
+      const info = HHST.swimmerSeasonInfo(sw, cfg.season) || {};
+      const ageGroup = info.ageGroup || (info.bracket && info.bracket!=='Unknown' ? info.bracket : '');
+      rows.push([ sw.name, cfg.stroke, String(cfg.distance), sec.toFixed(2), info.age||'', ageGroup ]);
+      counted++;
+    });
+    const status = $('saveStatus');
+    if(counted===0){ status.className='upload-status err'; status.textContent='No valid times to save — enter at least one time.'; return; }
+    $('saveAllBtn').disabled=true;
+    status.className='upload-status'; status.textContent=`Saving ${counted} time${counted===1?'':'s'}…`;
+    try {
+      const uploadId = `${HHST.slugify(cfg.season)}__results__timetrial__${Date.now()}__${HHST.slugify(cfg.name)}`;
+      const res = await HHST.ingestRows(rows, {
+        mode:'results', season:cfg.season, uploadId,
+        fileName: cfg.name + ' (time trial)',
+        meetName: cfg.name, meetDate: cfg.date
+      });
+      let msg = `Saved ${res.added} time${res.added===1?'':'s'} to ${res.swimmers} swimmer profile${res.swimmers===1?'':'s'} under "${cfg.name}".`;
+      if(res.newSwimmers) msg += ` Added ${res.newSwimmers} new swimmer${res.newSwimmers===1?'':'s'} to the roster.`;
+      if(res.skippedSwimmers && res.skippedSwimmers.length) msg += ` Skipped: ${res.skippedSwimmers.join(', ')}.`;
+      if(res.errors && res.errors.length) msg += ` Note: ${res.errors.join('; ')}`;
+      status.className='upload-status ok'; status.textContent = msg;
+      $('afterSave').style.display='block';
+    } catch(err){
+      console.error(err);
+      status.className='upload-status err'; status.textContent='Could not save: ' + (err.message||err);
+      $('saveAllBtn').disabled=false;
+    }
+  });
+</script>
+</body>
+</html>
