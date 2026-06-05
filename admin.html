@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="assets/styles.css?v=25"/>
+<link rel="stylesheet" href="assets/styles.css?v=26"/>
 
 <!-- ============================================================
      ADMIN PAGE POLISH — visual/UX refinements layered on top of
@@ -595,12 +595,12 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
     </div>
 
     <!-- DUPLICATE-TIME CLEANUP — collapse a meet that got uploaded more than
-         once (so swimmers have the same stroke logged several times) down to
-         one fastest time per stroke. Preview is a dry run; nothing changes
+         once (so swimmers have the same race logged several times) down to
+         one fastest time per event. Preview is a dry run; nothing changes
          until "Remove duplicates" is clicked. -->
     <div class="card" id="dedupeCard">
       <h2>Clean up duplicate times</h2>
-      <p class="lead">If a meet got uploaded more than once, swimmers can end up with the same stroke logged several times. Pick that meet to keep only the <strong>fastest time per stroke</strong> for each swimmer. Preview first — nothing changes until you apply.</p>
+      <p class="lead">If a meet got uploaded more than once, swimmers can end up with the same race logged several times. Pick that meet to keep only the <strong>fastest time per event</strong> (so a swimmer who raced two distances of one stroke keeps both). Preview first — nothing changes until you apply.</p>
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:6px">
         <select id="dedupeMeetSelect" class="lb-select" style="flex:1;min-width:240px" title="Pick the meet to clean up">
           <option value="">Select a meet…</option>
@@ -632,6 +632,67 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
           <button type="submit" class="btn lg block">Save Swimmer</button>
         </div>
       </form>
+    </div>
+
+    <!-- MANUAL TIME ENTRY CARD -->
+    <div class="card" id="manualTimeCard">
+      <h2>Add a Time Manually</h2>
+      <p class="lead">Search for a swimmer and log a single race time. It saves to Firebase and shows up on their profile, the season leaderboards, and the awards boards — exactly like a time from an uploaded meet file.</p>
+      <form id="manualTimeForm" autocomplete="off" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px">
+        <div class="field" style="grid-column:1/-1;max-width:440px">
+          <label>Swimmer *</label>
+          <input type="text" id="mtSwimmer" list="mtSwimmerList" placeholder="Start typing a name…" required autocomplete="off"/>
+          <datalist id="mtSwimmerList"></datalist>
+        </div>
+        <div class="field">
+          <label>Stroke *</label>
+          <select id="mtStroke" required>
+            <option value="Freestyle">Freestyle</option>
+            <option value="Backstroke">Backstroke</option>
+            <option value="Breaststroke">Breaststroke</option>
+            <option value="Butterfly">Butterfly</option>
+            <option value="IM">IM</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Distance (yards) *</label>
+          <select id="mtDistance" required>
+            <option value="15">15</option>
+            <option value="25">25</option>
+            <option value="50" selected>50</option>
+            <option value="100">100</option>
+            <option value="200">200</option>
+            <option value="400">400</option>
+            <option value="500">500</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Time *</label>
+          <input type="text" id="mtTime" placeholder="28.42 or 1:02.18" required inputmode="decimal"/>
+        </div>
+        <div class="field">
+          <label>Meet *</label>
+          <input type="text" id="mtMeet" list="mtMeetList" placeholder="e.g. Summer Invitational" required/>
+          <datalist id="mtMeetList"></datalist>
+        </div>
+        <div class="field">
+          <label>Date *</label>
+          <input type="date" id="mtDate" required/>
+        </div>
+        <div class="field">
+          <label>Season *</label>
+          <select id="mtSeason" required></select>
+        </div>
+        <div class="field" style="grid-column:1/-1">
+          <label style="display:inline-flex;align-items:center;gap:8px;font-weight:500;text-transform:none;letter-spacing:normal;cursor:pointer;color:var(--text-muted)">
+            <input type="checkbox" id="mtTimeTrial" style="width:auto;margin:0"/> Mark as a time trial (kept on the profile, but off the competitive boards)
+          </label>
+        </div>
+        <div style="display:flex;align-items:flex-end;grid-column:1/-1">
+          <button type="submit" class="btn lg" id="mtSubmit">Add time</button>
+        </div>
+      </form>
+      <div class="upload-status" id="mtStatus" style="margin-top:12px"></div>
     </div>
 
     <!-- ROSTER TABLE -->
@@ -747,7 +808,7 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
   </div>
 </div>
 
-<script src="assets/data.js?v=25"></script>
+<script src="assets/data.js?v=26"></script>
 <script>
   HHST.initTheme();
 
@@ -895,7 +956,7 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
   // a multi-sheet workbook like HHST's stats file, which has 8 sheets but
   // only one ("Import") that's actually a clean per-row results table.
   const SCORED_FIELDS = new Set(['name','first','last','time','event','distance','meet','date','age','dob','place','group','agegroup','email','parent']);
-  function scoreSheetHeader(headerRow){
+  function scoreSheetHeader(headerRow, requireResultData = true){
     if(!headerRow || !headerRow.length) return 0;
     const seen = new Set();
     for(const h of headerRow){
@@ -903,10 +964,20 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
       const field = HHST.mapHeader ? HHST.mapHeader(h) : '';
       if(SCORED_FIELDS.has(field)) seen.add(field);
     }
-    // Must have at least a name-ish field AND a time/event-ish field to count.
     const hasName = seen.has('name') || seen.has('first') || seen.has('last');
-    const hasResultData = seen.has('time') || seen.has('event') || seen.has('distance');
-    if(!hasName || !hasResultData) return 0;
+    if(!hasName) return 0;
+    if(requireResultData){
+      // Meet/times sheet: needs an actual result column.
+      if(!(seen.has('time') || seen.has('event') || seen.has('distance'))) return 0;
+    } else {
+      // Roster sheet has NO times — require a name plus at least one roster
+      // attribute (age/DOB/group/age-group/email/parent) so a Swimtopia roster
+      // .xlsx is recognized (the old code demanded a time/event/distance column,
+      // so every roster Excel upload failed), while a stray single-"name"-column
+      // sheet still scores 0.
+      if(!(seen.has('age') || seen.has('dob') || seen.has('group')
+        || seen.has('agegroup') || seen.has('email') || seen.has('parent'))) return 0;
+    }
     return seen.size;
   }
 
@@ -915,7 +986,7 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
   // (preferring one named "Import" / "Times" / "Roster") instead of blindly
   // merging all of them — merging unrelated sheets (Meet Summary, Fastest 5,
   // pivot tables) would corrupt the header detection.
-  async function readFileToRows(f){
+  async function readFileToRows(f, mode){
     const name = (f.name || '').toLowerCase();
     if(name.endsWith('.xlsx') || name.endsWith('.xls')){
       if(typeof XLSX === 'undefined'){
@@ -940,7 +1011,7 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
       const preferredNames = ['import', 'roster', 'results', 'times', 'meet results', 'individual results', 'athlete results'];
       const scored = wb.SheetNames.map((sn, idx) => {
         const rows = sheetToRows(sn);
-        let score = scoreSheetHeader(rows[0]);
+        let score = scoreSheetHeader(rows[0], mode !== 'roster');
         const lname = sn.toLowerCase().trim();
         if(score > 0 && preferredNames.includes(lname)) score += 10;
         // Sheets with substantial body rows beat tiny summary sheets at the same score
@@ -1054,7 +1125,7 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
         const f = supported[i];
         setStatus('ok', `Reading ${f.name} (${i+1}/${supported.length})…`);
         try {
-          const rows = await readFileToRows(f);
+          const rows = await readFileToRows(f, mode);
           const sheetTag = f.__chosenSheet ? ` (sheet "${f.__chosenSheet}")` : '';
           setStatus('ok', `Importing ${f.name}${sheetTag} — ${rows.length} rows (${i+1}/${supported.length})…`);
           // One uploadId per dropped file so it can be removed on its own later
@@ -1204,6 +1275,104 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
     }
   });
 
+  // MANUAL TIME ENTRY — search a swimmer + log one race time. Reuses the exact
+  // ingest pipeline a meet upload uses (mode:'results' only touches EXISTING
+  // swimmers), so the time lands on the swimmer doc + the hhst_meet_times mirror
+  // and shows on the profile, leaderboards and awards boards automatically.
+  const mtAbbr = { Freestyle:'Free', Backstroke:'Back', Breaststroke:'Breast', Butterfly:'Fly', IM:'IM' };
+  function mtSetStatus(kind, msg){
+    const el = document.getElementById('mtStatus');
+    if(!el) return;
+    el.className = 'upload-status ' + (kind === 'ok' ? 'ok' : kind === 'err' ? 'err' : '');
+    el.innerHTML = msg;
+  }
+  // (Re)fill the swimmer + meet datalists and the season dropdown from cachedData.
+  function populateManualTimeUI(){
+    if(!cachedData || !cachedData.swimmers) return;
+    const swimmers = Object.values(cachedData.swimmers).filter(s => s && s.name);
+    const swList = document.getElementById('mtSwimmerList');
+    if(swList){
+      swList.innerHTML = swimmers
+        .slice().sort((a,b)=> (a.name||'').localeCompare(b.name||''))
+        .map(s => {
+          const hint = [s.age ? s.age + 'y' : '', s.group || ''].filter(Boolean).join(' · ');
+          return `<option value="${escapeHtml(s.name)}">${hint ? escapeHtml(hint) : ''}</option>`;
+        }).join('');
+    }
+    const meetList = document.getElementById('mtMeetList');
+    if(meetList){
+      const meets = HHST.getAllMeets(cachedData.swimmers) || [];
+      meetList.innerHTML = meets
+        .map(m => `<option value="${escapeHtml(m.meet)}">${escapeHtml([m.date, m.season].filter(Boolean).join(' · '))}</option>`)
+        .join('');
+    }
+    const seasonSel = document.getElementById('mtSeason');
+    if(seasonSel){
+      const seasons = HHST.getAllSeasons(cachedData.swimmers) || [];
+      const prev = seasonSel.value;
+      seasonSel.innerHTML = seasons.length
+        ? seasons.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('')
+        : '<option value="">No seasons yet — upload a roster first</option>';
+      const cur = HHST.currentSeason(cachedData.swimmers) || seasons[0] || '';
+      if(prev && seasons.includes(prev)) seasonSel.value = prev;
+      else if(cur) seasonSel.value = cur;
+    }
+    const dateEl = document.getElementById('mtDate');
+    if(dateEl && !dateEl.value) dateEl.value = new Date().toISOString().slice(0,10);
+  }
+
+  document.getElementById('manualTimeForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const nameRaw   = document.getElementById('mtSwimmer').value.trim();
+    const stroke    = document.getElementById('mtStroke').value;
+    const distance  = document.getElementById('mtDistance').value;
+    const timeRaw   = document.getElementById('mtTime').value.trim();
+    const meet      = document.getElementById('mtMeet').value.trim();
+    const date      = document.getElementById('mtDate').value;
+    const season    = document.getElementById('mtSeason').value;
+    const timeTrial = document.getElementById('mtTimeTrial').checked;
+
+    // Resolve the typed name to an EXISTING swimmer. The ingest below is
+    // mode:'results', which silently skips unknown names — so check up front and
+    // give a clear error instead of a quiet no-op.
+    if(!nameRaw){ mtSetStatus('err','Pick a swimmer from the list first.'); return; }
+    const key = HHST.swimmerKey(nameRaw);
+    const match = (cachedData.swimmers || {})[key];
+    if(!match){
+      mtSetStatus('err', `No swimmer named “${escapeHtml(nameRaw)}” is on the roster. Choose a name from the suggestions, or add them under “Add or Update Swimmer Manually” first.`);
+      return;
+    }
+    if(!isFinite(HHST.timeToSeconds(timeRaw))){
+      mtSetStatus('err', `“${escapeHtml(timeRaw)}” isn't a valid time. Use seconds (e.g. 28.42) or minutes:seconds (e.g. 1:02.18).`);
+      return;
+    }
+    if(!meet){ mtSetStatus('err','Enter a meet name (or pick an existing one from the list).'); return; }
+    if(!date){ mtSetStatus('err','Pick the date the time was swum.'); return; }
+    if(!season){ mtSetStatus('err','Pick a season.'); return; }
+
+    const btn = document.getElementById('mtSubmit');
+    const orig = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Saving…';
+    try {
+      const rows = [['name','event','time'], [match.name, `${distance} ${stroke}`, timeRaw]];
+      const res = await HHST.ingestRows(rows, { mode:'results', season, meetName: meet, meetDate: date, timeTrial });
+      if(res && res.added > 0){
+        const label = `${distance} ${mtAbbr[stroke] || stroke} ${HHST.fmtTime(timeRaw)}`;
+        mtSetStatus('ok', `Saved <strong>${escapeHtml(label)}</strong> for <strong>${escapeHtml(match.name)}</strong> at ${escapeHtml(meet)}${timeTrial ? ' (time trial)' : ''}. It's on their profile now.`);
+        document.getElementById('mtTime').value = '';
+        await refreshAll();                          // refresh KPIs/roster + repopulate the lists
+        document.getElementById('mtTime').focus();   // ready for the next event
+      } else {
+        mtSetStatus('err', `That exact time is already logged for ${escapeHtml(match.name)} at ${escapeHtml(meet)} — nothing to add.`);
+      }
+    } catch(err){
+      console.error(err);
+      mtSetStatus('err','Could not save the time: ' + (err.message || err));
+    } finally {
+      btn.disabled = false; btn.textContent = orig;
+    }
+  });
+
   // ESTIMATE PER-SEASON AGES (migrate legacy mixed-age data)
   document.getElementById('migrateSeasonsBtn').addEventListener('click', async (e)=>{
     const btn = e.currentTarget;
@@ -1262,7 +1431,7 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
         const res = await HHST.dedupeMeetByStroke(meet, { apply:false });
         if(res.duplicatesRemoved > 0){
           previewedMeet = meet; apply.disabled = false;
-          setMsg('', `Found <strong>${res.duplicatesRemoved}</strong> duplicate time${res.duplicatesRemoved===1?'':'s'} across <strong>${res.swimmersAffected}</strong> swimmer${res.swimmersAffected===1?'':'s'} for “${escapeHtml(meet)}”. Click <strong>Remove duplicates</strong> to keep just the fastest time per stroke.`);
+          setMsg('', `Found <strong>${res.duplicatesRemoved}</strong> duplicate time${res.duplicatesRemoved===1?'':'s'} across <strong>${res.swimmersAffected}</strong> swimmer${res.swimmersAffected===1?'':'s'} for “${escapeHtml(meet)}”. Click <strong>Remove duplicates</strong> to keep just the fastest time per event.`);
         } else {
           previewedMeet = ''; apply.disabled = true;
           setMsg('ok', `No duplicate times found for “${escapeHtml(meet)}”. Nothing to clean up.`);
@@ -1275,13 +1444,13 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
     apply.addEventListener('click', async ()=>{
       const meet = sel.value;
       if(!meet || meet !== previewedMeet){ setMsg('err','Preview this meet first, then apply.'); return; }
-      if(!confirm(`Keep only the fastest time per stroke for “${meet}”? The slower duplicate times for this meet will be permanently removed. This cannot be undone.`)) return;
+      if(!confirm(`Keep only the fastest time per event for “${meet}”? The slower duplicate times for this meet will be permanently removed. This cannot be undone.`)) return;
       apply.disabled = true; const orig = apply.textContent; apply.textContent = 'Removing…';
       try{
         const res = await HHST.dedupeMeetByStroke(meet, { apply:true });
         await refreshAll();
         previewedMeet = '';
-        setMsg('ok', `Removed <strong>${res.duplicatesRemoved}</strong> duplicate time${res.duplicatesRemoved===1?'':'s'} from <strong>${res.swimmersAffected}</strong> swimmer${res.swimmersAffected===1?'':'s'}. Each stroke now keeps just its fastest time at “${escapeHtml(meet)}”.`);
+        setMsg('ok', `Removed <strong>${res.duplicatesRemoved}</strong> duplicate time${res.duplicatesRemoved===1?'':'s'} from <strong>${res.swimmersAffected}</strong> swimmer${res.swimmersAffected===1?'':'s'}. Each event now keeps just its fastest time at “${escapeHtml(meet)}”.`);
       } catch(err){
         console.error(err); apply.disabled = false; setMsg('err','Could not remove duplicates: ' + (err.message || err));
       } finally { apply.textContent = orig; }
@@ -1399,6 +1568,7 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
     // ("current season") when renderRoster reads it on the first paint.
     refreshSeasonUI();
     renderRoster(document.getElementById('searchInput').value);
+    populateManualTimeUI();
     refreshUploads();
   }
 

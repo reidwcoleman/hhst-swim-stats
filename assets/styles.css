@@ -3078,7 +3078,16 @@ a.lb-entry-name:hover{color:var(--accent)!important;text-decoration:underline;te
   .awards-host{
     display:block !important;margin:0 !important;gap:0 !important;
     grid-template-columns:none !important;
+    /* The hosts are <section> elements, so the global `section{padding:96px
+       24px}` (≈1in top+bottom) applies to them. The reset above never cleared
+       padding, so that 1in pushed each 8.5in card off the page grid and the
+       browser emitted a blank/sliver page around every poster. Zero it so each
+       card owns exactly one sheet. */
+    padding:0 !important;
   }
+  /* The Most Improved host carries a 18px top margin on screen; drop it in
+     print so "Print all" doesn't offset that section onto an extra page. */
+  .awards-host-improved{ margin-top:0 !important; }
   /* Each award fills the entire landscape US Letter sheet (11in × 8.5in).
      box-sizing:border-box keeps the card exactly one page tall so there are
      no blank pages between posters; content is centered vertically. */

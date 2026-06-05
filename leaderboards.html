@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="assets/styles.css?v=25"/>
+<link rel="stylesheet" href="assets/styles.css?v=26"/>
 <style>
   /* Hide everything until auth check completes — admins only. */
   body:not(.auth-ready) > *{visibility:hidden}
@@ -241,7 +241,7 @@
   Highcroft Hurricanes Swim Team · <a href="index.html">Swimmer Lookup</a> · <a href="awards.html">Fastest Five</a> · <a href="admin.html">Admin</a>
 </footer>
 
-<script src="assets/data.js?v=25"></script>
+<script src="assets/data.js?v=26"></script>
 <script>
   HHST.initTheme();
   document.getElementById('themeToggle').addEventListener('click', HHST.toggleTheme);
@@ -317,10 +317,13 @@
     sel.addEventListener('change', () => { activeSeason = sel.value; render(); });
   }
 
-  // Swimmers who actually raced in the given season (season '' = all-time).
+  // Swimmers who actually raced a non-time-trial result in the season — so these
+  // section tables match the KPI cards, which exclude time trials via
+  // HHST.teamStats. season '' = all-time.
   function seasonSwimmers(season){
     return Object.values(swimmers).filter(sw =>
-      season ? (sw.results||[]).some(r => r && r.season === season) : (sw.results||[]).length > 0
+      season ? (sw.results||[]).some(r => r && r.season === season && !r.timeTrial)
+             : (sw.results||[]).some(r => r && !r.timeTrial)
     );
   }
 
@@ -386,7 +389,13 @@
       const swrs = buckets[bracket] || [];
       if(!swrs.length) return '';
       let races = 0, drop = 0, prs = 0;
-      swrs.forEach(sw => { const s = HHST.statsForSwimmer(sw, { season }); races += s.totalRaces; drop += s.totalTimeDropSec; prs += s.prCount; });
+      swrs.forEach(sw => {
+        const s = HHST.statsForSwimmer(sw, { season });
+        // Races exclude time trials to match the KPI "Races Logged" (teamStats);
+        // drop/PRs come from statsForSwimmer, exactly as the KPI cards do.
+        races += (sw.results||[]).filter(r => r && (!season || r.season === season) && !r.timeTrial).length;
+        drop += s.totalTimeDropSec; prs += s.prCount;
+      });
       const dmin = fmtDropMin(drop);
       return `<tr>
         <td><span class="bracket-pill bracket-${bracket.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'')}">${escapeHtml(bracket)}</span></td>
@@ -405,12 +414,13 @@
     // Count races + distinct swimmers per meet for this season.
     const counts = {};
     Object.values(swimmers).forEach(sw => (sw.results||[]).forEach(r => {
-      if(!r || !r.meet) return;
+      if(!r || !r.meet || r.timeTrial) return; // time trials aren't meets (match the KPI meetCount)
       if(season && r.season !== season) return;
       const c = counts[r.meet] || (counts[r.meet] = { races:0, swimmers:new Set() });
       c.races++; c.swimmers.add(sw.key);
     }));
-    const rows = ordered.map(m => {
+    // Drop any meet with no non-time-trial races (e.g. a time-trial-only entry).
+    const rows = ordered.filter(m => counts[m.meet]).map(m => {
       const c = counts[m.meet] || { races:0, swimmers:new Set() };
       return `<tr>
         <td><strong>${escapeHtml(m.meet)}</strong></td>
