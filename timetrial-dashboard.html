@@ -400,8 +400,8 @@
   function renderMovers(list){
     var host = document.getElementById('moversList');
     var movers = list.map(function(x){
-      var st = HHST.statsForSwimmer({ key:x.key, name:x.sw.name, seasonInfo:x.sw.seasonInfo, results:x.tt }, {});
-      return { key:x.key, name:x.sw.name, drop:st.totalTimeDropSec, best:st.mostImproved };
+      var st = HHST.statsForSwimmer({ key:x.key, name:x.sw.name, seasonInfo:x.sw.seasonInfo, results:x.tt }, { includeTimeTrials:true });
+      return { key:x.key, name:x.sw.name, drop:st.recentMeetDropSec, best:st.mostImproved };
     }).filter(function(m){ return m.drop > 0; }).sort(function(a,b){ return b.drop-a.drop; }).slice(0,8);
     if(!movers.length){ host.innerHTML = '<div class="empty" style="padding:28px;grid-column:1/-1">Need at least two trials of the same event to measure improvement.</div>'; return; }
     host.innerHTML = movers.map(function(m){

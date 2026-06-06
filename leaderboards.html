@@ -179,9 +179,9 @@
       </div>
       <div class="stat-card stat-drop"><div class="accent"></div>
         <div class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14l-7 7-7-7"/><path d="M12 3v18"/></svg></div>
-        <div class="label">Total Time Dropped</div>
+        <div class="label">Time Dropped</div>
         <div class="value" id="kDrop">—</div>
-        <div class="sub" id="kDropSub">Cumulative seconds shaved off PRs</div>
+        <div class="sub" id="kDropSub">Between each swimmer's last two meets</div>
       </div>
     </div>
 
@@ -212,9 +212,9 @@
     <div class="card ss-movers-card" id="moversCard" style="display:none">
       <div class="ss-movers-head">
         <h2>Top Movers</h2>
-        <span class="ss-muted" id="moversSub">Biggest time drops this season</span>
+        <span class="ss-muted" id="moversSub">Biggest drops between their last two meets</span>
       </div>
-      <p class="lead" style="margin:0">Swimmers who shaved the most total time off their best times.</p>
+      <p class="lead" style="margin:0">Swimmers who dropped the most time between their two most recent meets (same stroke, faster swims only).</p>
       <div class="ss-movers-list" id="moversList"></div>
     </div>
 
@@ -357,9 +357,9 @@
     document.getElementById('kRaces').textContent = fmtNum(t.totalRaces);
     document.getElementById('kPRs').textContent = fmtNum(t.prRaces);
     document.getElementById('kPodium').textContent = fmtNum(t.podium);
-    document.getElementById('kDrop').textContent = t.totalDropSec > 0 ? fmtDrop(t.totalDropSec) : '—';
-    const dmin = fmtDropMin(t.totalDropSec);
-    document.getElementById('kDropSub').textContent = dmin ? `${dmin} shaved off PRs` : 'Cumulative seconds shaved off PRs';
+    document.getElementById('kDrop').textContent = t.recentDropSec > 0 ? fmtDrop(t.recentDropSec) : '—';
+    const dmin = fmtDropMin(t.recentDropSec);
+    document.getElementById('kDropSub').textContent = dmin ? `${dmin} between each swimmer's last two meets` : "Between each swimmer's last two meets";
 
     document.getElementById('mGold').textContent   = fmtNum(t.gold);
     document.getElementById('mSilver').textContent = fmtNum(t.silver);
@@ -374,19 +374,20 @@
     renderMeets(season);
   }
 
-  // Top ~5 swimmers by total time dropped in the selected season.
+  // Top ~5 swimmers by time dropped between their two most recent meets in the
+  // selected season (same stroke, faster swims only — see statsForSwimmer).
   function renderMovers(season){
     const card = document.getElementById('moversCard');
     const list = document.getElementById('moversList');
     const sub  = document.getElementById('moversSub');
     const movers = seasonSwimmers(season)
-      .map(sw => ({ sw, drop: HHST.statsForSwimmer(sw, { season }).totalTimeDropSec }))
+      .map(sw => ({ sw, drop: HHST.statsForSwimmer(sw, { season }).recentMeetDropSec }))
       .filter(m => isFinite(m.drop) && m.drop > 0)
       .sort((a, b) => b.drop - a.drop)
       .slice(0, 5);
     if(!movers.length){ card.style.display = 'none'; return; }
     card.style.display = '';
-    sub.textContent = season ? `Biggest time drops · ${season}` : 'Biggest time drops · all-time';
+    sub.textContent = season ? `Last two meets · ${season}` : 'Last two meets';
     list.innerHTML = movers.map((m, i) => {
       const info = HHST.swimmerSeasonInfo(m.sw, season);
       const grp = info && info.bracket && info.bracket !== 'Unknown' ? escapeHtml(info.bracket) : '';
@@ -412,7 +413,7 @@
         // Races exclude time trials to match the KPI "Races Logged" (teamStats);
         // drop/PRs come from statsForSwimmer, exactly as the KPI cards do.
         races += (sw.results||[]).filter(r => r && (!season || r.season === season) && !r.timeTrial).length;
-        drop += s.totalTimeDropSec; prs += s.prCount;
+        drop += s.recentMeetDropSec; prs += s.prCount;
       });
       const dmin = fmtDropMin(drop);
       return `<tr>

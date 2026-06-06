@@ -2206,6 +2206,10 @@
   // Empty / omitted means "across all seasons" (legacy behavior).
   function statsForSwimmer(sw, opts){
     const season = (opts && opts.season) || '';
+    // Most Improved normally ignores time trials (they don't count competitively).
+    // The Time Trial dashboard passes includeTimeTrials so it CAN rank trial-to-
+    // trial improvement, where excluding them would leave nothing to compare.
+    const includeTimeTrials = !!(opts && opts.includeTimeTrials);
     const results = season
       ? (sw.results||[]).filter(r => r && r.season === season)
       : (sw.results||[]);
@@ -2280,11 +2284,79 @@
     const recentMeets = Object.values(meetMap).sort((a,b)=> b.date - a.date);
     const recentMeet  = recentMeets[0] || null;
 
-    // Most-improved + favorite (most-raced) event
-    const improved   = bestTimes.slice().filter(b => b.improvement > 0).sort((a,b)=> b.improvement - a.improvement);
-    const mostImproved = improved[0] || null;
-    const favorite     = bestTimes.slice().sort((a,b)=> b.count - a.count)[0] || null;
+    // Favorite (most-raced) event + cumulative season improvement (first → best
+    // per event). totalTimeDropSec stays season-cumulative — it backs the
+    // cross-season "All Seasons" comparison and the admin "time dropped by
+    // season" card, which should NOT shrink to a two-meet window.
+    const favorite = bestTimes.slice().sort((a,b)=> b.count - a.count)[0] || null;
     const totalTimeDropSec = bestTimes.reduce((sum,b)=> sum + Math.max(0, b.improvement), 0);
+
+    // ---- Most Improved: the swimmer's TWO most recent meets, this season -----
+    // "Most improved" = seconds dropped between your latest meet and the meet
+    // right before it, matched within the SAME stroke+distance (freestyle vs
+    // freestyle, never freestyle vs breaststroke) and counted only where you
+    // swam FASTER — a PR over the prior meet, so no drop means no improvement.
+    // It needs two meets; with fewer there's nothing to compare. Time trials
+    // never count, and we refuse to pair meets from different seasons so last
+    // year is never compared to this year (a concrete `season` already scopes
+    // `results` to one season; "All seasons combined" is guarded by the tags).
+    let recentMeetDropSec = 0;
+    let mostImproved = null;
+    {
+      const meetTs = {}, meetSeasonTag = {};
+      results.forEach(r => {
+        if(!r || !r.meet || (r.timeTrial && !includeTimeTrials)) return;
+        const ts = parseFlexibleDate(r.date);
+        const t = isFinite(ts) ? ts : -Infinity;
+        if(meetTs[r.meet] === undefined || t > meetTs[r.meet]) meetTs[r.meet] = t;
+        if(r.season) meetSeasonTag[r.meet] = r.season;
+      });
+      // Newest → oldest; tie-break on meet name so the pair is deterministic.
+      const order = Object.keys(meetTs).sort((a,b) =>
+        meetTs[b] !== meetTs[a] ? meetTs[b] - meetTs[a] : (a < b ? 1 : a > b ? -1 : 0));
+      if(order.length >= 2){
+        const targetMeet = order[0], baselineMeet = order[1];
+        const crossYear = meetSeasonTag[targetMeet] && meetSeasonTag[baselineMeet]
+          && meetSeasonTag[targetMeet] !== meetSeasonTag[baselineMeet];
+        if(!crossYear){
+          // Best swim of each stroke+distance at one meet (handles an event swum
+          // twice in a session). Keying on stroke+distance is what keeps the
+          // comparison freestyle-vs-freestyle and never freestyle-vs-breaststroke.
+          const bestByEvent = meetName => {
+            const m = {};
+            results.forEach(r => {
+              if(!r || r.meet !== meetName || (r.timeTrial && !includeTimeTrials) || !isFinite(r.seconds)) return;
+              const stroke = (r.stroke || extractStroke(r.event) || '').trim();
+              if(!stroke) return;                 // unstroked legacy row — can't match
+              const dist = (r.distance != null ? String(r.distance) : (extractDistance(r.event) || '')).trim();
+              const k = `${stroke}|${dist}`;
+              if(!m[k] || r.seconds < m[k].seconds) m[k] = r;
+            });
+            return m;
+          };
+          const tgt = bestByEvent(targetMeet), base = bestByEvent(baselineMeet);
+          const drops = [];
+          Object.keys(tgt).forEach(k => {
+            const tr = tgt[k], br = base[k];
+            if(!br) return;                       // not swum at the earlier meet → can't compare
+            const drop = br.seconds - tr.seconds;
+            if(drop > 0){                          // only a PR over the prior meet counts
+              recentMeetDropSec += drop;
+              drops.push({
+                event: tr.event,
+                improvement: drop,
+                firstTime: br.time || fmtTime(br.seconds),
+                time:      tr.time || fmtTime(tr.seconds),
+                fromMeet:  baselineMeet,
+                toMeet:    targetMeet
+              });
+            }
+          });
+          drops.sort((a,b)=> b.improvement - a.improvement);
+          mostImproved = drops[0] || null;
+        }
+      }
+    }
 
     const placeNums = results.map(r => parseInt(r.place,10)).filter(p => isFinite(p) && p > 0);
     const avgPlace  = placeNums.length ? (placeNums.reduce((s,p)=>s+p,0) / placeNums.length) : null;
@@ -2300,7 +2372,7 @@
       strokeCounts,
       recentMeets, recentMeet,
       mostImproved, favorite,
-      totalTimeDropSec,
+      totalTimeDropSec, recentMeetDropSec,
       avgPlace,
       ageGroup: resolveBracket(swimmerSeasonInfo(sw, season))
     };
@@ -2435,6 +2507,7 @@
     const meetsSet = new Set();
     let gold=0, silver=0, bronze=0;
     let totalDropSec = 0;
+    let recentDropSec = 0;
     let prRaces = 0;
     let activeSwimmers = 0;
     swimmers.forEach(sw => {
@@ -2455,6 +2528,7 @@
         const s = statsForSwimmer(sw, { season });
         gold += s.gold; silver += s.silver; bronze += s.bronze;
         totalDropSec += s.totalTimeDropSec;
+        recentDropSec += s.recentMeetDropSec;
         prRaces += s.prCount;
       }
       filtered.forEach(r => meetsSet.add(r.meet));
@@ -2464,7 +2538,7 @@
       totalRaces, meetCount: meetsSet.size,
       gold, silver, bronze,
       podium: gold + silver + bronze,
-      totalDropSec, prRaces,
+      totalDropSec, recentDropSec, prRaces,
       season: season || null,
       meet: meet || null
     };
