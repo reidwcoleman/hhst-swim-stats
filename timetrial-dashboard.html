@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="theme-color" content="#0b1d3a"/>
+<title>Time Trial Dashboard — Highcroft Hurricanes</title>
+<meta name="robots" content="noindex,nofollow"/>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="assets/styles.css?v=26"/>
+<style>
+  /* ---- Time Trial Dashboard (page-scoped) ----
+     Reuses the shared component tokens; only the bits unique to this page
+     (leaderboard rows, movers, table bar) live here. */
+  .tt-shell{max-width:1180px;margin:0 auto;padding:28px 24px 64px}
+  .tt-hero-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+  .tt-back{display:inline-flex;align-items:center;gap:6px;color:rgba(255,255,255,.85);
+    font-weight:600;font-size:14px;margin-bottom:14px;background:none;border:0;cursor:pointer;
+    text-decoration:none;padding:0;-webkit-tap-highlight-color:transparent}
+  .tt-back:hover{color:#fff}
+  .tt-back svg{width:16px;height:16px}
+
+  .tt-card-head{display:flex;justify-content:space-between;align-items:center;gap:12px;
+    flex-wrap:wrap;margin-bottom:18px}
+  .tt-card-head h2{margin:0}
+  .tt-card-head .lead{margin:0;color:var(--text-muted);font-size:13.5px}
+  .tt-select{font-family:inherit;font-size:14px;padding:9px 12px;border-radius:10px;
+    background:var(--surface);color:var(--text);border:1px solid var(--border-strong);max-width:100%}
+  .tt-select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--ring)}
+
+  /* Leaderboard */
+  .tt-lb-list{display:flex;flex-direction:column;gap:8px}
+  .tt-lb-row{display:grid;grid-template-columns:30px minmax(0,1.3fr) minmax(50px,2fr) auto;
+    gap:14px;align-items:center;padding:11px 14px;border-radius:12px;
+    background:var(--surface);border:1px solid var(--border);color:var(--text)!important;
+    transition:border-color .2s,transform .2s}
+  .tt-lb-row:hover{border-color:var(--accent);transform:translateY(-1px)}
+  .tt-lb-1{border-color:rgba(251,191,36,.4);background:linear-gradient(90deg,rgba(251,191,36,.07),var(--surface) 60%)}
+  .tt-lb-rank{font-family:'Fraunces',serif;font-weight:800;color:var(--text-muted);text-align:center;font-variant-numeric:tabular-nums}
+  .tt-lb-name{font-weight:600;font-size:14px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tt-lb-name small{display:block;color:var(--text-subtle);font-weight:500;font-size:11.5px}
+  .tt-lb-bar{height:8px;border-radius:999px;background:var(--bg-alt);overflow:hidden;border:1px solid var(--border)}
+  .tt-lb-bar span{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--brand-500),var(--ice-400))}
+  .tt-lb-1 .tt-lb-bar span{background:linear-gradient(90deg,#f59e0b,#fbbf24)}
+  .tt-lb-time{font-family:'Fraunces',serif;font-weight:700;color:var(--accent);
+    font-variant-numeric:tabular-nums;white-space:nowrap;font-size:15px}
+
+  /* Movers */
+  .tt-movers{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}
+  .tt-mover{display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:13px 15px;border-radius:12px;background:var(--surface);border:1px solid var(--border);
+    color:var(--text)!important;transition:border-color .2s,transform .2s}
+  .tt-mover:hover{border-color:var(--accent);transform:translateY(-1px)}
+  .tt-mover-name{font-weight:600;font-size:14px;display:block;line-height:1.2}
+  .tt-mover-sub{font-size:12px;color:var(--text-subtle)}
+
+  /* Results table bar */
+  .tt-tablebar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+  .tt-search{flex:1;min-width:160px;font-family:inherit;font-size:14px;padding:10px 13px;border-radius:10px;
+    background:var(--surface);color:var(--text);border:1px solid var(--border-strong)}
+  .tt-search:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--ring)}
+  .tt-count{margin-left:auto;font-size:12.5px;color:var(--text-subtle);font-weight:600;letter-spacing:.03em}
+  .tt-name-link{color:var(--accent);font-weight:600}
+
+  .tt-info-note{display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border-radius:14px;
+    background:rgba(96,165,250,.07);border:1px solid var(--border-strong);
+    color:var(--text-muted);font-size:13.5px;line-height:1.55;margin-bottom:24px}
+  .tt-info-note svg{width:20px;height:20px;color:var(--accent);flex:none;margin-top:1px}
+
+  @media (max-width:560px){
+    .tt-lb-row{grid-template-columns:26px minmax(0,1fr) auto;gap:10px}
+    .tt-lb-bar{display:none}
+    .tt-shell{padding:22px 16px 56px}
+  }
+  @media (max-width:430px){
+    .chart-host{height:240px}
+    .stroke-chart-host{height:190px}
+  }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+<!-- Firebase compat SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="assets/firebase-init.js"></script>
+</head>
+<body>
+
+<header>
+  <nav>
+    <a class="brand" href="index.html">
+      <span class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2 12c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/>
+          <path d="M2 17c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/>
+          <path d="M2 7c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/>
+        </svg>
+      </span>
+      Highcroft <em>Hurricanes</em>
+    </a>
+    <ul class="nav-links">
+      <li><a href="timetrial.html">Run a Time Trial</a></li>
+      <li><a href="index.html">Swimmer Lookup</a></li>
+      <li><a href="admin.html" class="btn">Admin</a></li>
+      <li>
+        <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+          <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+          <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+      </li>
+    </ul>
+  </nav>
+</header>
+
+<!-- LOADING -->
+<div id="loadingState" style="padding:80px 24px;text-align:center">
+  <p class="lead" style="color:var(--text-muted);margin:0">Loading time trials…</p>
+</div>
+
+<!-- ============ TEAM OVERVIEW ============ -->
+<section id="teamView" style="display:none">
+  <div class="dash-hero">
+    <div class="dash-hero-inner">
+      <div class="kicker" style="color:var(--ice-300);background:rgba(125,211,252,.1);border:1px solid rgba(125,211,252,.22)"><span class="pulse"></span> Practice swims · off the competitive boards</div>
+      <h1 class="swimmer-name" style="margin-top:14px">Time Trial Dashboard</h1>
+      <p class="swimmer-tagline" style="font-size:15px;max-width:600px">Every time-trial swim across the team, with detailed stats — fastest trials by event, who's improving the most, and a full searchable log. Tap a swimmer to see their personal progression.</p>
+      <div class="tt-hero-actions">
+        <a class="btn" href="timetrial.html">⏱ Run a Time Trial</a>
+        <a class="btn ghost" href="index.html">Swimmer Lookup</a>
+      </div>
+    </div>
+  </div>
+
+  <main class="tt-shell">
+    <!-- Empty state -->
+    <div id="teamEmpty" class="card empty" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M9 2h6"/></svg>
+      <h3 style="font-family:'Fraunces',serif;color:var(--text);margin:6px 0 4px">No time trials yet</h3>
+      <p>Run a time trial from the <a href="timetrial.html">stopwatch page</a> and the times will show up here automatically.</p>
+    </div>
+
+    <div id="teamBody" style="display:none">
+      <div class="tt-info-note">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <span>This dashboard shows <strong>only time-trial swims</strong>. Time trials live on each swimmer's profile but never count toward Fastest Five, Most Improved, leaderboards or records — they're for tracking practice.</span>
+      </div>
+
+      <div class="kpi-row">
+        <div class="kpi"><div class="label">Time Trials</div><div class="value" id="ttTotal">0</div><div class="delta">Swims logged</div></div>
+        <div class="kpi"><div class="label">Swimmers</div><div class="value" id="ttSwimmers">0</div><div class="delta">With a trial on file</div></div>
+        <div class="kpi"><div class="label">Events</div><div class="value" id="ttEvents">0</div><div class="delta">Distinct events tested</div></div>
+        <div class="kpi"><div class="label">Sessions</div><div class="value" id="ttSessions">0</div><div class="delta">Distinct trials</div></div>
+      </div>
+
+      <!-- Fastest time trials -->
+      <div class="card">
+        <div class="tt-card-head">
+          <div>
+            <h2>Fastest time trials</h2>
+            <p class="lead">Best time-trial swim per swimmer, ranked.</p>
+          </div>
+          <select class="tt-select" id="lbEvent" aria-label="Event"></select>
+        </div>
+        <div class="tt-lb-list" id="lbList"></div>
+      </div>
+
+      <!-- Most improved across trials -->
+      <div class="card">
+        <div class="tt-card-head">
+          <div>
+            <h2>Most improved across trials</h2>
+            <p class="lead">Total time dropped between a swimmer's first and best time-trial swim of each event.</p>
+          </div>
+        </div>
+        <div class="tt-movers" id="moversList"></div>
+      </div>
+
+      <!-- All time-trial results -->
+      <div class="card">
+        <div class="tt-card-head"><div><h2>All time-trial results</h2></div></div>
+        <div class="tt-tablebar">
+          <input class="tt-search" id="tblSearch" type="search" placeholder="Search swimmer, event or trial…"/>
+          <select class="tt-select" id="tblStroke" aria-label="Stroke"></select>
+          <span class="tt-count" id="tblCount"></span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Swimmer</th><th>Event</th><th>Time</th><th>Trial</th><th>Date</th></tr></thead>
+            <tbody id="tblBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</section>
+
+<!-- ============ PER-SWIMMER ============ -->
+<section id="swimmerView" style="display:none">
+  <div class="dash-hero">
+    <div class="dash-hero-inner">
+      <a class="tt-back" href="timetrial-dashboard.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        All time trials
+      </a>
+      <div class="swimmer-id">
+        <div class="avatar" id="swAvatar">–</div>
+        <div>
+          <div class="swimmer-name" id="swName">Swimmer</div>
+          <div class="swimmer-meta" id="swMeta"></div>
+          <p class="swimmer-tagline">Time-trial swims only — best times, progression and history for this swimmer.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <main class="tt-shell">
+    <div id="swEmpty" class="card empty" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M9 2h6"/></svg>
+      <h3 style="font-family:'Fraunces',serif;color:var(--text);margin:6px 0 4px">No time trials for this swimmer yet</h3>
+      <p>Run a time trial from the <a href="timetrial.html">stopwatch page</a> to start tracking practice swims.</p>
+    </div>
+
+    <div id="swBody" style="display:none">
+      <div class="stat-grid">
+        <div class="stat-card"><div class="accent"></div><div class="label">Time Trials</div><div class="value" id="swTrials">0</div><div class="sub">Practice swims logged</div></div>
+        <div class="stat-card"><div class="accent"></div><div class="label">Events</div><div class="value" id="swEvents">0</div><div class="sub">Distinct events</div></div>
+        <div class="stat-card"><div class="accent"></div><div class="label">Improving</div><div class="value" id="swPRs">0</div><div class="sub">Events trending faster</div></div>
+        <div class="stat-card"><div class="accent"></div><div class="label">Time Dropped</div><div class="value" id="swDrop">—</div><div class="sub">First → best, all events</div></div>
+      </div>
+
+      <div class="card">
+        <div class="tt-card-head"><div><h2>Best time-trial times</h2><p class="lead">Fastest practice swim in each event.</p></div></div>
+        <div class="best-times-rich" id="swBest"></div>
+      </div>
+
+      <div class="dash-two-col">
+        <div class="chart-card">
+          <h3>Trial progression</h3>
+          <p class="lead" id="swProgressTitle">Trial by trial</p>
+          <div class="tabs" id="swTabs"></div>
+          <div class="chart-host"><canvas id="swProgress"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3>Stroke mix</h3>
+          <p class="lead">Which strokes this swimmer time-trials.</p>
+          <div class="stroke-mix">
+            <div class="stroke-chart-host"><canvas id="swStroke"></canvas></div>
+            <div class="stroke-legend" id="swStrokeLegend"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="tt-card-head"><div><h2>Time-trial history</h2></div></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Event</th><th>Time</th><th>Trial</th><th>Date</th></tr></thead>
+            <tbody id="swHistBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</section>
+
+<footer>
+  Highcroft Hurricanes Swim Team ·
+  <a href="timetrial.html">Run a Time Trial</a> ·
+  <a href="index.html">Swimmer Lookup</a> ·
+  <a href="admin.html">Admin</a>
+</footer>
+
+<script src="assets/data.js?v=26"></script>
+<script>
+(function(){
+  HHST.initTheme();
+  var tBtn = document.getElementById('themeToggle');
+  if(tBtn) tBtn.addEventListener('click', function(){ HHST.toggleTheme(); refreshCharts(); });
+
+  var allSwimmers = {};
+  var progressChart = null, strokeChart = null;
+  var curBest = [];
+
+  // ---- helpers ----
+  function esc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; }); }
+  function initials(n){ return (n||'').split(' ').filter(Boolean).slice(0,2).map(function(s){return s[0].toUpperCase();}).join('') || '?'; }
+  function cssVar(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+  function dnum(s){ var d = new Date(s).getTime(); return isFinite(d) ? d : 0; }
+  function fmtDate(s){ if(!s) return '—'; var d = new Date(s); return isNaN(d) ? s : d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}); }
+  function fmtDateShort(s){ if(!s) return ''; var d = new Date(s); return isNaN(d) ? s : d.toLocaleDateString(undefined,{month:'short',day:'numeric'}); }
+  function fmtDrop(sec){
+    if(!isFinite(sec) || sec <= 0) return '—';
+    if(sec >= 60){ var m = Math.floor(sec/60); return m + ':' + (sec - m*60).toFixed(2).padStart(5,'0'); }
+    return sec.toFixed(2) + 's';
+  }
+  var STROKE_COLORS = {Freestyle:'#60a5fa',Backstroke:'#34d399',Breaststroke:'#fbbf24',Butterfly:'#f472b6',IM:'#a78bfa',Other:'#94a3b8'};
+  function strokeClass(s){ return 'stroke-' + (String(s||'').toLowerCase().replace(/[^a-z]/g,'') || 'other'); }
+  function ttRes(sw){ return (sw.results||[]).filter(function(r){ return r && r.timeTrial && isFinite(r.seconds); }); }
+  function setText(id, v){ var el = document.getElementById(id); if(el) el.textContent = v; }
+
+  async function loadData(){
+    if(window.__TT_DATA) return window.__TT_DATA;   // preview/verification hook
+    return HHST.readAll();
+  }
+
+  async function boot(){
+    var loading = document.getElementById('loadingState');
+    try{
+      var all = await loadData();
+      allSwimmers = (all && all.swimmers) || {};
+    } catch(e){
+      console.error(e);
+      loading.innerHTML = '<p class="lead" style="color:var(--red-light);margin:0">Couldn\'t load time trials. <a href="index.html">Back to site</a>.</p>';
+      return;
+    }
+    loading.style.display = 'none';
+    var key = new URLSearchParams(location.search).get('s');
+    if(key && allSwimmers[key]) renderSwimmer(key);
+    else renderTeam();
+  }
+  window.TTDash = { boot: boot };
+
+  function teamList(){
+    return Object.keys(allSwimmers).map(function(key){
+      return { key: key, sw: allSwimmers[key], tt: ttRes(allSwimmers[key]) };
+    }).filter(function(x){ return x.tt.length; });
+  }
+
+  // ---------- TEAM ----------
+  function renderTeam(){
+    document.getElementById('swimmerView').style.display = 'none';
+    document.getElementById('teamView').style.display = 'block';
+    var list = teamList();
+    if(!list.length){
+      document.getElementById('teamEmpty').style.display = 'block';
+      document.getElementById('teamBody').style.display = 'none';
+      return;
+    }
+    document.getElementById('teamEmpty').style.display = 'none';
+    document.getElementById('teamBody').style.display = 'block';
+
+    var totalTrials = 0; var events = {}; var sessions = {};
+    list.forEach(function(x){ x.tt.forEach(function(r){ totalTrials++; events[r.event]=(events[r.event]||0)+1; if(r.meet) sessions[r.meet]=1; }); });
+    setText('ttTotal', totalTrials);
+    setText('ttSwimmers', list.length);
+    setText('ttEvents', Object.keys(events).length);
+    setText('ttSessions', Object.keys(sessions).length);
+
+    // Event leaderboard select (default = event with the most data)
+    var evList = Object.keys(events).sort(HHST.compareEventLabel);
+    var evSel = document.getElementById('lbEvent');
+    evSel.innerHTML = evList.map(function(e){ return '<option value="'+esc(e)+'">'+esc(e)+'</option>'; }).join('');
+    var def = evList.slice().sort(function(a,b){ return events[b]-events[a]; })[0];
+    evSel.value = def;
+    evSel.onchange = function(){ renderLeaderboard(evSel.value); };
+    renderLeaderboard(def);
+
+    renderMovers(list);
+
+    // Results table filters
+    var strokeSel = document.getElementById('tblStroke');
+    var strokes = [];
+    list.forEach(function(x){ x.tt.forEach(function(r){ var s = r.stroke || HHST.extractStroke(r.event); if(s && strokes.indexOf(s)<0) strokes.push(s); }); });
+    strokes.sort();
+    strokeSel.innerHTML = '<option value="">All strokes</option>' + strokes.map(function(s){ return '<option>'+esc(s)+'</option>'; }).join('');
+    var search = document.getElementById('tblSearch');
+    var apply = function(){ renderTable(list, search.value, strokeSel.value); };
+    search.oninput = apply; strokeSel.onchange = apply;
+    apply();
+  }
+
+  function renderLeaderboard(event){
+    var host = document.getElementById('lbList');
+    var list = teamList();
+    var entries = list.map(function(x){
+      var best = x.tt.filter(function(r){ return r.event === event; }).sort(function(a,b){ return a.seconds-b.seconds; })[0];
+      if(!best) return null;
+      return { key:x.key, name:x.sw.name, group:HHST.competitionGroup(x.sw), seconds:best.seconds, time:best.time };
+    }).filter(Boolean).sort(function(a,b){ return a.seconds-b.seconds; });
+    if(!entries.length){ host.innerHTML = '<div class="empty" style="padding:28px">No time trials for this event yet.</div>'; return; }
+    var fastest = entries[0].seconds;
+    host.innerHTML = entries.map(function(e,i){
+      var pct = Math.max(10, Math.round(fastest / e.seconds * 100));
+      var medal = i===0?' 🥇':i===1?' 🥈':i===2?' 🥉':'';
+      var grp = (e.group && e.group !== 'Unknown') ? '<small>'+esc(e.group)+'</small>' : '';
+      return '<a class="tt-lb-row'+(i===0?' tt-lb-1':'')+'" href="?s='+encodeURIComponent(e.key)+'">'
+        + '<span class="tt-lb-rank">'+(i+1)+'</span>'
+        + '<span class="tt-lb-name">'+esc(e.name)+grp+'</span>'
+        + '<span class="tt-lb-bar"><span style="width:'+pct+'%"></span></span>'
+        + '<span class="tt-lb-time">'+esc(e.time)+medal+'</span></a>';
+    }).join('');
+  }
+
+  function renderMovers(list){
+    var host = document.getElementById('moversList');
+    var movers = list.map(function(x){
+      var st = HHST.statsForSwimmer({ key:x.key, name:x.sw.name, seasonInfo:x.sw.seasonInfo, results:x.tt }, {});
+      return { key:x.key, name:x.sw.name, drop:st.totalTimeDropSec, best:st.mostImproved };
+    }).filter(function(m){ return m.drop > 0; }).sort(function(a,b){ return b.drop-a.drop; }).slice(0,8);
+    if(!movers.length){ host.innerHTML = '<div class="empty" style="padding:28px;grid-column:1/-1">Need at least two trials of the same event to measure improvement.</div>'; return; }
+    host.innerHTML = movers.map(function(m){
+      return '<a class="tt-mover" href="?s='+encodeURIComponent(m.key)+'">'
+        + '<span><span class="tt-mover-name">'+esc(m.name)+'</span>'
+        + '<span class="tt-mover-sub">'+(m.best?esc(m.best.event):'')+'</span></span>'
+        + '<span class="chip-stat chip-down">▼ '+fmtDrop(m.drop)+'</span></a>';
+    }).join('');
+  }
+
+  function renderTable(list, q, stroke){
+    q = (q||'').trim().toLowerCase();
+    var rows = [];
+    list.forEach(function(x){ x.tt.forEach(function(r){ rows.push({ key:x.key, name:x.sw.name, event:r.event, stroke:r.stroke, time:r.time, meet:r.meet, date:r.date }); }); });
+    if(stroke) rows = rows.filter(function(r){ return (r.stroke || HHST.extractStroke(r.event)) === stroke; });
+    if(q) rows = rows.filter(function(r){ return (r.name+' '+r.event+' '+(r.meet||'')).toLowerCase().indexOf(q) >= 0; });
+    rows.sort(function(a,b){ return dnum(b.date)-dnum(a.date); });
+    setText('tblCount', rows.length + ' result' + (rows.length===1?'':'s'));
+    var host = document.getElementById('tblBody');
+    if(!rows.length){ host.innerHTML = '<tr><td colspan="5"><div class="empty" style="padding:24px">No matching time trials.</div></td></tr>'; return; }
+    host.innerHTML = rows.slice(0,400).map(function(r){
+      return '<tr><td><a class="tt-name-link" href="?s='+encodeURIComponent(r.key)+'">'+esc(r.name)+'</a></td>'
+        + '<td>'+esc(r.event)+'</td>'
+        + '<td class="time-cell">'+esc(r.time)+'</td>'
+        + '<td>'+esc(r.meet||'—')+'</td>'
+        + '<td>'+fmtDate(r.date)+'</td></tr>';
+    }).join('');
+  }
+
+  // ---------- SWIMMER ----------
+  function renderSwimmer(key){
+    var sw = allSwimmers[key];
+    document.getElementById('teamView').style.display = 'none';
+    document.getElementById('swimmerView').style.display = 'block';
+    var tt = ttRes(sw);
+    setText('swAvatar', initials(sw.name));
+    setText('swName', sw.name);
+    var info = HHST.swimmerSeasonInfo(sw, '');
+    var grp = HHST.competitionGroup(sw);
+    document.getElementById('swMeta').innerHTML = [
+      (grp && grp !== 'Unknown') ? '<span class="chip">'+esc(grp)+'</span>' : '',
+      info.age ? '<span class="chip">Age '+esc(info.age)+'</span>' : '',
+      '<span class="chip">'+tt.length+' time trial'+(tt.length===1?'':'s')+'</span>'
+    ].filter(Boolean).join('');
+
+    if(!tt.length){
+      document.getElementById('swEmpty').style.display = 'block';
+      document.getElementById('swBody').style.display = 'none';
+      return;
+    }
+    document.getElementById('swEmpty').style.display = 'none';
+    document.getElementById('swBody').style.display = 'block';
+
+    var st = HHST.statsForSwimmer({ key:sw.key||key, name:sw.name, seasonInfo:sw.seasonInfo, results:tt }, {});
+    setText('swTrials', st.totalRaces);
+    setText('swEvents', st.eventCount);
+    setText('swPRs', st.prCount);
+    setText('swDrop', fmtDrop(st.totalTimeDropSec));
+
+    renderBestCards(st.bestTimes);
+    renderProgressTabs(st.bestTimes);
+    renderStrokeMix(st.strokeCounts);
+    renderHistory(tt);
+  }
+
+  function renderBestCards(best){
+    var host = document.getElementById('swBest');
+    host.innerHTML = best.map(function(b){
+      var color = STROKE_COLORS[b.stroke] || STROKE_COLORS.Other;
+      var drop = b.improvement > 0 ? '<span class="chip-stat chip-down">▼ '+fmtDrop(b.improvement)+'</span>'
+               : (b.count > 1 ? '<span class="chip-stat chip-flat">No drop yet</span>' : '');
+      var pr = b.latestIsPR ? '<span class="chip-stat chip-pr">PR</span>' : '';
+      var meta = (b.firstTime && b.count > 1)
+        ? 'First '+esc(b.firstTime)+' → best '+esc(b.time)
+        : 'Logged '+fmtDate(b.bestDate);
+      return '<div class="bt-card '+strokeClass(b.stroke)+'">'
+        + '<div class="bt-top"><span class="bt-event"><span class="bt-stroke-dot" style="background:'+color+'"></span>'+esc(b.event)+'</span>'
+        + '<span class="bt-races">'+b.count+' trial'+(b.count===1?'':'s')+'</span></div>'
+        + '<div class="bt-time">'+esc(b.time)+'</div>'
+        + '<div class="bt-chips">'+drop+pr+'</div>'
+        + '<div class="bt-meta">'+meta+'</div></div>';
+    }).join('');
+  }
+
+  function renderProgressTabs(best){
+    curBest = best;
+    var tabs = document.getElementById('swTabs');
+    tabs.innerHTML = best.map(function(b,i){ return '<button data-i="'+i+'" class="'+(i===0?'active':'')+'">'+esc(b.event)+'</button>'; }).join('');
+    tabs.querySelectorAll('button').forEach(function(btn){
+      btn.onclick = function(){
+        tabs.querySelectorAll('button').forEach(function(x){ x.classList.remove('active'); });
+        btn.classList.add('active');
+        drawProgress(best[+btn.dataset.i]);
+      };
+    });
+    drawProgress(best[0]);
+  }
+
+  function drawProgress(b){
+    if(!b) return;
+    setText('swProgressTitle', b.event + ' — trial by trial');
+    var canvas = document.getElementById('swProgress');
+    var hist = b.history.slice().filter(function(r){ return isFinite(r.seconds); }).sort(function(a,b){ return dnum(a.date)-dnum(b.date); });
+    var labels = hist.map(function(r,i){ return r.date ? fmtDateShort(r.date) : ('Trial '+(i+1)); });
+    var data = hist.map(function(r){ return r.seconds; });
+    if(progressChart){ progressChart.destroy(); progressChart = null; }
+    if(typeof Chart === 'undefined') return;
+    var muted = cssVar('--text-muted') || '#8aa2c2';
+    var grid = cssVar('--border') || 'rgba(255,255,255,.12)';
+    var accent = cssVar('--accent') || '#60a5fa';
+    progressChart = new Chart(canvas, {
+      type:'line',
+      data:{ labels:labels, datasets:[{ data:data, borderColor:accent, backgroundColor:'rgba(96,165,250,.15)', fill:true, tension:.3, pointRadius:4, pointHoverRadius:6, pointBackgroundColor:accent }] },
+      options:{ responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:function(c){ return HHST.fmtTime(c.parsed.y); } } } },
+        scales:{
+          y:{ reverse:true, ticks:{ color:muted, callback:function(v){ return HHST.fmtTime(v); } }, grid:{ color:grid } },
+          x:{ ticks:{ color:muted }, grid:{ display:false } }
+        } }
+    });
+  }
+
+  function renderStrokeMix(counts){
+    var canvas = document.getElementById('swStroke');
+    var legend = document.getElementById('swStrokeLegend');
+    var entries = Object.keys(counts).map(function(k){ return [k, counts[k]]; }).sort(function(a,b){ return b[1]-a[1]; });
+    var total = entries.reduce(function(s,e){ return s+e[1]; }, 0) || 1;
+    if(strokeChart){ strokeChart.destroy(); strokeChart = null; }
+    if(typeof Chart !== 'undefined'){
+      strokeChart = new Chart(canvas, {
+        type:'doughnut',
+        data:{ labels:entries.map(function(e){ return e[0]; }), datasets:[{ data:entries.map(function(e){ return e[1]; }), backgroundColor:entries.map(function(e){ return STROKE_COLORS[e[0]] || STROKE_COLORS.Other; }), borderWidth:0 }] },
+        options:{ responsive:true, maintainAspectRatio:false, cutout:'68%', plugins:{ legend:{display:false} } }
+      });
+    }
+    legend.innerHTML = entries.map(function(e){
+      return '<div class="stroke-leg-row"><span class="stroke-leg-dot" style="background:'+(STROKE_COLORS[e[0]]||STROKE_COLORS.Other)+'"></span>'
+        + '<span class="stroke-leg-name">'+esc(e[0])+'</span>'
+        + '<span class="stroke-leg-count">'+e[1]+'</span>'
+        + '<span class="stroke-leg-pct">'+Math.round(e[1]/total*100)+'%</span></div>';
+    }).join('');
+  }
+
+  function renderHistory(tt){
+    var rows = tt.slice().sort(function(a,b){ return dnum(b.date)-dnum(a.date); });
+    document.getElementById('swHistBody').innerHTML = rows.map(function(r){
+      return '<tr><td>'+esc(r.event)+'</td><td class="time-cell">'+esc(r.time)+'</td><td>'+esc(r.meet||'—')+'</td><td>'+fmtDate(r.date)+'</td></tr>';
+    }).join('');
+  }
+
+  // Re-tint charts after a theme switch (axis/line colors read from CSS vars).
+  function refreshCharts(){
+    if(progressChart && curBest.length){
+      var active = document.querySelector('#swTabs button.active');
+      drawProgress(curBest[active ? +active.dataset.i : 0]);
+    }
+  }
+
+  if(document.readyState !== 'loading') boot();
+  else document.addEventListener('DOMContentLoaded', boot);
+})();
+</script>
+<script src="assets/mobile-nav.js" defer></script>
+</body>
+</html>
