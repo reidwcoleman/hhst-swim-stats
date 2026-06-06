@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
 <meta name="theme-color" content="#0b1d3a"/>
 <title>Highcroft Hurricanes Swim Stats</title>
 <meta name="description" content="Look up your Highcroft Hurricanes swimmer's meet times, personal records, and progress charts."/>
@@ -34,10 +34,14 @@
   }
   @keyframes idx-drift{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 
-  /* ===== Lookup card: lift, halo, snappier inputs ===== */
+  /* ===== Lookup card: lift, focus ring edge, snappier inputs =====
+     Shadow lives on one token (var(--shadow-lg)) at rest AND on focus-within;
+     the state change reads only through the ::after ring + a subtle lift, so
+     the resting card isn't already glowing. */
   .idx-lift{
-    transition:transform .35s cubic-bezier(.16,1,.3,1),
-               box-shadow .35s cubic-bezier(.16,1,.3,1);
+    box-shadow:var(--shadow-lg);
+    transition:transform .22s cubic-bezier(.16,1,.3,1),
+               box-shadow .22s cubic-bezier(.16,1,.3,1);
   }
   .idx-lift::after{
     content:'';position:absolute;inset:-1px;border-radius:inherit;
@@ -46,11 +50,11 @@
     -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
             mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
     -webkit-mask-composite:xor;mask-composite:exclude;
-    transition:opacity .35s ease;
+    transition:opacity .18s ease;
   }
   .lookup-card.idx-lift:focus-within{
     transform:translateY(-2px);
-    box-shadow:0 30px 60px -28px rgba(8,18,38,.6);
+    box-shadow:var(--shadow-lg);
   }
   .lookup-card.idx-lift:focus-within::after{opacity:1}
 
@@ -67,13 +71,16 @@
     animation:idx-sheen .9s ease;
   }
   @keyframes idx-sheen{to{left:140%}}
-  .idx-form .btn.lg.block:active:not(:disabled){transform:translateY(1px) scale(.995)}
+  /* Active state intentionally left to the shared .btn recipe
+     (translateY(0) scale(.98)) so the button system stays consistent. */
 
   /* ===== Inline validation + helper text ===== */
   .idx-input-wrap{position:relative;display:block}
+  /* The only reading copy in the card — keep it legible, never the smallest
+     type. 13px / lh 1.5, muted via the shared subtle token. */
   .idx-hint{
-    font-size:11.5px;line-height:1.45;color:var(--text-subtle);
-    margin-top:5px;transition:color .2s ease;
+    font-size:13px;line-height:1.5;color:var(--text-subtle);
+    margin-top:6px;transition:color .18s ease;
   }
   .idx-form .field.idx-valid input{
     border-color:rgba(52,211,153,.55);
@@ -91,7 +98,7 @@
     position:absolute;right:14px;top:50%;margin-top:-9px;
     width:18px;height:18px;
     color:var(--green-light);opacity:0;transform:scale(.6);
-    transition:opacity .2s ease,transform .2s cubic-bezier(.16,1,.3,1);
+    transition:opacity .18s ease,transform .18s cubic-bezier(.16,1,.3,1);
     pointer-events:none;
   }
   .idx-form .field.idx-valid .idx-check{opacity:1;transform:scale(1)}
@@ -123,10 +130,11 @@
     .idx-waves{height:90px;overflow:hidden}
     .idx-waves svg{max-width:none}
     .hero .drops{overflow:hidden}
-    /* Keep the focus check + reserved padding sensible on tiny inputs. */
+    /* Keep the focus check + reserved padding sensible on tiny inputs.
+       The hint stays at 13px/lh1.5 — it's the card's reading copy and must
+       never become the smallest type, so no shrink here. */
     .idx-form .idx-input-wrap input{padding-right:38px}
     .idx-check{right:12px}
-    .idx-hint{font-size:11px;line-height:1.4}
   }
 </style>
 

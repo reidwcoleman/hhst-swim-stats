@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
 <meta name="theme-color" content="#0b1d3a"/>
 <title>Swimmer Dashboard — Highcroft Hurricanes</title>
 <meta name="robots" content="noindex,nofollow"/>
@@ -13,6 +13,11 @@
 
 <link rel="stylesheet" href="assets/styles.css?v=26"/>
 <style>
+  /* ---- Page-scoped polish for the swimmer dashboard ----
+     Aligns this page's inline-style risks to the shared design tokens
+     (radius / shadow / border / spacing) without re-implementing any of
+     the global component CSS that lives in styles.css. Presentational only. */
+
   /* Progress-chart "time dropped" badge */
   .chart-drop{display:inline-flex;align-items:center;gap:8px;margin:2px 0 14px;padding:7px 13px;border-radius:999px;
     font-size:13px;font-weight:500;line-height:1.2;
@@ -20,26 +25,61 @@
   .chart-drop strong{font-weight:700}
   .chart-drop svg{flex:0 0 auto}
 
-  /* ---- Dashboard mobile hardening (page-scoped) ----
+  /* Loading + not-found states — use shared card padding + tokens instead of
+     hand-tuned inline pixels. (#loadingState keeps its id for JS toggling.) */
+  #loadingState.dash-loading{text-align:center;padding:28px}
+  .dash-spinner{display:inline-block;width:32px;height:32px;
+    border:3px solid var(--border-strong);border-top-color:var(--accent);
+    border-radius:50%;animation:spin .8s linear infinite;margin-bottom:14px}
+  .dash-notfound{text-align:center}
+  .dash-back{margin-top:8px;display:inline-flex}
+
+  /* Season picker card — replace inline padding/margin with the inner-tile
+     radius token + the standard 24px section rhythm. */
+  #dashSeasonCard{border-radius:var(--radius-md);margin-bottom:24px}
+  /* Inline season select: grow within the flex row but cap so the label +
+     helper stay on the same line; the 760px rule lets it span full-width. */
+  #dashSeasonSelect{flex:0 1 220px;width:auto}
+  .dash-season-helper{flex:1 1 220px;font-size:13px;color:var(--text-muted)}
+
+  /* Slightly larger, calmer body copy on chart-card intros (>=15px). */
+  .chart-card .lead{font-size:15px;line-height:1.55}
+
+  /* Snap inner-card radii to the 2-tier token system. */
+  .bt-card,.medal,.highlight,.rank-row,.sp-row,.ed-cell{border-radius:var(--radius-md)}
+
+  /* Tabular figures on every time / count readout (not covered globally). */
+  .bt-time,.sp-step .sp-time,.pr-right .pr-time,.ed-cell .ed-value,.medal-count{
+    font-variant-numeric:tabular-nums}
+
+  /* Record-breaker "+N more" footnote — muted, tokenized (no inline size). */
+  .pr-more{text-align:center;color:var(--text-muted);font-size:13px;padding:14px 0 2px}
+
+  /* Consistent focus rings reusing the shared --ring recipe. The --shadow-md
+     fallback keeps the ring valid even before the global token lands. */
+  .bt-card:focus-visible{outline:none;
+    box-shadow:0 0 0 3px var(--ring),var(--shadow-md,0 12px 28px -10px rgba(0,0,0,.45))}
+  #eventTabs button:focus-visible{outline:none;box-shadow:inset 0 0 0 2px var(--ring)}
+
+  /* ---- Mobile hardening (page-scoped) ----
      Site-wide layout collapses live in styles.css; these rules only patch
-     this page's inline-style risks so nothing forces horizontal scroll
-     at ~320–430px wide. Desktop is untouched (rules live behind a query). */
+     this page's risks so nothing forces horizontal scroll at ~320-430px. */
   @media (max-width:760px){
-    /* Season picker row: let the select shrink and span the row instead of
-       holding its inline 200px min-width and overflowing the card. */
-    #dashSeasonSelect{min-width:0 !important;width:100%;max-width:100%;box-sizing:border-box}
+    /* Season picker row: let the select span the row (no inline min-width to
+       fight now — handled by .lb-select width:100%). */
+    #dashSeasonSelect{flex:1 1 100%;width:100%;max-width:100%;box-sizing:border-box}
     /* Meet-history filters: each select takes the full row when wrapped. */
     .meet-filters label{flex:1 1 100%;min-width:0}
     .meet-filters select{min-width:0;width:100%;max-width:100%;box-sizing:border-box}
     .meet-filters .meet-counter{flex:1 1 100%}
-    /* Loading card: trim the oversized vertical padding on small screens. */
-    #loadingState{padding:36px 18px !important}
   }
-  @media (max-width:430px){
-    /* Charts on phones: keep canvases full-width but a touch shorter so the
-       donut/line don't dominate the viewport. Containers stay width:100%. */
-    .chart-host{height:230px}
-    .stroke-chart-host{height:190px}
+  @media (max-width:480px){
+    /* Keep a modest table width so horizontal scroll inside .table-wrap reads
+       as intentional rather than a cramped wrap; nowrap the short columns. */
+    #meetTable{min-width:580px}
+    #meetTable th:nth-child(1),#meetTable td:nth-child(1),
+    #meetTable th:nth-child(4),#meetTable td:nth-child(4),
+    #meetTable th:nth-child(5),#meetTable td:nth-child(5){white-space:nowrap}
   }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -100,17 +140,17 @@
 
 <main class="admin-shell">
 
-  <div id="loadingState" class="card" style="text-align:center;padding:48px 24px">
-    <div style="display:inline-block;width:32px;height:32px;border:3px solid var(--border-strong);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:14px"></div>
+  <div id="loadingState" class="card dash-loading">
+    <div class="dash-spinner" aria-hidden="true"></div>
     <p class="lead" style="margin:0">Loading swimmer data…</p>
   </div>
   <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 
   <div id="notFound" style="display:none">
-    <div class="card" style="text-align:center">
+    <div class="card dash-notfound">
       <h2>Swimmer not found</h2>
       <p class="lead">We couldn't locate that swimmer. Try searching again.</p>
-      <a class="btn lg" href="index.html" style="margin-top:8px;display:inline-flex">
+      <a class="btn lg dash-back" href="index.html">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>
         Back to search
       </a>
@@ -120,11 +160,11 @@
   <div id="dashContent" style="display:none">
 
     <!-- SEASON FILTER -->
-    <div class="card" id="dashSeasonCard" style="display:none;padding:14px 18px;margin-bottom:14px">
+    <div class="card" id="dashSeasonCard" style="display:none">
       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
         <label for="dashSeasonSelect" style="font-weight:600;color:var(--text);margin:0">Season:</label>
-        <select id="dashSeasonSelect" class="lb-select" style="min-width:200px"></select>
-        <span style="font-size:13px;color:var(--text-muted)">Everything below — PRs, time dropped, podium, charts — filters to the selected season.</span>
+        <select id="dashSeasonSelect" class="lb-select"></select>
+        <span class="dash-season-helper">Everything below — PRs, time dropped, podium, charts — filters to the selected season.</span>
       </div>
     </div>
 
@@ -1042,7 +1082,7 @@
     }).join('');
     if(prs.length > LIMIT){
       host.insertAdjacentHTML('beforeend',
-        `<div class="pr-more" style="text-align:center;color:var(--text-muted);font-size:12.5px;padding:14px 0 2px">+${prs.length-LIMIT} more earlier personal best${prs.length-LIMIT===1?'':'s'}</div>`);
+        `<div class="pr-more">+${prs.length-LIMIT} more earlier personal best${prs.length-LIMIT===1?'':'s'}</div>`);
     }
   }
 

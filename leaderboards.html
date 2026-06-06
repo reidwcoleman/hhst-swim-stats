@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
 <meta name="theme-color" content="#0b1d3a"/>
 <title>Season Stats — Highcroft Hurricanes</title>
 <meta name="robots" content="noindex,nofollow"/>
@@ -17,61 +17,74 @@
   body:not(.auth-ready) > *{visibility:hidden}
 
   /* ===== Season Stats (ss- prefixed) ===== */
-  .ss-season-bar{display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin:0 0 26px;
-    padding:14px 18px;background:var(--surface-glass);border:1px solid var(--border);
-    border-radius:var(--radius-lg);box-shadow:var(--shadow-lg)}
-  .ss-season-bar label{font-weight:700;font-size:13px;letter-spacing:.02em;text-transform:uppercase;color:var(--text-muted)}
-  .ss-season-bar .lb-select{min-width:220px;font-size:15px;padding:11px 14px;transition:border-color .18s ease,box-shadow .18s ease}
+  .ss-season-bar{display:flex;flex-wrap:wrap;align-items:center;gap:16px;margin:0 0 24px;
+    padding:18px 20px;background:var(--surface-glass);border:1px solid var(--border);
+    border-radius:var(--radius-lg);box-shadow:var(--shadow-sm)}
+  .ss-season-bar label{font-weight:700;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted)}
+  .ss-season-bar .lb-select{min-width:220px;font-size:16px;padding:13px 16px;
+    transition:border-color .18s cubic-bezier(.16,1,.3,1),box-shadow .18s cubic-bezier(.16,1,.3,1)}
   .ss-season-bar .lb-select:hover{border-color:var(--border-strong)}
   .ss-season-bar .lb-select:focus-visible{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--ring)}
-  .ss-season-badge{display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:999px;font-size:12.5px;font-weight:700;
-    background:rgba(34,197,94,.16);color:#22c55e;border:1px solid rgba(34,197,94,.32)}
-  .ss-section-title{display:flex;align-items:baseline;gap:12px;margin:38px 0 14px}
-  .ss-section-title h2{font-family:'Fraunces',serif;font-size:22px;font-weight:700;margin:0;letter-spacing:-.01em}
+  .ss-season-badge{display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:999px;font-size:12px;font-weight:700;
+    background:rgba(16,185,129,.14);color:var(--green-light);border:1px solid rgba(16,185,129,.28)}
+  [data-theme="light"] .ss-season-badge{color:#047857;background:rgba(16,185,129,.1)}
+  .ss-section-title{display:flex;align-items:baseline;gap:12px;margin:24px 0}
+  .ss-section-title h2{font-family:'Fraunces',serif;font-size:22px;font-weight:700;line-height:1.2;margin:0;letter-spacing:-.01em}
   .ss-section-title span{color:var(--text-muted);font-size:13px}
-  .ss-table-row-link{cursor:pointer;transition:background .16s ease}
+  .ss-table-row-link{cursor:pointer;transition:background .18s cubic-bezier(.16,1,.3,1)}
   .ss-table-row-link:hover{background:var(--bg-alt)}
-  .ss-cur-chip{background:rgba(34,197,94,.18);color:#22c55e;border-color:rgba(34,197,94,.35)}
-  .ss-drop{color:#22c55e;white-space:nowrap;font-weight:600}
+  .ss-cur-chip{background:rgba(16,185,129,.14);color:var(--green-light);border-color:rgba(16,185,129,.28)}
+  [data-theme="light"] .ss-cur-chip{color:#047857;background:rgba(16,185,129,.1)}
+  .ss-drop{color:var(--green-light);white-space:nowrap;font-weight:600;font-variant-numeric:tabular-nums}
+  [data-theme="light"] .ss-drop{color:#047857}
+  .ss-drop-min{font-size:12px;font-weight:400;margin-top:2px;color:var(--text-subtle)}
   .ss-muted{color:var(--text-muted)}
+  .ss-empty-cell{padding:24px;text-align:center;color:var(--text-subtle)}
+  /* Numeric table cells line up cleanly */
+  .roster-table tbody td{font-variant-numeric:tabular-nums}
   /* Polished table affordances */
-  .ss-section-title + .card .roster-table tbody tr{transition:background .16s ease}
+  .ss-section-title + .card .roster-table tbody tr{transition:background .18s cubic-bezier(.16,1,.3,1)}
   .ss-section-title + .card .roster-table tbody tr:hover{background:var(--bg-alt)}
-  .ss-season-bar + .stat-grid .stat-card .sub{transition:color .18s ease}
+  .ss-season-bar + .stat-grid .stat-card .sub{transition:color .18s cubic-bezier(.16,1,.3,1)}
 
   /* ===== Top Movers ===== */
-  .ss-movers-card{margin-top:26px}
-  .ss-movers-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 4px}
-  .ss-movers-head h2{font-family:'Fraunces',serif;font-size:20px;font-weight:700;margin:0}
-  .ss-movers-head .ss-muted{font-size:12.5px}
+  .ss-movers-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0}
+  .ss-movers-head h2{font-family:'Fraunces',serif;font-size:22px;font-weight:700;line-height:1.2;margin:0;letter-spacing:-.01em}
+  .ss-movers-head .ss-muted{font-size:13px}
   .ss-movers-list{display:grid;gap:10px;margin-top:16px}
-  .ss-mover{display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:14px;
+  .ss-mover{display:flex;align-items:center;gap:14px;padding:18px 20px;border-radius:var(--radius-md);
     background:var(--bg-alt);border:1px solid var(--border);text-decoration:none;color:var(--text);
-    transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease,background .16s ease}
-  .ss-mover:hover{transform:translateY(-2px);border-color:var(--border-strong);box-shadow:var(--shadow-lg);background:var(--surface)}
-  .ss-mover-rank{flex:0 0 auto;width:30px;height:30px;display:grid;place-items:center;border-radius:9px;
+    transition:transform .18s cubic-bezier(.16,1,.3,1),border-color .18s cubic-bezier(.16,1,.3,1),box-shadow .18s cubic-bezier(.16,1,.3,1),background .18s cubic-bezier(.16,1,.3,1)}
+  .ss-mover:hover{transform:translateY(-2px);border-color:var(--border-strong);box-shadow:var(--shadow-md);background:var(--surface)}
+  .ss-mover:focus-visible{outline:none;box-shadow:0 0 0 3px var(--ring);border-color:var(--accent)}
+  .ss-mover-rank{flex:0 0 auto;width:30px;height:30px;display:grid;place-items:center;border-radius:var(--radius-sm);
     font-family:'Fraunces',serif;font-weight:700;font-size:14px;color:var(--text-muted);
     background:var(--surface);border:1px solid var(--border)}
-  .ss-mover:nth-child(1) .ss-mover-rank{color:#22c55e;border-color:rgba(34,197,94,.4);background:rgba(34,197,94,.12)}
-  .ss-mover-name{flex:1 1 auto;min-width:0;font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ss-mover:nth-child(1) .ss-mover-rank{color:var(--green-light);border-color:rgba(16,185,129,.28);background:rgba(16,185,129,.14)}
+  [data-theme="light"] .ss-mover:nth-child(1) .ss-mover-rank{color:#047857;background:rgba(16,185,129,.1)}
+  .ss-mover-name{display:flex;flex-direction:column;min-width:0;flex:1 1 auto;font-weight:600;font-size:15px}
+  .ss-mover-name > span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .ss-mover-sub{display:block;font-size:12px;color:var(--text-subtle);font-weight:400;margin-top:1px}
-  .ss-mover-drop{flex:0 0 auto;font-family:'Fraunces',serif;font-weight:700;font-size:17px;color:#22c55e;white-space:nowrap}
-  .ss-mover-arrow{flex:0 0 auto;color:var(--text-subtle);transition:transform .16s ease,color .16s ease;display:flex}
+  .ss-mover-drop{flex:0 0 auto;font-family:'Fraunces',serif;font-weight:700;font-size:17px;color:var(--green-light);white-space:nowrap;font-variant-numeric:tabular-nums}
+  [data-theme="light"] .ss-mover-drop{color:#047857}
+  .ss-mover-arrow{flex:0 0 auto;color:var(--text-subtle);transition:transform .18s cubic-bezier(.16,1,.3,1),color .18s cubic-bezier(.16,1,.3,1);display:flex}
   .ss-mover:hover .ss-mover-arrow{transform:translateX(3px);color:var(--accent)}
 
   /* ===== Mobile (<=760px) ===== */
   @media (max-width:760px){
     /* Season picker: stack label + full-width select, drop the rigid min-width */
-    .ss-season-bar{flex-direction:column;align-items:stretch;gap:9px;padding:14px}
-    .ss-season-bar .lb-select{min-width:0;width:100%;font-size:16px}
+    .ss-season-bar{flex-direction:column;align-items:stretch;gap:10px}
+    .ss-season-bar .lb-select{min-width:0;width:100%}
     .ss-season-badge{align-self:flex-start}
-    .ss-section-title{margin:30px 0 12px;flex-wrap:wrap;gap:6px 10px}
-    .ss-section-title h2{font-size:19px}
+    .ss-section-title{flex-wrap:wrap;gap:6px 10px}
+  }
+  @media (max-width:480px){
+    .ss-season-bar{padding:16px}
+    .ss-mover{padding:16px}
   }
   @media (max-width:430px){
-    .ss-movers-head h2{font-size:18px}
     /* Keep mover rows tight + tappable, never let them overflow */
-    .ss-mover{gap:11px;padding:11px 12px}
+    .ss-mover{gap:11px}
     .ss-mover-name{font-size:14px}
     .ss-mover-drop{font-size:15px}
   }
@@ -124,14 +137,18 @@
 
 <main class="admin-shell">
 
-  <div id="loadingState" class="card" style="text-align:center;padding:48px 24px">
-    <div style="display:inline-block;width:32px;height:32px;border:3px solid var(--border-strong);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:14px"></div>
+  <div id="loadingState" class="card empty">
+    <div class="ss-spinner" aria-hidden="true"></div>
     <p class="lead" style="margin:0">Loading team data…</p>
   </div>
-  <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+  <style>
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .ss-spinner{display:inline-block;width:32px;height:32px;border:3px solid var(--border-strong);
+      border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:14px}
+  </style>
 
-  <div id="emptyState" class="card" style="display:none;text-align:center;padding:60px 24px">
-    <h2>No times in the system yet</h2>
+  <div id="emptyState" class="card empty" style="display:none">
+    <h2 style="margin-bottom:6px">No times in the system yet</h2>
     <p class="lead">Upload meet results from the Admin page and the season stats will populate automatically.</p>
     <a href="admin.html" class="btn lg" style="margin-top:8px;display:inline-flex">Open Admin</a>
   </div>
@@ -186,9 +203,9 @@
     </div>
 
     <!-- MEDALS -->
-    <div class="card" style="margin-top:18px">
-      <h2 style="margin:0 0 4px">Medals</h2>
-      <p class="lead" style="margin:0 0 16px">Heat-finish placings across this season's meets.</p>
+    <div class="card">
+      <h2>Medals</h2>
+      <p class="lead">Heat-finish placings across this season's meets.</p>
       <div class="medal-row">
         <div class="medal medal-gold">
           <div class="medal-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M8.5 13L5 22l7-4 7 4-3.5-9"/></svg></div>
@@ -214,7 +231,7 @@
         <h2>Top Movers</h2>
         <span class="ss-muted" id="moversSub">Biggest drops between their last two meets</span>
       </div>
-      <p class="lead" style="margin:0">Swimmers who dropped the most time between their two most recent meets (same stroke, faster swims only).</p>
+      <p class="lead" style="margin-top:6px">Swimmers who dropped the most time between their two most recent meets (same stroke, faster swims only).</p>
       <div class="ss-movers-list" id="moversList"></div>
     </div>
 
@@ -393,7 +410,7 @@
       const grp = info && info.bracket && info.bracket !== 'Unknown' ? escapeHtml(info.bracket) : '';
       return `<a class="ss-mover" href="dashboard.html?s=${encodeURIComponent(m.sw.key)}">
         <span class="ss-mover-rank">${i + 1}</span>
-        <span class="ss-mover-name">${escapeHtml(m.sw.name || 'Unknown')}${grp ? `<span class="ss-mover-sub">${grp}</span>` : ''}</span>
+        <span class="ss-mover-name"><span>${escapeHtml(m.sw.name || 'Unknown')}</span>${grp ? `<span class="ss-mover-sub">${grp}</span>` : ''}</span>
         <span class="ss-mover-drop">${fmtDrop(m.drop)}</span>
         <span class="ss-mover-arrow" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
       </a>`;
@@ -421,10 +438,10 @@
         <td>${swrs.length}</td>
         <td>${fmtNum(races)}</td>
         <td>${fmtNum(prs)}</td>
-        <td>${drop > 0 ? `<span class="ss-drop">${fmtDrop(drop)}</span>${dmin?`<div style="font-size:11.5px;font-weight:400;margin-top:2px" class="ss-muted">${dmin}</div>`:''}` : '<span class="ss-muted">—</span>'}</td>
+        <td>${drop > 0 ? `<span class="ss-drop">${fmtDrop(drop)}</span>${dmin?`<div class="ss-drop-min">${dmin}</div>`:''}` : '<span class="ss-muted">—</span>'}</td>
       </tr>`;
     }).filter(Boolean).join('');
-    body.innerHTML = rows || `<tr><td colspan="5" class="ss-muted" style="padding:18px;text-align:center">No swimmers raced this season yet.</td></tr>`;
+    body.innerHTML = rows || `<tr><td colspan="5" class="ss-empty-cell">No swimmers raced this season yet.</td></tr>`;
   }
 
   function renderMeets(season){
@@ -448,7 +465,7 @@
         <td>${fmtNum(c.races)}</td>
       </tr>`;
     }).join('');
-    body.innerHTML = rows || `<tr><td colspan="4" class="ss-muted" style="padding:18px;text-align:center">No meets recorded for this season yet.</td></tr>`;
+    body.innerHTML = rows || `<tr><td colspan="4" class="ss-empty-cell">No meets recorded for this season yet.</td></tr>`;
   }
 
   function renderAllSeasons(){
@@ -463,7 +480,7 @@
         <td>${fmtNum(s.totalRaces)}</td>
         <td>${fmtNum(s.meetCount)}</td>
         <td>${fmtNum(s.prRaces)}</td>
-        <td>${s.totalDropSec > 0 ? `<span class="ss-drop">${fmtDrop(s.totalDropSec)}</span>${dmin?`<div style="font-size:11.5px;font-weight:400;margin-top:2px" class="ss-muted">${dmin}</div>`:''}` : '<span class="ss-muted">—</span>'}</td>
+        <td>${s.totalDropSec > 0 ? `<span class="ss-drop">${fmtDrop(s.totalDropSec)}</span>${dmin?`<div class="ss-drop-min">${dmin}</div>`:''}` : '<span class="ss-muted">—</span>'}</td>
       </tr>`;
     }).join('');
     body.querySelectorAll('tr[data-season]').forEach(tr => tr.addEventListener('click', () => {

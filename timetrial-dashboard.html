@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
 <meta name="theme-color" content="#0b1d3a"/>
 <title>Time Trial Dashboard — Highcroft Hurricanes</title>
 <meta name="robots" content="noindex,nofollow"/>
@@ -16,33 +16,53 @@
   /* ---- Time Trial Dashboard (page-scoped) ----
      Reuses the shared component tokens; only the bits unique to this page
      (leaderboard rows, movers, table bar) live here. */
-  .tt-shell{max-width:1180px;margin:0 auto;padding:28px 24px 64px}
-  .tt-hero-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
-  .tt-back{display:inline-flex;align-items:center;gap:6px;color:rgba(255,255,255,.85);
-    font-weight:600;font-size:14px;margin-bottom:14px;background:none;border:0;cursor:pointer;
-    text-decoration:none;padding:0;-webkit-tap-highlight-color:transparent}
-  .tt-back:hover{color:#fff}
-  .tt-back svg{width:16px;height:16px}
+  .tt-shell{max-width:1180px;margin:0 auto;
+    padding:32px max(24px,env(safe-area-inset-right)) calc(64px + env(safe-area-inset-bottom)) max(24px,env(safe-area-inset-left))}
+  .tt-hero-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:20px}
+
+  /* Hero kicker: reuse the shared leaderboard-hero ice recipe */
+  .dash-hero .kicker{
+    color:var(--ice-300);background:rgba(125,211,252,.1);border:1px solid rgba(125,211,252,.22);
+  }
+
+  /* Back pill: mirrors the shared .dash-hero-back recipe */
+  .tt-back{display:inline-flex;align-items:center;gap:6px;
+    color:rgba(255,255,255,.78)!important;
+    font-size:13px;font-weight:600;letter-spacing:.02em;
+    padding:7px 12px 7px 9px;border-radius:999px;
+    background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.12);
+    margin-bottom:22px;cursor:pointer;
+    transition:background .18s cubic-bezier(.16,1,.3,1),color .18s cubic-bezier(.16,1,.3,1),transform .18s cubic-bezier(.16,1,.3,1),box-shadow .18s cubic-bezier(.16,1,.3,1);
+    text-decoration:none!important;-webkit-tap-highlight-color:transparent}
+  .tt-back:hover{background:rgba(255,255,255,.12);color:#fff!important;transform:translateX(-2px)}
+  .tt-back:active{transform:translateX(0)}
+  .tt-back:focus-visible{outline:none;box-shadow:0 0 0 3px var(--ring);border-color:var(--accent)}
+  .tt-back svg{width:14px;height:14px}
 
   .tt-card-head{display:flex;justify-content:space-between;align-items:center;gap:12px;
-    flex-wrap:wrap;margin-bottom:18px}
+    flex-wrap:wrap;margin-bottom:24px}
   .tt-card-head h2{margin:0}
-  .tt-card-head .lead{margin:0;color:var(--text-muted);font-size:13.5px}
-  .tt-select{font-family:inherit;font-size:14px;padding:9px 12px;border-radius:10px;
-    background:var(--surface);color:var(--text);border:1px solid var(--border-strong);max-width:100%}
+  .tt-card-head .lead{margin:0;color:var(--text-muted);font-size:13px}
+  .tt-select{font-family:inherit;font-size:16px;padding:13px 16px;border-radius:var(--radius);
+    background:var(--surface);color:var(--text);border:1px solid var(--border-strong);max-width:100%;
+    transition:border-color .18s cubic-bezier(.16,1,.3,1),box-shadow .18s cubic-bezier(.16,1,.3,1)}
+  .tt-select:hover{box-shadow:var(--shadow-md)}
   .tt-select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--ring)}
 
   /* Leaderboard */
   .tt-lb-list{display:flex;flex-direction:column;gap:8px}
   .tt-lb-row{display:grid;grid-template-columns:30px minmax(0,1.3fr) minmax(50px,2fr) auto;
-    gap:14px;align-items:center;padding:11px 14px;border-radius:12px;
+    gap:14px;align-items:center;padding:18px 20px;border-radius:var(--radius-md);
     background:var(--surface);border:1px solid var(--border);color:var(--text)!important;
-    transition:border-color .2s,transform .2s}
-  .tt-lb-row:hover{border-color:var(--accent);transform:translateY(-1px)}
+    transition:border-color .18s cubic-bezier(.16,1,.3,1),transform .18s cubic-bezier(.16,1,.3,1),box-shadow .18s cubic-bezier(.16,1,.3,1)}
+  .tt-lb-row:hover{border-color:var(--accent);transform:translateY(-1px);box-shadow:var(--shadow-md)}
+  .tt-lb-row:active{transform:translateY(0)}
+  .tt-lb-row:focus-visible{outline:none;box-shadow:0 0 0 3px var(--ring);border-color:var(--accent)}
   .tt-lb-1{border-color:rgba(251,191,36,.4);background:linear-gradient(90deg,rgba(251,191,36,.07),var(--surface) 60%)}
   .tt-lb-rank{font-family:'Fraunces',serif;font-weight:800;color:var(--text-muted);text-align:center;font-variant-numeric:tabular-nums}
-  .tt-lb-name{font-weight:600;font-size:14px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .tt-lb-name small{display:block;color:var(--text-subtle);font-weight:500;font-size:11.5px}
+  .tt-lb-name{font-weight:600;font-size:15px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tt-lb-name small{display:block;color:var(--text-subtle);font-weight:500;font-size:12px}
   .tt-lb-bar{height:8px;border-radius:999px;background:var(--bg-alt);overflow:hidden;border:1px solid var(--border)}
   .tt-lb-bar span{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--brand-500),var(--ice-400))}
   .tt-lb-1 .tt-lb-bar span{background:linear-gradient(90deg,#f59e0b,#fbbf24)}
@@ -50,31 +70,52 @@
     font-variant-numeric:tabular-nums;white-space:nowrap;font-size:15px}
 
   /* Movers */
-  .tt-movers{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}
+  .tt-movers{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:20px}
   .tt-mover{display:flex;align-items:center;justify-content:space-between;gap:12px;
-    padding:13px 15px;border-radius:12px;background:var(--surface);border:1px solid var(--border);
-    color:var(--text)!important;transition:border-color .2s,transform .2s}
-  .tt-mover:hover{border-color:var(--accent);transform:translateY(-1px)}
-  .tt-mover-name{font-weight:600;font-size:14px;display:block;line-height:1.2}
-  .tt-mover-sub{font-size:12px;color:var(--text-subtle)}
+    padding:18px 20px;border-radius:var(--radius-md);background:var(--surface);border:1px solid var(--border);
+    color:var(--text)!important;
+    transition:border-color .18s cubic-bezier(.16,1,.3,1),transform .18s cubic-bezier(.16,1,.3,1),box-shadow .18s cubic-bezier(.16,1,.3,1)}
+  .tt-mover:hover{border-color:var(--accent);transform:translateY(-1px);box-shadow:var(--shadow-md)}
+  .tt-mover:active{transform:translateY(0)}
+  .tt-mover:focus-visible{outline:none;box-shadow:0 0 0 3px var(--ring);border-color:var(--accent)}
+  .tt-mover-name{font-weight:600;font-size:15px;display:block;line-height:1.2}
+  .tt-mover-sub{font-size:13px;color:var(--text-subtle)}
+  .tt-mover .chip-stat{font-variant-numeric:tabular-nums}
 
   /* Results table bar */
-  .tt-tablebar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
-  .tt-search{flex:1;min-width:160px;font-family:inherit;font-size:14px;padding:10px 13px;border-radius:10px;
-    background:var(--surface);color:var(--text);border:1px solid var(--border-strong)}
+  .tt-tablebar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:24px}
+  .tt-search{flex:1;min-width:160px;font-family:inherit;font-size:16px;padding:13px 16px;border-radius:var(--radius);
+    background:var(--surface);color:var(--text);border:1px solid var(--border-strong);
+    transition:border-color .18s cubic-bezier(.16,1,.3,1),box-shadow .18s cubic-bezier(.16,1,.3,1)}
+  .tt-search:hover{box-shadow:var(--shadow-md)}
   .tt-search:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--ring)}
-  .tt-count{margin-left:auto;font-size:12.5px;color:var(--text-subtle);font-weight:600;letter-spacing:.03em}
-  .tt-name-link{color:var(--accent);font-weight:600}
+  .tt-count{margin-left:auto;font-size:13px;color:var(--text-subtle);font-weight:600;letter-spacing:.03em}
+  .tt-name-link{color:var(--accent);font-weight:600;border-radius:var(--radius-sm);
+    transition:color .18s cubic-bezier(.16,1,.3,1)}
+  .tt-name-link:focus-visible{outline:none;box-shadow:0 0 0 3px var(--ring)}
+  .tt-name-link:active{transform:translateY(0)}
 
-  .tt-info-note{display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border-radius:14px;
-    background:rgba(96,165,250,.07);border:1px solid var(--border-strong);
-    color:var(--text-muted);font-size:13.5px;line-height:1.55;margin-bottom:24px}
+  .tt-info-note{display:flex;gap:12px;align-items:flex-start;padding:18px 20px;border-radius:var(--radius-md);
+    background:rgba(96,165,250,.07);border:1px solid var(--border-strong);border-left:3px solid var(--accent);
+    color:var(--text-muted);font-size:13px;line-height:1.55;margin-bottom:24px}
   .tt-info-note svg{width:20px;height:20px;color:var(--accent);flex:none;margin-top:1px}
+  [data-theme=light] .tt-info-note{background:rgba(37,99,235,.06);border-left:3px solid var(--accent)}
 
-  @media (max-width:560px){
-    .tt-lb-row{grid-template-columns:26px minmax(0,1fr) auto;gap:10px}
+  /* Shared empty-state heading (no per-element Fraunces overrides in markup) */
+  .empty h3{font-family:'Fraunces',serif;color:var(--text);margin:6px 0 4px;font-size:18px;font-weight:700;line-height:1.3}
+
+  /* Tabular figures for KPI readouts (page-scoped fallback; aligns with the global rule) */
+  .kpi .value{font-variant-numeric:tabular-nums}
+
+  @media (max-width:768px){
+    .tt-shell{padding:24px max(24px,env(safe-area-inset-right)) calc(64px + env(safe-area-inset-bottom)) max(24px,env(safe-area-inset-left))}
+  }
+  @media (max-width:480px){
+    .tt-shell{padding:20px max(16px,env(safe-area-inset-right)) calc(56px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
+    .tt-lb-row{grid-template-columns:26px minmax(0,1fr) auto;gap:10px;padding:16px}
+    .tt-mover{padding:16px}
     .tt-lb-bar{display:none}
-    .tt-shell{padding:22px 16px 56px}
+    .tt-movers{gap:16px}
   }
   @media (max-width:430px){
     .chart-host{height:240px}
@@ -127,9 +168,9 @@
 <section id="teamView" style="display:none">
   <div class="dash-hero">
     <div class="dash-hero-inner">
-      <div class="kicker" style="color:var(--ice-300);background:rgba(125,211,252,.1);border:1px solid rgba(125,211,252,.22)"><span class="pulse"></span> Practice swims · off the competitive boards</div>
+      <div class="kicker"><span class="pulse"></span> Practice swims · off the competitive boards</div>
       <h1 class="swimmer-name" style="margin-top:14px">Time Trial Dashboard</h1>
-      <p class="swimmer-tagline" style="font-size:15px;max-width:600px">Every time-trial swim across the team, with detailed stats — fastest trials by event, who's improving the most, and a full searchable log. Tap a swimmer to see their personal progression.</p>
+      <p class="swimmer-tagline" style="max-width:600px">Every time-trial swim across the team, with detailed stats — fastest trials by event, who's improving the most, and a full searchable log. Tap a swimmer to see their personal progression.</p>
       <div class="tt-hero-actions">
         <a class="btn" href="timetrial.html">⏱ Run a Time Trial</a>
         <a class="btn ghost" href="index.html">Swimmer Lookup</a>
@@ -141,7 +182,7 @@
     <!-- Empty state -->
     <div id="teamEmpty" class="card empty" style="display:none">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M9 2h6"/></svg>
-      <h3 style="font-family:'Fraunces',serif;color:var(--text);margin:6px 0 4px">No time trials yet</h3>
+      <h3>No time trials yet</h3>
       <p>Run a time trial from the <a href="timetrial.html">stopwatch page</a> and the times will show up here automatically.</p>
     </div>
 
@@ -222,7 +263,7 @@
   <main class="tt-shell">
     <div id="swEmpty" class="card empty" style="display:none">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M9 2h6"/></svg>
-      <h3 style="font-family:'Fraunces',serif;color:var(--text);margin:6px 0 4px">No time trials for this swimmer yet</h3>
+      <h3>No time trials for this swimmer yet</h3>
       <p>Run a time trial from the <a href="timetrial.html">stopwatch page</a> to start tracking practice swims.</p>
     </div>
 
