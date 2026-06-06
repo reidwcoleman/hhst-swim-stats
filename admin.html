@@ -200,9 +200,9 @@
       min-height:44px;display:inline-flex;align-items:center}
     .topbar-right .theme-toggle-sm{min-width:44px;min-height:44px}
 
-    /* Team Activity chart: contain the canvas, shorten on small screens. */
+    /* Team Momentum chart: contain the canvas, shorten on small screens. */
     #adminChartCard{overflow:hidden}
-    #adminChartCard .chart-host{height:260px!important;max-width:100%}
+    #adminChartCard .chart-host{height:280px!important;max-width:100%}
     #adminChartCard canvas{max-width:100%}
 
     /* Manual-time form: stack fields so nothing overflows the card. */
@@ -240,7 +240,7 @@
 <!-- SheetJS — lets the importer read .xlsx / .xls in addition to .csv -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
-<!-- Chart.js — powers the "Team Activity" bar chart on the admin dashboard -->
+<!-- Chart.js — powers the "Team Momentum" chart on the admin dashboard -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -455,12 +455,12 @@
       </div>
     </div>
 
-    <!-- TEAM ACTIVITY CHART -->
+    <!-- TEAM MOMENTUM CHART -->
     <section class="card chart-card" id="adminChartCard">
-      <h2>Team Activity</h2>
-      <p class="lead">Races logged per meet, oldest to newest.</p>
-      <div class="chart-host" style="height:280px"><canvas id="adminChart"></canvas></div>
-      <div class="empty" id="adminChartEmpty" style="display:none">Upload meet results to see team activity.</div>
+      <h2>Team Momentum</h2>
+      <p class="lead">Races by stroke at each meet, oldest to newest — with the personal bests set along the way.</p>
+      <div class="chart-host" style="height:300px"><canvas id="adminChart"></canvas></div>
+      <div class="empty" id="adminChartEmpty" style="display:none">Upload meet results to see team momentum.</div>
     </section>
 
     <!-- TIME DROPPED PER SEASON -->
@@ -1610,7 +1610,7 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
   let cachedData = { swimmers:{}, lastUpload:null };
   let cachedUploads = [];
   let deletingUpload = false; // guard: only one deleteUpload in flight at a time
-  let adminChartInstance = null; // Chart.js instance for the Team Activity graph
+  let adminChartInstance = null; // Chart.js instance for the Team Momentum chart
   document.getElementById('searchInput').addEventListener('input', e => renderRoster(e.target.value));
   document.getElementById('rosterSeasonFilter').addEventListener('change', () => {
     renderRoster(document.getElementById('searchInput').value);
@@ -1653,31 +1653,66 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
     refreshUploads();
   }
 
-  // Team Activity bar chart — races logged per meet, oldest meet to newest.
+  // Team Momentum chart — for each meet (oldest → newest) a stacked bar of races
+  // broken out by stroke, with a glowing line tracking the personal bests set at
+  // that meet. Tells the coach volume, stroke mix AND improvement at a glance.
   // Re-entrant: destroys any prior Chart.js instance so refreshAll() can run
   // repeatedly (after uploads, edits, deletes) without leaking canvases.
+  const STROKE_COLORS = {
+    Freestyle:    '#3b82f6', // blue
+    Backstroke:   '#22d3ee', // cyan
+    Breaststroke: '#a855f7', // purple
+    Butterfly:    '#ec4899', // pink
+    IM:           '#10b981', // green
+    Other:        '#64748b'  // slate
+  };
+  const PR_LINE_COLOR = '#fbbf24'; // gold — pops over every stroke color
+
   function renderAdminChart(swimmers){
     const host = document.querySelector('#adminChartCard .chart-host');
     const canvas = document.getElementById('adminChart');
     const empty = document.getElementById('adminChartEmpty');
     if(!canvas || !host) return;
 
-    // Tally races per meet (skip time-trial results and meet-less / Unknown rows).
+    const strokeKeys = ['Freestyle','Backstroke','Breaststroke','Butterfly','IM','Other'];
+    // Per meet: earliest date (for ordering), race count by stroke, PRs set.
     const byMeet = new Map();
+    const meetEntry = meet => {
+      let e = byMeet.get(meet);
+      if(!e){ e = { ts:NaN, strokes:{}, prs:0 }; strokeKeys.forEach(k => e.strokes[k] = 0); byMeet.set(meet, e); }
+      return e;
+    };
+    // Tally races per meet by stroke (skip time-trials and meet-less / Unknown rows).
     swimmers.forEach(s => (s.results||[]).forEach(r => {
       if(!r || r.timeTrial) return;
       const meet = r.meet;
       if(!meet || meet === 'Unknown Meet') return;
+      const e = meetEntry(meet);
       const ts = Date.parse(r.date); // NaN when undated
-      const entry = byMeet.get(meet);
-      if(entry){
-        entry.count++;
-        // Keep the earliest known date for ordering; ignore NaN once we have one.
-        if(!isNaN(ts) && (isNaN(entry.ts) || ts < entry.ts)) entry.ts = ts;
-      } else {
-        byMeet.set(meet, { count:1, ts });
-      }
+      if(!isNaN(ts) && (isNaN(e.ts) || ts < e.ts)) e.ts = ts;
+      let stroke = r.stroke || HHST.extractStroke(r.event) || 'Other';
+      if(!STROKE_COLORS[stroke]) stroke = 'Other';
+      e.strokes[stroke]++;
     }));
+
+    // Personal bests set per meet — a swim that beats the swimmer's own prior
+    // best in that event (the first swim sets a baseline, not a PR). Mirrors the
+    // "improvement" idea used everywhere else on the site.
+    swimmers.forEach(s => {
+      const byEvent = {};
+      (s.results||[]).forEach(r => {
+        if(!r || r.timeTrial || !r.meet || r.meet === 'Unknown Meet' || !isFinite(r.seconds)) return;
+        (byEvent[r.event] = byEvent[r.event] || []).push(r);
+      });
+      Object.values(byEvent).forEach(arr => {
+        arr.sort((a,b) => (Date.parse(a.date)||0) - (Date.parse(b.date)||0));
+        let best = Infinity;
+        arr.forEach(r => {
+          if(isFinite(best) && r.seconds < best){ const e = byMeet.get(r.meet); if(e) e.prs++; }
+          if(r.seconds < best) best = r.seconds;
+        });
+      });
+    });
 
     // No meets, or Chart.js failed to load -> show the empty state, hide canvas.
     if(byMeet.size === 0 || typeof Chart === 'undefined'){
@@ -1685,11 +1720,9 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
       host.style.display = 'none';
       if(empty){
         empty.style.display = '';
-        if(typeof Chart === 'undefined'){
-          empty.textContent = 'Charts are unavailable right now.';
-        } else {
-          empty.textContent = 'Upload meet results to see team activity.';
-        }
+        empty.textContent = (typeof Chart === 'undefined')
+          ? 'Charts are unavailable right now.'
+          : 'Upload meet results to see team momentum.';
       }
       return;
     }
@@ -1704,41 +1737,95 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
       return ta - tb;
     });
     const labels = meets.map(m => m[0]);
-    const data = meets.map(m => m[1].count);
 
     host.style.display = '';
     if(empty) empty.style.display = 'none';
 
     const tickColor = 'rgba(178,197,224,.5)';
     const gridColor = 'rgba(96,165,250,.12)';
+    const ctx = canvas.getContext('2d');
+    const h = host.clientHeight || 280;
+
+    // Vertical gradient per stroke (solid at the top → translucent at the base)
+    // gives the stacked bars a bit of depth instead of flat fills.
+    const barGrad = hex => {
+      const g = ctx.createLinearGradient(0, 0, 0, h);
+      g.addColorStop(0, hex);
+      g.addColorStop(1, hex + '55'); // ~33% alpha at the base
+      return g;
+    };
+
+    const strokeDatasets = strokeKeys
+      .filter(k => meets.some(m => m[1].strokes[k] > 0))
+      .map(k => ({
+        label: k,
+        data: meets.map(m => m[1].strokes[k]),
+        backgroundColor: barGrad(STROKE_COLORS[k]),
+        borderRadius: 4,
+        borderSkipped: false,
+        stack: 'races',
+        maxBarThickness: 56,
+        order: 2
+      }));
+
+    const prData = meets.map(m => m[1].prs);
+    const hasPRs = prData.some(v => v > 0);
+    const datasets = strokeDatasets.slice();
+    if(hasPRs){
+      const prGrad = ctx.createLinearGradient(0, 0, 0, h);
+      prGrad.addColorStop(0, 'rgba(251,191,36,.30)');
+      prGrad.addColorStop(1, 'rgba(251,191,36,0)');
+      datasets.push({
+        type: 'line',
+        label: 'Personal bests',
+        data: prData,
+        yAxisID: 'yPR',
+        borderColor: PR_LINE_COLOR,
+        backgroundColor: prGrad,
+        borderWidth: 3,
+        fill: true,
+        tension: 0.4,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        pointBackgroundColor: PR_LINE_COLOR,
+        pointBorderColor: 'rgba(11,29,58,.9)',
+        pointBorderWidth: 2,
+        order: 0
+      });
+    }
 
     if(adminChartInstance){ adminChartInstance.destroy(); adminChartInstance = null; }
-    adminChartInstance = new Chart(canvas.getContext('2d'), {
+    adminChartInstance = new Chart(ctx, {
       type:'bar',
-      data:{
-        labels,
-        datasets:[{
-          label:'Races logged',
-          data,
-          backgroundColor:'#3b82f6',
-          borderRadius:6,
-          maxBarThickness:54
-        }]
-      },
+      data:{ labels, datasets },
       options:{
         responsive:true,
         maintainAspectRatio:false,
-        plugins:{ legend:{ display:false } },
-        scales:{
-          x:{
-            ticks:{ color:tickColor },
-            grid:{ color:gridColor, drawBorder:false }
+        interaction:{ mode:'index', intersect:false },
+        plugins:{
+          legend:{
+            display:true, position:'top', align:'end',
+            labels:{ color:tickColor, usePointStyle:true, pointStyleWidth:10, boxHeight:7, padding:14, font:{ size:12 } }
           },
-          y:{
-            beginAtZero:true,
-            ticks:{ color:tickColor, precision:0, stepSize:1 },
-            grid:{ color:gridColor, drawBorder:false }
+          tooltip:{
+            backgroundColor:'rgba(11,29,58,.95)', borderColor:'rgba(96,165,250,.3)', borderWidth:1, padding:12,
+            titleColor:'#e5edf9', bodyColor:'#b2c5e0',
+            callbacks:{
+              footer: items => {
+                const races = items.filter(i => i.dataset.stack === 'races').reduce((s,i)=> s + (i.parsed.y||0), 0);
+                return 'Total races: ' + races;
+              }
+            }
           }
+        },
+        scales:{
+          x:{ stacked:true, ticks:{ color:tickColor, maxRotation:0, autoSkipPadding:16 }, grid:{ color:gridColor, drawBorder:false } },
+          y:{ stacked:true, beginAtZero:true, title:{ display:true, text:'Races', color:tickColor },
+              ticks:{ color:tickColor, precision:0 }, grid:{ color:gridColor, drawBorder:false } },
+          yPR: hasPRs
+            ? { position:'right', beginAtZero:true, title:{ display:true, text:'PRs', color:PR_LINE_COLOR },
+                ticks:{ color:PR_LINE_COLOR, precision:0 }, grid:{ drawOnChartArea:false, drawBorder:false } }
+            : { display:false }
         }
       }
     });
