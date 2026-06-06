@@ -19,6 +19,28 @@
     background:rgba(34,197,94,.12);color:#22c55e;border:1px solid rgba(34,197,94,.30)}
   .chart-drop strong{font-weight:700}
   .chart-drop svg{flex:0 0 auto}
+
+  /* ---- Dashboard mobile hardening (page-scoped) ----
+     Site-wide layout collapses live in styles.css; these rules only patch
+     this page's inline-style risks so nothing forces horizontal scroll
+     at ~320–430px wide. Desktop is untouched (rules live behind a query). */
+  @media (max-width:760px){
+    /* Season picker row: let the select shrink and span the row instead of
+       holding its inline 200px min-width and overflowing the card. */
+    #dashSeasonSelect{min-width:0 !important;width:100%;max-width:100%;box-sizing:border-box}
+    /* Meet-history filters: each select takes the full row when wrapped. */
+    .meet-filters label{flex:1 1 100%;min-width:0}
+    .meet-filters select{min-width:0;width:100%;max-width:100%;box-sizing:border-box}
+    .meet-filters .meet-counter{flex:1 1 100%}
+    /* Loading card: trim the oversized vertical padding on small screens. */
+    #loadingState{padding:36px 18px !important}
+  }
+  @media (max-width:430px){
+    /* Charts on phones: keep canvases full-width but a touch shorter so the
+       donut/line don't dominate the viewport. Containers stay width:100%. */
+    .chart-host{height:230px}
+    .stroke-chart-host{height:190px}
+  }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
@@ -1029,5 +1051,6 @@
   }
 </script>
 
+<script src="assets/mobile-nav.js" defer></script>
 </body>
 </html>

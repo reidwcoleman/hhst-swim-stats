@@ -58,6 +58,23 @@
   .ss-mover-drop{flex:0 0 auto;font-family:'Fraunces',serif;font-weight:700;font-size:17px;color:#22c55e;white-space:nowrap}
   .ss-mover-arrow{flex:0 0 auto;color:var(--text-subtle);transition:transform .16s ease,color .16s ease;display:flex}
   .ss-mover:hover .ss-mover-arrow{transform:translateX(3px);color:var(--accent)}
+
+  /* ===== Mobile (<=760px) ===== */
+  @media (max-width:760px){
+    /* Season picker: stack label + full-width select, drop the rigid min-width */
+    .ss-season-bar{flex-direction:column;align-items:stretch;gap:9px;padding:14px}
+    .ss-season-bar .lb-select{min-width:0;width:100%;font-size:16px}
+    .ss-season-badge{align-self:flex-start}
+    .ss-section-title{margin:30px 0 12px;flex-wrap:wrap;gap:6px 10px}
+    .ss-section-title h2{font-size:19px}
+  }
+  @media (max-width:430px){
+    .ss-movers-head h2{font-size:18px}
+    /* Keep mover rows tight + tappable, never let them overflow */
+    .ss-mover{gap:11px;padding:11px 12px}
+    .ss-mover-name{font-size:14px}
+    .ss-mover-drop{font-size:15px}
+  }
 </style>
 
 <!-- Firebase compat SDK -->
@@ -242,6 +259,7 @@
 </footer>
 
 <script src="assets/data.js?v=26"></script>
+<script src="assets/mobile-nav.js" defer></script>
 <script>
   HHST.initTheme();
   document.getElementById('themeToggle').addEventListener('click', HHST.toggleTheme);

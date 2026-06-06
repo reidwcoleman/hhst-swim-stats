@@ -113,6 +113,21 @@
   @media (max-width:640px){
     .idx-waves{height:110px}
   }
+  /* ===== Phone refinements (page-scoped, idx-* + hero decorations only) =====
+     Guards against horizontal scroll and oversized page-specific elements at
+     ~320–430px. Shared layout (hero padding, lookup-card, inputs@16px,
+     hero-trust wrap, team-pulse / how-steps / feature-grid collapse) lives in
+     assets/styles.css; these rules only touch this page's own decorations. */
+  @media (max-width:480px){
+    /* Wave/droplet decorations must never widen the page. */
+    .idx-waves{height:90px;overflow:hidden}
+    .idx-waves svg{max-width:none}
+    .hero .drops{overflow:hidden}
+    /* Keep the focus check + reserved padding sensible on tiny inputs. */
+    .idx-form .idx-input-wrap input{padding-right:38px}
+    .idx-check{right:12px}
+    .idx-hint{font-size:11px;line-height:1.4}
+  }
 </style>
 
 <!-- Firebase compat SDK -->
@@ -479,6 +494,7 @@
     }
   })();
 </script>
+<script src="assets/mobile-nav.js" defer></script>
 
 </body>
 </html>

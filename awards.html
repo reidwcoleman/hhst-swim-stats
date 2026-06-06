@@ -160,6 +160,49 @@
 
   /* Anchored scrolls (e.g. the ?print=fastest deep-link) clear the header. */
   .aw-section-head, .awards-host, .awards-host-improved{ scroll-margin-top:80px; }
+
+  /* ====================================================================
+     Phone polish (≤640px). On-screen only — every selector here is either
+     .no-print, inside .awards-intro (hidden in @media print), or the sticky
+     pill, so none of this can reach the printed posters. Fixes the few
+     page-local inline styles that the site-wide CSS can't reach with media
+     queries: the right-aligned controls column and its capped caption.
+     ==================================================================== */
+  @media (max-width:640px){
+    /* When .awards-intro-head collapses to one column (≤768px in styles.css),
+       the inline `align-items:flex-end` on .awards-controls hugs the print
+       button + caption to the right edge. Pull them back to the left, full
+       width, and let the button fill the row so it can't overflow 360px. */
+    .awards-intro-head .awards-controls{
+      align-items:stretch !important;
+      width:100%;
+    }
+    .awards-intro-head .awards-controls > span{
+      max-width:none !important;
+      text-align:left !important;
+    }
+    #printAllAwards{
+      width:100%;
+      justify-content:center;
+      padding:12px 16px;
+      max-width:100%;
+    }
+    /* Badge meta row stays wrapped (already flex-wrap), just tighten gaps. */
+    .aw-meta{ gap:6px; }
+    /* Section eyebrow + hairline: keep the rule from forcing overflow. */
+    .aw-section-head{ margin-left:0; margin-right:0; min-width:0; }
+    .aw-section-head .aw-section-rule{ min-width:0; }
+  }
+
+  /* Very narrow phones (≤380px): the certificate posters carry a lot of
+     fixed-feel chrome. Belt-and-suspenders to guarantee no poster or host
+     can push the page wider than the viewport. Screen-only; print uses its
+     own fixed-inch sizing in @media print. */
+  @media (max-width:380px){
+    .awards-host, .awards-host-improved{ max-width:100%; }
+    .award-card{ max-width:100%; }
+    .award-card .award-table{ width:100%; }
+  }
 </style>
 
 <!-- Firebase compat SDK -->
@@ -833,5 +876,6 @@
     return (s||'').toString().replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
 </script>
+<script src="assets/mobile-nav.js" defer></script>
 </body>
 </html>

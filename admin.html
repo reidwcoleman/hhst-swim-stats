@@ -177,6 +177,58 @@
     .kpi:hover,.quick-nav-card:hover,.maintenance-btn:hover,
     main.admin-shell > .card:hover{transform:none!important}
   }
+
+  /* =====================================================================
+     ADMIN MOBILE POLISH — admin-only refinements layered on top of the
+     shared styles.css @media blocks (which already handle topbar wrap,
+     single-col KPIs, card padding, table scroll & modal sizing). Scoped
+     to admin markup so no other page is affected. styles.css is untouched.
+     ===================================================================== */
+  @media (max-width:768px){
+    /* Never let the dashboard cause a sideways scroll. */
+    body{overflow-x:hidden}
+    #adminView{max-width:100%}
+
+    /* Topbar: let both sides wrap and keep every control tappable (>=40px). */
+    .topbar{flex-wrap:wrap;row-gap:10px}
+    .topbar-right{flex-wrap:wrap}
+    .topbar-right .btn-sm,
+    .topbar-right .btn-site,
+    .topbar-right .btn-logout{
+      min-height:40px;display:inline-flex;align-items:center}
+    .topbar-right .theme-toggle-sm{min-width:40px;min-height:40px}
+
+    /* Team Activity chart: contain the canvas, shorten on small screens. */
+    #adminChartCard{overflow:hidden}
+    #adminChartCard .chart-host{height:260px!important;max-width:100%}
+    #adminChartCard canvas{max-width:100%}
+
+    /* Manual-time form: stack fields so nothing overflows the card. */
+    #manualTimeForm{grid-template-columns:1fr!important}
+    #manualTimeForm .field{max-width:none!important;grid-column:1/-1!important}
+    #manualTimeForm input,
+    #manualTimeForm select{width:100%;min-height:42px}
+
+    /* Drop zones & status read full width with no overflow. */
+    .drop-zone{width:100%}
+  }
+
+  @media (max-width:480px){
+    /* Tighter chart on the smallest phones. */
+    #adminChartCard .chart-host{height:230px!important}
+
+    /* Keep the brand + admin pill from forcing overflow. */
+    .topbar .brand{min-width:0;flex:1 1 auto}
+
+    /* Time-trial / view-site / logout pills stay finger-friendly. */
+    .topbar-right .btn-sm,
+    .topbar-right .btn-site,
+    .topbar-right .btn-logout{min-height:40px}
+
+    /* Modal actions stack so buttons stay full-width and tappable. */
+    .modal-card .modal-actions{flex-wrap:wrap;gap:8px}
+    .modal-card .modal-actions .btn{flex:1 1 auto}
+  }
 </style>
 
 <!-- Firebase compat SDK -->
@@ -187,6 +239,9 @@
 
 <!-- SheetJS — lets the importer read .xlsx / .xls in addition to .csv -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<!-- Chart.js — powers the "Team Activity" bar chart on the admin dashboard -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
@@ -343,6 +398,16 @@
         </span>
         <svg class="quick-nav-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
       </a>
+      <a href="timetrial.html" class="quick-nav-card">
+        <span class="quick-nav-icon" style="background:linear-gradient(135deg,#38bdf8,#0ea5e9);box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 8px 20px -10px #0ea5e9">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M9 2h6"/><path d="M19 4l-2 2"/></svg>
+        </span>
+        <span class="quick-nav-body">
+          <span class="quick-nav-title">Time Trial</span>
+          <span class="quick-nav-sub">Run a stopwatch time trial — saved to profiles</span>
+        </span>
+        <svg class="quick-nav-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
     </div>
 
     <div class="kpi-row">
@@ -379,6 +444,14 @@
         <div class="delta" id="dLast">No CSV uploaded yet</div>
       </div>
     </div>
+
+    <!-- TEAM ACTIVITY CHART -->
+    <section class="card chart-card" id="adminChartCard">
+      <h2>Team Activity</h2>
+      <p class="lead">Races logged per meet, oldest to newest.</p>
+      <div class="chart-host" style="height:280px"><canvas id="adminChart"></canvas></div>
+      <div class="empty" id="adminChartEmpty" style="display:none">Upload meet results to see team activity.</div>
+    </section>
 
     <!-- TIME DROPPED PER SEASON -->
     <div class="card" id="seasonStatsCard" style="display:none">
@@ -1531,6 +1604,7 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
   let cachedData = { swimmers:{}, lastUpload:null };
   let cachedUploads = [];
   let deletingUpload = false; // guard: only one deleteUpload in flight at a time
+  let adminChartInstance = null; // Chart.js instance for the Team Activity graph
   document.getElementById('searchInput').addEventListener('input', e => renderRoster(e.target.value));
   document.getElementById('rosterSeasonFilter').addEventListener('change', () => {
     renderRoster(document.getElementById('searchInput').value);
@@ -1547,6 +1621,7 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
       return;
     }
     const swimmers = Object.values(cachedData.swimmers);
+    renderAdminChart(swimmers);
     const totalRaces = swimmers.reduce((sum, s)=> sum + (s.results||[]).length, 0);
     const meets = new Set();
     swimmers.forEach(s => (s.results||[]).forEach(r => meets.add(r.meet)));
@@ -1570,6 +1645,97 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
     renderRoster(document.getElementById('searchInput').value);
     populateManualTimeUI();
     refreshUploads();
+  }
+
+  // Team Activity bar chart — races logged per meet, oldest meet to newest.
+  // Re-entrant: destroys any prior Chart.js instance so refreshAll() can run
+  // repeatedly (after uploads, edits, deletes) without leaking canvases.
+  function renderAdminChart(swimmers){
+    const host = document.querySelector('#adminChartCard .chart-host');
+    const canvas = document.getElementById('adminChart');
+    const empty = document.getElementById('adminChartEmpty');
+    if(!canvas || !host) return;
+
+    // Tally races per meet (skip time-trial results and meet-less / Unknown rows).
+    const byMeet = new Map();
+    swimmers.forEach(s => (s.results||[]).forEach(r => {
+      if(!r || r.timeTrial) return;
+      const meet = r.meet;
+      if(!meet || meet === 'Unknown Meet') return;
+      const ts = Date.parse(r.date); // NaN when undated
+      const entry = byMeet.get(meet);
+      if(entry){
+        entry.count++;
+        // Keep the earliest known date for ordering; ignore NaN once we have one.
+        if(!isNaN(ts) && (isNaN(entry.ts) || ts < entry.ts)) entry.ts = ts;
+      } else {
+        byMeet.set(meet, { count:1, ts });
+      }
+    }));
+
+    // No meets, or Chart.js failed to load -> show the empty state, hide canvas.
+    if(byMeet.size === 0 || typeof Chart === 'undefined'){
+      if(adminChartInstance){ adminChartInstance.destroy(); adminChartInstance = null; }
+      host.style.display = 'none';
+      if(empty){
+        empty.style.display = '';
+        if(typeof Chart === 'undefined'){
+          empty.textContent = 'Charts are unavailable right now.';
+        } else {
+          empty.textContent = 'Upload meet results to see team activity.';
+        }
+      }
+      return;
+    }
+
+    // Sort meets ascending by date; undated meets (NaN) sort first.
+    const meets = Array.from(byMeet.entries()).sort((a,b) => {
+      const ta = a[1].ts, tb = b[1].ts;
+      const na = isNaN(ta), nb = isNaN(tb);
+      if(na && nb) return 0;
+      if(na) return -1;
+      if(nb) return 1;
+      return ta - tb;
+    });
+    const labels = meets.map(m => m[0]);
+    const data = meets.map(m => m[1].count);
+
+    host.style.display = '';
+    if(empty) empty.style.display = 'none';
+
+    const tickColor = 'rgba(178,197,224,.5)';
+    const gridColor = 'rgba(96,165,250,.12)';
+
+    if(adminChartInstance){ adminChartInstance.destroy(); adminChartInstance = null; }
+    adminChartInstance = new Chart(canvas.getContext('2d'), {
+      type:'bar',
+      data:{
+        labels,
+        datasets:[{
+          label:'Races logged',
+          data,
+          backgroundColor:'#3b82f6',
+          borderRadius:6,
+          maxBarThickness:54
+        }]
+      },
+      options:{
+        responsive:true,
+        maintainAspectRatio:false,
+        plugins:{ legend:{ display:false } },
+        scales:{
+          x:{
+            ticks:{ color:tickColor },
+            grid:{ color:gridColor, drawBorder:false }
+          },
+          y:{
+            beginAtZero:true,
+            ticks:{ color:tickColor, precision:0, stepSize:1 },
+            grid:{ color:gridColor, drawBorder:false }
+          }
+        }
+      }
+    });
   }
 
   // Load the uploaded-files registry and (re)render the Uploaded Files card.

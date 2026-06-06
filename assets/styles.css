@@ -1154,9 +1154,11 @@ table tr:hover td{background:rgba(96,165,250,.05)}
 .lb-select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--ring)}
 
 @media (max-width:760px){
-  /* Let public-site nav stay accessible — wrap instead of hiding links. */
-  nav{flex-wrap:wrap;row-gap:6px}
-  .nav-links{flex-wrap:wrap;justify-content:flex-end}
+  /* Public-site nav: the hamburger (.nav-burger + .nav-open dropdown) now
+     handles the links at this width — see the "MOBILE NAV (hamburger)"
+     block lower in this file. Keep the nav itself on one row so the brand
+     stays left and the burger sits right. */
+  header nav{flex-wrap:nowrap}
   .swimmer-meta{font-size:13px}
   .rank-row{grid-template-columns:1fr;gap:8px;text-align:left}
   .rank-place{justify-content:flex-start}
@@ -3768,3 +3770,187 @@ a.lb-entry-name:hover{color:var(--accent)!important;text-decoration:underline;te
 .pr-right .pr-drop{font-size:12.5px;font-weight:700;color:#34d399;margin-top:2px}
 [data-theme="light"] .pr-right .pr-drop{color:#047857}
 .pr-right .pr-first{font-size:11px;font-weight:600;color:var(--text-subtle);margin-top:2px}
+
+/* =============================================================
+   MOBILE NAV (hamburger)
+   -------------------------------------------------------------
+   Injected by assets/mobile-nav.js as
+     <button class="nav-burger"><span></span>×3</button>
+   appended inside `header nav`. Hidden on desktop; at
+   max-width:760px it shows as a 44×44 tappable hamburger on the
+   right and `.nav-links` becomes an absolutely-positioned
+   dropdown panel anchored under the sticky header. The panel is
+   hidden by default and shown when the parent <nav> has
+   `.nav-open`. Reads sensibly in both dark (default) and
+   [data-theme="light"] because it uses design tokens.
+   ============================================================= */
+.nav-burger{
+  display:none;                 /* desktop: hidden — links show inline */
+  width:44px;height:44px;flex-shrink:0;
+  padding:0;margin-left:8px;
+  border:1px solid var(--border-strong);
+  border-radius:10px;
+  background:var(--surface);
+  cursor:pointer;
+  align-items:center;justify-content:center;
+  flex-direction:column;gap:5px;
+  -webkit-tap-highlight-color:transparent;
+  transition:border-color .18s ease,background .18s ease;
+}
+.nav-burger span{
+  display:block;width:20px;height:2px;border-radius:2px;
+  background:var(--text);
+  transition:transform .22s cubic-bezier(.16,1,.3,1),opacity .18s ease;
+}
+.nav-burger:hover{border-color:var(--accent)}
+.nav-burger:focus-visible{outline:none;box-shadow:0 0 0 3px var(--ring)}
+/* Open state — morph the three bars into an X */
+nav.nav-open .nav-burger span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+nav.nav-open .nav-burger span:nth-child(2){opacity:0}
+nav.nav-open .nav-burger span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+
+@media (max-width:760px){
+  /* Anchor the dropdown to the nav. */
+  header nav{position:relative}
+  /* Show the burger as the right-hand control. */
+  .nav-burger{display:inline-flex}
+  /* Turn the link list into a full-width dropdown panel under the header. */
+  header nav .nav-links{
+    display:none;                /* closed by default */
+    position:absolute;top:100%;left:0;right:0;
+    flex-direction:column;align-items:stretch;
+    gap:6px;
+    margin-top:1px;
+    padding:12px;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-top:none;
+    border-radius:0 0 var(--radius) var(--radius);
+    box-shadow:var(--shadow-lg);
+    z-index:120;
+  }
+  /* Open: reveal the stacked panel. */
+  header nav.nav-open .nav-links{display:flex}
+  /* Each link / list item becomes a full-width tappable row. */
+  header nav .nav-links li{width:100%;list-style:none}
+  header nav .nav-links a{
+    display:flex;align-items:center;width:100%;
+    padding:12px 14px;border-radius:10px;
+    font-size:15px;min-height:44px;
+  }
+  header nav .nav-links a:not(.btn){
+    color:var(--text);background:var(--bg-alt);
+  }
+  header nav .nav-links a.btn{
+    justify-content:center;width:100%;
+  }
+  header nav .nav-links a.btn.ghost{
+    border:1px solid var(--border-strong);
+  }
+  /* The trailing theme-toggle <li> still works inside the open menu. */
+  header nav .nav-links li:last-child{
+    display:flex;justify-content:flex-start;
+    padding-top:4px;
+  }
+  header nav .nav-links .theme-toggle{
+    width:44px;height:44px;
+  }
+}
+
+/* =============================================================
+   ===== MOBILE OPTIMIZATION (added) =====
+   Additive phone layer (~320px–430px). Does not remove desktop
+   rules; collapses remaining multi-column grids to 1 (or 2→1),
+   tightens hero/section padding, prevents iOS input zoom, and
+   guarantees no horizontal overflow. Verified against both the
+   dark (default) and [data-theme="light"] token sets.
+   ============================================================= */
+
+/* --- Overflow guard: cap anything that could exceed a 320px viewport.
+   Tables keep their own horizontal scroll inside .table-wrap. --- */
+@media (max-width:768px){
+  img, svg, video, canvas{max-width:100%}
+  .lookup-card, .login-card, .modal-card,
+  .feature, .card, .chart-card, .stat-card, .kpi,
+  .quick-nav-card, .team-pulse{max-width:100%}
+  /* Any auto-fit grid that still forces a wide min collapses cleanly. */
+  .feature-grid,
+  .best-times,
+  .best-times-rich,
+  .event-deep,
+  .admin-quick-nav,
+  .maintenance-grid{
+    grid-template-columns:1fr;
+  }
+  /* Keep two-up where it still reads well on a large phone. */
+  .kpi-row,
+  .stat-grid,
+  .medal-row{
+    grid-template-columns:repeat(2,1fr);
+  }
+  /* Filter / meet controls go single-column and full width. */
+  .lb-filter-grid{grid-template-columns:1fr}
+  .meet-filters{flex-direction:column;align-items:stretch;gap:12px}
+  .meet-filters label{width:100%}
+  .meet-filters select{min-width:0;width:100%}
+  .meet-counter{margin-left:0}
+  .meet-form-grid{grid-template-columns:1fr}
+  /* Ranks rows already collapse at 760px; ensure place aligns left. */
+  .ranks-list .rank-row{grid-template-columns:1fr}
+}
+
+@media (max-width:480px){
+  /* Single-column everything that was still 2-up at 768. */
+  .kpi-row,
+  .stat-grid,
+  .feature-grid,
+  .best-times,
+  .best-times-rich,
+  .event-deep{
+    grid-template-columns:1fr;
+  }
+  /* Medals stay 2-up (4 small tiles in two rows reads better than a stack). */
+  .medal-row{grid-template-columns:repeat(2,1fr)}
+
+  /* Hero / section padding trim for the smallest screens. */
+  .hero{padding:44px 14px 54px}
+  .dash-hero{padding:26px 14px 22px}
+  section{padding:44px 14px}
+
+  /* Inputs / selects / textareas: 16px stops iOS focus-zoom; full width. */
+  input, select, textarea,
+  .field input, .field select,
+  .roster-search, .lb-select select, .meet-filters select,
+  .awards-controls select, .chip-add input{
+    font-size:16px;
+    max-width:100%;
+  }
+  input[type=text], input[type=email], input[type=password],
+  input[type=search], input[type=number], input[type=tel],
+  select, textarea,
+  .field input, .field select, .roster-search{
+    width:100%;
+  }
+
+  /* Awards controls stack full-width so the print button isn't cramped. */
+  .awards-controls{flex-direction:column;align-items:stretch}
+  .awards-controls > label.lb-select{width:100%}
+  .awards-controls > label.lb-select select{min-width:0;width:100%}
+  #printAllAwards{width:100%;justify-content:center}
+
+  /* Roster search row: search + any buttons stack full width. */
+  .roster-search-row{flex-direction:column}
+  .roster-search{min-width:0}
+}
+
+/* --- Touch tap targets: extend the existing hover:none block so the new
+   interactive controls also honour the 44pt minimum. --- */
+@media (hover:none) and (pointer:coarse){
+  .nav-burger, .quick-nav-card, .login-choice,
+  .chip-x, .chip-add input, .roster-search,
+  .meet-filters select, .lb-select select,
+  .awards-controls select, #printAllAwards{
+    min-height:44px;
+  }
+  .nav-burger{min-width:44px}
+}
