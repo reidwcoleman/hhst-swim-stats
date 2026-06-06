@@ -942,15 +942,24 @@
     const t = Date.parse(str);
     return isFinite(t) ? t : NaN;
   }
-  // Distinct meets within a season, each with a representative (latest) date,
-  // sorted OLDEST → NEWEST. A meet with no date (e.g. a preseason best-times
-  // "Practice Meet") sorts earliest, so a later real meet becomes the target.
+  // A "practice meet" / preseason best-times session is NOT an actual
+  // competition, so its times must never count as a real meet — not for Fastest
+  // Five targeting and not for Most Improved. Detected by name (case-insensitive
+  // "practice"), e.g. "Practice Meet", "Intrasquad Practice". Time trials are
+  // flagged separately via r.timeTrial and excluded too.
+  function isPracticeMeet(meet){
+    return /practice/i.test((meet || '').toString());
+  }
+
+  // Distinct ACTUAL meets within a season (practice meets + time trials
+  // excluded), each with a representative (latest) date, sorted OLDEST → NEWEST.
   function meetsInSeason(swimmers, season){
     const byMeet = new Map();
     let seq = 0;
     swimmers.forEach(sw => (sw.results||[]).forEach(r => {
       if(!r || !r.meet) return;
       if(r.timeTrial) return; // time trials never count as a meet (keeps them out of Fastest Five / Most Improved targeting)
+      if(isPracticeMeet(r.meet)) return; // practice/best-times sessions aren't actual meets
       if(season && r.season !== season) return;
       const ts = parseFlexibleDate(r.date);
       const cur = byMeet.get(r.meet);
@@ -977,10 +986,15 @@
   // Ranks swimmers by total seconds dropped between the current season's most
   // recent meet (the "target") and the meet immediately before it within the
   // SAME season (the "baseline" — "compare the second meet to the first meet").
-  // The season needs at least two meets: with only one, there's nothing to
-  // compare against and the function returns empty (the board stays hidden). It
-  // never reaches into a previous season. For each (swimmer, event) swum at
-  // BOTH meets, drop = baseline time − target time, counted only when faster.
+  // The season needs at least two ACTUAL meets in the current year (practice
+  // meets + time trials don't count): with fewer, there's nothing to compare
+  // against and the function returns empty (the board stays hidden). It never
+  // reaches into a previous season. For each (swimmer, event) swum at BOTH
+  // meets, drop = baseline time − target time, counted ONLY when the target swim
+  // is a PERSONAL RECORD — the swimmer's fastest-ever time for that stroke+
+  // distance across actual meets (practice meets + time trials excluded). A swim
+  // that beat the previous meet but is still slower than an earlier real-meet
+  // time is an improvement, not a PR, so it does not count.
   // Returns { meet, date, baselineMeet, baselineSeason, boards } where boards is
   // keyed by competitionGroup ("Boys 11-12" / "Girls 11-12" / bare bracket).
   // opts.season scopes the target meet (defaults handled by the caller).
@@ -1037,9 +1051,19 @@
         const cur = into[st].get(d);
         if(cur === undefined || r.seconds < cur.sec) into[st].set(d, { sec: r.seconds, ev: r.event, time: r.time });
       }
+      // bestEver: the swimmer's fastest-ever time per stroke|distance across
+      // ACTUAL meets (time trials + practice meets excluded). This is the PR
+      // baseline — a target swim only counts toward Most Improved when it matches
+      // this best (i.e. it set a personal record), not merely beat last meet.
+      const bestEver = {};
       (sw.results||[]).forEach(r => {
         if(!r || !isFinite(r.seconds)) return;
         if(r.timeTrial) return; // time trials excluded from Most Improved
+        if(isPracticeMeet(r.meet)) return; // practice-meet times are not actual meet times
+        const st = strokeOf(r); if(st){
+          const k = st + '|' + distOf(r);
+          if(bestEver[k] === undefined || r.seconds < bestEver[k]) bestEver[k] = r.seconds;
+        }
         if(r.meet === target.meet && (!season || r.season === season)) indexResult(tgtByStroke, r);
         if(r.meet === baseline.meet && (!baselineSeason || r.season === baselineSeason)) indexResult(baseByStroke, r);
       });
@@ -1097,6 +1121,13 @@
           if(!bEntry) return;                      // not swum at the baseline meet → can't compare
           const drop = bEntry.sec - tEntry.sec;
           if(drop > 0){
+            // PR-only gate: the target swim must be the swimmer's fastest-ever
+            // for this stroke+distance across actual meets. tEntry.sec is itself
+            // in bestEver, so bestEver[key] <= tEntry.sec always; equality means
+            // no earlier real-meet swim was faster → it's a PR. A drop over the
+            // previous meet that is still slower than an older PB doesn't count.
+            const prBest = bestEver[stroke + '|' + dist];
+            if(prBest === undefined || tEntry.sec > prBest + 1e-6) return;
             totalDrop += drop;
             eventsDropped.push({
               event: tEntry.ev, drop,
