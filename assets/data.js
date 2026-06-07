@@ -94,6 +94,108 @@
     return rows.filter(r => r.length && r.some(x => x !== ''));
   }
 
+  // -------- Hy-Tek (.hy3) / SDIF (.sd3) meet-results parsers --------
+  // SwimTopia's Meet Maestro exports a finished meet's results as a Hy-Tek
+  // .hy3 or an SDIF .sd3 file (often inside a .zip). Both are fixed-width text:
+  // the first two characters of every line are the record type. We turn them
+  // into the SAME array-of-arrays (header row + data rows) that ingestRows
+  // already consumes, so all the downstream roster-matching, time formatting
+  // (fmtTime/timeToSeconds) and de-duplication stay identical to the CSV path.
+  // 1-indexed fixed-width slice, trimmed — matches the published record layouts.
+  function fw(line, start, len){ return (line == null ? '' : line).slice(start - 1, start - 1 + len).trim(); }
+  // "MMDDYYYY" -> "MM/DD/YYYY" so the importer's flexible date parser reads it.
+  function mdyToDate(s){
+    s = (s || '').trim();
+    return /^\d{8}$/.test(s) ? `${s.slice(0,2)}/${s.slice(2,4)}/${s.slice(4,8)}` : '';
+  }
+  // Hy-Tek stroke codes are letters (A-E) or digits (1-5); SDIF uses digits 1-5.
+  const HYTEK_STROKE = { '1':'Free','2':'Back','3':'Breast','4':'Fly','5':'IM',
+                         'A':'Free','B':'Back','C':'Breast','D':'Fly','E':'IM' };
+  const SDIF_STROKE  = { '1':'Free','2':'Back','3':'Breast','4':'Fly','5':'IM' };
+
+  // Hy-Tek .hy3 → rows. Records used: B1 (meet name/date), D1 (swimmer),
+  // E1 (event entry: distance + stroke), E2 (event result: time/place/date).
+  // We emit one row per entry, preferring the FINAL swim (type F) over a
+  // prelim/swim-off, so a swimmer who swam both isn't counted twice.
+  function parseHy3(text){
+    const lines = (text || '').split(/\r?\n/);
+    const out = [['first','last','gender','event','distance','time','place','date','meet']];
+    let meetName = '', meetDate = '';
+    const swimmers = {};        // swimmerCode -> { first, last, gender }
+    let cur = null;             // { code, distance, stroke, final, fallback }
+    const flush = () => {
+      if(cur){ const row = cur.final || cur.fallback; if(row) out.push(row); cur = null; }
+    };
+    for(const line of lines){
+      const rec = line.slice(0, 2);
+      if(rec === 'B1'){
+        meetName = fw(line, 3, 45);
+        meetDate = mdyToDate(fw(line, 93, 8));
+      } else if(rec === 'D1'){
+        flush();
+        swimmers[fw(line, 4, 5)] = { gender: fw(line, 3, 1), last: fw(line, 9, 20), first: fw(line, 29, 20) };
+      } else if(rec === 'E1'){
+        flush();
+        cur = { code: fw(line, 4, 5), distance: fw(line, 16, 6), stroke: HYTEK_STROKE[fw(line, 22, 1)] || '', final: null, fallback: null };
+      } else if(rec === 'E2' && cur){
+        const type = fw(line, 3, 1);                 // F = final, P = prelim, S = swim-off
+        const rawTime = fw(line, 4, 8);
+        if(timeToSeconds(rawTime) > 0 && cur.distance && cur.stroke){   // skip NT/DQ/0.00
+          const sw = swimmers[cur.code] || {};
+          const row = [ sw.first || '', sw.last || '', sw.gender || '',
+            `${cur.distance} ${cur.stroke}`, cur.distance, rawTime, fw(line, 30, 4),
+            mdyToDate(fw(line, 88, 8)) || meetDate, meetName ];
+          if(type === 'F') cur.final = row;
+          else if(!cur.fallback) cur.fallback = row;
+        }
+      }
+    }
+    flush();
+    return out;
+  }
+
+  // SDIF .sd3 → rows. One D0 record per swim. Uses the achieved time
+  // (finals 116, else prelim 98, else swim-off 107) — never the seed/entry
+  // time (89), which is just what the swimmer was seeded with.
+  function parseSd3(text){
+    const lines = (text || '').split(/\r?\n/);
+    const out = [['name','gender','event','distance','time','place','date','meet']];
+    let meetName = '', meetDate = '';
+    for(const line of lines){
+      const rec = line.slice(0, 2);
+      if(rec === 'B1'){
+        meetName = fw(line, 12, 30);
+        meetDate = mdyToDate(fw(line, 122, 8));
+      } else if(rec === 'D0'){
+        const distance = fw(line, 68, 4);
+        const stroke = SDIF_STROKE[fw(line, 72, 1)] || '';
+        const finals = fw(line, 116, 8), prelim = fw(line, 98, 8), swimoff = fw(line, 107, 8);
+        let rawTime = '', place = '';
+        if(timeToSeconds(finals) > 0){ rawTime = finals; place = fw(line, 136, 3); }
+        else if(timeToSeconds(prelim) > 0){ rawTime = prelim; place = fw(line, 133, 3); }
+        else if(timeToSeconds(swimoff) > 0){ rawTime = swimoff; }
+        if(!(timeToSeconds(rawTime) > 0) || !distance || !stroke) continue;  // entries-only / DQ → skip
+        out.push([ fw(line, 12, 28) /* LAST, FIRST */, fw(line, 66, 1),
+          `${distance} ${stroke}`, distance, rawTime, place,
+          mdyToDate(fw(line, 81, 8)) || meetDate, meetName ]);
+      }
+    }
+    return out;
+  }
+
+  // Pick the right parser by extension, falling back to sniffing the record
+  // codes (a .zip's inner file, or an extension-less download). Returns the
+  // array-of-arrays, or null when the text isn't a recognized results file.
+  function parseResultsFile(name, text){
+    const n = (name || '').toLowerCase();
+    if(n.endsWith('.hy3')) return parseHy3(text);
+    if(n.endsWith('.sd3')) return parseSd3(text);
+    const head = (text || '').slice(0, 6000);
+    if(/^D0/m.test(head)) return parseSd3(text);          // SDIF individual-event records
+    if(/^(D1|E1|E2)/m.test(head)) return parseHy3(text);  // Hy-Tek swimmer/event records
+    return null;
+  }
+
   // Header alias -> normalized internal field name. Keys are matched after stripping
   // every non-alphanumeric char, so "Athlete Last Name", "AthleteLastName", and
   // "athlete_last_name" all collapse to the same key.
@@ -2630,7 +2732,7 @@
 
   global.HHST = {
     readAll, getSwimmer,
-    parseCSV, ingestCSV, ingestRows,
+    parseCSV, parseHy3, parseSd3, parseResultsFile, ingestCSV, ingestRows,
     findSwimmer,
     deleteSwimmer, pruneNonRosterSwimmers, addSwimmerManual, updateSwimmer,
     getUploads, deleteUpload,

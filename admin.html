@@ -253,6 +253,32 @@
     box-shadow:0 0 0 3px var(--ring)}
 
   /* ===================================================================
+     LOGIN CHOOSER — role-distinct icons + sub-labels (page-scoped).
+     Builds on the shared .login-choice recipe in styles.css; adds a leading
+     gradient icon tile per role and a one-line descriptor so the three logins
+     read at a glance and feel premium. Behavior/JS (data-target) unchanged.
+     =================================================================== */
+  .login-choice{padding:14px 16px}
+  .login-choice-main{display:flex;align-items:center;gap:14px;min-width:0}
+  .login-choice-ic{
+    width:40px;height:40px;flex:none;border-radius:12px;
+    display:grid;place-items:center;color:#fff;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.28);
+  }
+  .login-choice-ic svg{width:21px;height:21px;color:#fff}
+  .login-choice:hover .login-choice-ic svg{color:#fff}  /* keep tile icon white on hover */
+  .ic-admin{background:linear-gradient(135deg,#fbbf24,#f59e0b);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 8px 18px -10px rgba(245,158,11,.7)}
+  .ic-head{background:linear-gradient(135deg,var(--brand-500,#3b82f6),var(--brand-700,#1d4ed8));
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 8px 18px -10px var(--brand-600,#2563eb)}
+  .ic-assistant{background:linear-gradient(135deg,#38bdf8,#0ea5e9);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 8px 18px -10px #0ea5e9}
+  .login-choice-text{display:flex;flex-direction:column;gap:2px;min-width:0;text-align:left}
+  .login-choice-label{font-weight:700;font-size:15.5px;color:var(--text);line-height:1.2}
+  .login-choice-sub{font-size:12.5px;font-weight:500;color:var(--text-muted);line-height:1.3}
+  .login-choice-arrow{flex:none}
+
+  /* ===================================================================
      ADMIN MOBILE POLISH — admin-only refinements on top of the shared
      @media blocks (topbar wrap, single-col KPIs, card padding, table
      scroll & modal sizing are already handled in styles.css).
@@ -347,6 +373,8 @@
 
 <!-- SheetJS — lets the importer read .xlsx / .xls in addition to .csv -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<!-- fflate — unzips SwimTopia .zip result bundles in the browser so the .hy3/.sd3 inside can be imported -->
+<script src="https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js"></script>
 
 <!-- Chart.js — powers the "Team Momentum" chart on the admin dashboard -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -373,16 +401,40 @@
       <p class="lead">Choose your login.</p>
       <div class="login-choices">
         <button type="button" class="login-choice" data-target="admin">
-          <span class="login-choice-label">Admin</span>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          <span class="login-choice-main">
+            <span class="login-choice-ic ic-admin">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+            </span>
+            <span class="login-choice-text">
+              <span class="login-choice-label">Admin</span>
+              <span class="login-choice-sub">Full team management</span>
+            </span>
+          </span>
+          <svg class="login-choice-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
         </button>
         <button type="button" class="login-choice" data-target="head">
-          <span class="login-choice-label">Head Coach</span>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          <span class="login-choice-main">
+            <span class="login-choice-ic ic-head">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.6 5.9 6.4.6-4.8 4.3 1.4 6.3L12 19.8 6.4 23.1l1.4-6.3L3 12.5l6.4-.6z"/></svg>
+            </span>
+            <span class="login-choice-text">
+              <span class="login-choice-label">Head Coach</span>
+              <span class="login-choice-sub">Roster, results &amp; awards</span>
+            </span>
+          </span>
+          <svg class="login-choice-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
         </button>
         <button type="button" class="login-choice" data-target="assistant">
-          <span class="login-choice-label">Assistant Coach</span>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          <span class="login-choice-main">
+            <span class="login-choice-ic ic-assistant">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+            </span>
+            <span class="login-choice-text">
+              <span class="login-choice-label">Assistant Coach</span>
+              <span class="login-choice-sub">Fastest Five &amp; awards</span>
+            </span>
+          </span>
+          <svg class="login-choice-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
         </button>
       </div>
       <p class="axp-login-back">
@@ -721,7 +773,7 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
         </span>
         <div>
           <h2>Add a Meet</h2>
-          <p class="lead">Name the meet, pick its season, and drop the results file. The name you type — like <em>“Highcroft at Riverstone”</em> — is what shows in each swimmer's stats. One file = one meet.</p>
+          <p class="lead">Name the meet, pick its season, and drop the results file. Works with a CSV/Excel export <em>or</em> the results file straight from <strong>SwimTopia</strong> (<code>.hy3</code>, <code>.sd3</code>, or the <code>.zip</code> bundle). The name you type — like <em>“Highcroft at Riverstone”</em> — is what shows in each swimmer's stats. One file = one meet.</p>
         </div>
       </div>
 
@@ -748,14 +800,15 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
       <label class="drop-zone meet-drop" id="dropZone" for="csvFile">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
         <h3>Drop this meet's results file</h3>
-        <p>or click to browse · one CSV or Excel (.xlsx, .xls) file</p>
-        <input type="file" id="csvFile" accept=".csv,.xlsx,.xls,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"/>
+        <p>or click to browse · CSV, Excel (.xlsx, .xls), or a SwimTopia results file (.hy3, .sd3, or .zip)</p>
+        <input type="file" id="csvFile" accept=".csv,.xlsx,.xls,.hy3,.sd3,.cl2,.zip,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,application/zip"/>
       </label>
       <div class="upload-status" id="uploadStatus" role="status" aria-live="polite"></div>
 
       <details style="margin-top:20px;color:var(--text-muted);font-size:13px">
-        <summary style="cursor:pointer;font-weight:600;color:var(--text)">Results file columns the importer needs</summary>
-        <p style="margin:12px 0 8px">The team's <strong>Top Times export</strong> drops in directly — its columns (<code>age_group</code>, <code>distance</code>, <code>stroke</code>, <code>place</code>, <code>converted_time</code>/<code>original_time</code>, <code>last_name</code>, <code>first_name</code>, <code>age</code>, <code>date</code>, <code>swim_meet</code>) are all recognized. Course-code suffixes on times (<code>18.06Y</code>, <code>1:00.42Y</code>) are handled automatically, and the gender + age bracket are read from the <code>age_group</code> label (e.g. <em>"Girls 6 &amp; Under"</em>).</p>
+        <summary style="cursor:pointer;font-weight:600;color:var(--text)">Results file formats &amp; columns the importer reads</summary>
+        <p style="margin:12px 0 8px"><strong>SwimTopia results files import directly.</strong> From Meet Maestro, export the meet results and drop the <code>.hy3</code> (Hy-Tek) or <code>.sd3</code> (SDIF) file here — or just drop the whole <code>.zip</code> bundle and the importer pulls the results file out of it. Each swimmer's name, event (distance + stroke), final time, place, and date are read automatically; you still type the meet name above so it reads nicely in stats.</p>
+        <p style="margin:12px 0 8px">The team's <strong>Top Times CSV/Excel export</strong> also drops in directly — its columns (<code>age_group</code>, <code>distance</code>, <code>stroke</code>, <code>place</code>, <code>converted_time</code>/<code>original_time</code>, <code>last_name</code>, <code>first_name</code>, <code>age</code>, <code>date</code>, <code>swim_meet</code>) are all recognized. Course-code suffixes on times (<code>18.06Y</code>, <code>1:00.42Y</code>) are handled automatically, and the gender + age bracket are read from the <code>age_group</code> label (e.g. <em>"Girls 6 &amp; Under"</em>).</p>
         <p style="margin:0 0 8px">At minimum the importer needs a name (<code>first_name</code> + <code>last_name</code>, or a single <code>Athlete</code> column in <em>"Last, First"</em> form), a <code>stroke</code> (or <code>Event</code>), and a time. The <strong>meet name and date you type above win over the file's own <code>swim_meet</code>/<code>date</code> columns</strong>, so one upload becomes one named meet. Older exports (<code>Athlete,Event,Time,…</code>) still work too.</p>
         <p style="margin:0 0 8px"><strong>Stroke-only files work too:</strong> if a file just lists the <code>Stroke</code> (Freestyle, Backstroke, …) and a <code>Time</code> with no distance, the distance is filled in from each swimmer's age group automatically — <code>6 &amp; Under</code> 15y, <code>7-8</code> and <code>9-10</code> 25y, <code>11-12</code> and older 50y — so the time lands on the right event and leaderboard.</p>
 <pre style="background:var(--bg-alt);padding:14px;border-radius:var(--radius);margin-top:12px;font-size:12.5px;overflow-x:auto;border:1px solid var(--border);color:var(--text)">age_group,distance,stroke,place,converted_time,converted_hundredths,original_time,last_name,first_name,age,team_abbr,team_name,date,swim_meet
@@ -1133,9 +1186,12 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
   function isSupportedImportFile(f){
     const n = (f.name || '').toLowerCase();
     if(n.endsWith('.csv') || n.endsWith('.xlsx') || n.endsWith('.xls')) return true;
+    // SwimTopia / Hy-Tek meet-results downloads (and their zip bundles).
+    if(n.endsWith('.hy3') || n.endsWith('.sd3') || n.endsWith('.cl2') || n.endsWith('.zip')) return true;
     const t = (f.type || '').toLowerCase();
     return t.includes('csv') || t.includes('text/plain')
-        || t.includes('spreadsheetml') || t.includes('ms-excel') || t.includes('excel');
+        || t.includes('spreadsheetml') || t.includes('ms-excel') || t.includes('excel')
+        || t.includes('zip');
   }
 
   // Score a sheet's first row by how many cells map to recognized swim-import
@@ -1218,9 +1274,60 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
       try { f.__chosenSheet = chosen.sheetName; } catch(_){}
       return chosen.rows;
     }
+    // SwimTopia / Hy-Tek meet-results files (Hy-Tek .hy3, SDIF .sd3/.cl2).
+    if(name.endsWith('.hy3') || name.endsWith('.sd3') || name.endsWith('.cl2')){
+      const text = await f.text();
+      const rows = HHST.parseResultsFile(f.name, text);
+      if(!rows || rows.length < 2){
+        throw new Error('Couldn\'t read any swims from this file. Make sure it\'s a Hy-Tek (.hy3) or SDIF (.sd3) meet-results export from SwimTopia.');
+      }
+      return rows;
+    }
+    // SwimTopia results bundle — a .zip wrapping the .hy3/.sd3 (and sometimes a
+    // CSV). Unzip in the browser and import the best results file inside.
+    if(name.endsWith('.zip')){
+      if(typeof fflate === 'undefined'){
+        throw new Error('Zip reader (fflate) failed to load. Reload the page, or unzip the file and drop the .hy3 / .sd3 inside it.');
+      }
+      const buf = new Uint8Array(await f.arrayBuffer());
+      let entries;
+      try { entries = fflate.unzipSync(buf); }
+      catch(e){ throw new Error('That .zip could not be opened. Try unzipping it and dropping the .hy3 / .sd3 / CSV inside.'); }
+      const inner = Object.keys(entries).filter(k => !k.endsWith('/'));
+      const pick = inner.find(k => /\.hy3$/i.test(k)) || inner.find(k => /\.sd3$/i.test(k))
+                || inner.find(k => /\.cl2$/i.test(k)) || inner.find(k => /\.csv$/i.test(k));
+      if(!pick){
+        throw new Error(`No .hy3, .sd3, or .csv results file was found inside the zip (it held: ${inner.join(', ') || 'nothing'}).`);
+      }
+      const innerText = new TextDecoder().decode(entries[pick]);
+      try { f.__chosenSheet = pick; } catch(_){}   // surfaces "(file …)" in the status line
+      const rows = /\.csv$/i.test(pick) ? HHST.parseCSV(innerText) : HHST.parseResultsFile(pick, innerText);
+      if(!rows || rows.length < 2){
+        throw new Error(`Couldn't read any swims from ${pick} inside the zip.`);
+      }
+      return rows;
+    }
     // CSV / text
     const text = await f.text();
     return HHST.parseCSV(text);
+  }
+
+  // Peek at a SwimTopia/Hy-Tek results file's OWN meet name + date so the meet
+  // form can auto-fill when the coach hasn't typed them. Returns {} for CSV/Excel
+  // (those don't reliably carry a meet name — the coach names them). Date comes
+  // back as yyyy-mm-dd for the <input type="date">.
+  async function peekMeetInfo(f){
+    const n = (f.name || '').toLowerCase();
+    if(!(n.endsWith('.hy3') || n.endsWith('.sd3') || n.endsWith('.cl2') || n.endsWith('.zip'))) return {};
+    const rows = await readFileToRows(f, 'results');
+    if(!rows || rows.length < 2) return {};
+    const h = rows[0];
+    const mi = h.indexOf('meet'), di = h.indexOf('date');
+    const meet = mi >= 0 ? (rows[1][mi] || '').trim() : '';
+    const rawDate = di >= 0 ? (rows[1][di] || '').trim() : '';
+    const m = rawDate.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    const date = m ? `${m[3]}-${m[1].padStart(2,'0')}-${m[2].padStart(2,'0')}` : '';
+    return { meet, date };
   }
 
   function bindDropZone(zoneId, inputId, statusId, label){
@@ -1239,7 +1346,7 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
       const supported = all.filter(isSupportedImportFile);
       const rejected  = all.filter(f => !isSupportedImportFile(f));
       if(!supported.length){
-        setStatus('err','Please upload CSV or Excel (.xlsx / .xls) files.');
+        setStatus('err','Please upload a CSV, Excel (.xlsx / .xls), or SwimTopia results file (.hy3, .sd3, or .zip).');
         return;
       }
 
@@ -1279,8 +1386,19 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
       let meetName = '', meetDate = '';
       if(mode === 'results'){
         const nameInput = document.getElementById('meetNameInput');
+        const dateInput = document.getElementById('meetDateInput');
         meetName = (nameInput && nameInput.value || '').trim();
-        meetDate = (document.getElementById('meetDateInput') && document.getElementById('meetDateInput').value || '').trim();
+        meetDate = (dateInput && dateInput.value || '').trim();
+        // SwimTopia .hy3/.sd3 files carry the meet's own name + date — if the
+        // coach left those blank, read them from the file and fill the fields in
+        // so they don't have to retype what the file already knows.
+        if(!meetName && supported.length === 1){
+          try {
+            const info = await peekMeetInfo(supported[0]);
+            if(info.meet){ meetName = info.meet; if(nameInput) nameInput.value = info.meet; }
+            if(info.date && !meetDate){ meetDate = info.date; if(dateInput) dateInput.value = info.date; }
+          } catch(_){ /* fall through to the "name this meet" prompt below */ }
+        }
         if(!meetName){
           setStatus('err', 'Name this meet first (e.g. "Highcroft at Riverstone") above the drop zone, then upload again. That name is what shows in each swimmer\'s stats.');
           if(nameInput){
