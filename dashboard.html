@@ -957,6 +957,33 @@
   }
 
   let chart;
+  // Least-squares trend over this event's races (oldest→newest), projected one
+  // race ahead — the "on pace for" number. Returns null unless there are 3+
+  // timed swims AND the trend is actually improving: we never project a kid
+  // getting slower. The projection is clamped to 4% under their PR so a hot
+  // streak can't promise something absurd.
+  function predictEvent(history){
+    const pts = (history||[]).filter(r=>isFinite(r.seconds)).sort((a,b)=>{
+      const da = new Date(a.date).getTime() || 0;
+      const db = new Date(b.date).getTime() || 0;
+      return da - db;
+    });
+    const n = pts.length;
+    if(n < 3) return null;
+    const ys = pts.map(r=>r.seconds);
+    const xm = (n-1)/2;
+    const ym = ys.reduce((a,c)=>a+c,0)/n;
+    let num = 0, den = 0;
+    ys.forEach((y,x)=>{ num += (x-xm)*(y-ym); den += (x-xm)*(x-xm); });
+    if(!den) return null;
+    const slope = num/den;
+    if(slope >= -0.01) return null; // flat or slowing — no projection
+    const best = Math.min(...ys);
+    const predicted = Math.max(ym + slope*(n - xm), best * 0.96);
+    if(!isFinite(predicted) || predicted <= 0) return null;
+    return { predicted, perRace: -slope, beatsPR: predicted < best - 0.005 };
+  }
+
   function drawChart(eventData){
     renderEventDeep(eventData);
     const ctx = document.getElementById('progressChart').getContext('2d');
@@ -1000,25 +1027,46 @@
     grad.addColorStop(0, fillTop);
     grad.addColorStop(1, fillBot);
 
+    const datasets = [{
+      label: eventData.event + ' time (sec)',
+      data: seconds,
+      borderColor: accentColor,
+      borderWidth: 2.5,
+      pointRadius: pointR,
+      pointHoverRadius: 9,
+      pointBackgroundColor: pointBg,
+      pointBorderColor: '#fff',
+      pointBorderWidth: 2,
+      backgroundColor: grad,
+      fill: true,
+      tension: .35,
+    }];
+    // Projected next swim: a dashed extension from the latest race out to the
+    // trend's next-race estimate (only shown when the swimmer is trending
+    // faster — see predictEvent). The open-circle end point reads as "not
+    // swum yet".
+    const proj = predictEvent(eventData.history);
+    if(proj){
+      labels.push('Next meet (proj.)');
+      datasets.push({
+        label: 'Projected',
+        data: [...Array(Math.max(0, seconds.length-1)).fill(null), seconds[seconds.length-1], proj.predicted],
+        borderColor: accentColor,
+        borderDash: [6,5],
+        borderWidth: 2,
+        pointRadius: [...Array(seconds.length).fill(0), 6],
+        pointHoverRadius: 8,
+        pointBackgroundColor: 'transparent',
+        pointBorderColor: accentColor,
+        pointBorderWidth: 2,
+        fill: false,
+        tension: 0,
+      });
+    }
+
     chart = new Chart(ctx, {
       type:'line',
-      data:{
-        labels,
-        datasets:[{
-          label: eventData.event + ' time (sec)',
-          data: seconds,
-          borderColor: accentColor,
-          borderWidth: 2.5,
-          pointRadius: pointR,
-          pointHoverRadius: 9,
-          pointBackgroundColor: pointBg,
-          pointBorderColor: '#fff',
-          pointBorderWidth: 2,
-          backgroundColor: grad,
-          fill: true,
-          tension: .35,
-        }]
-      },
+      data:{ labels, datasets },
       options:{
         responsive:true,
         maintainAspectRatio:false,
@@ -1031,9 +1079,13 @@
             borderColor:accentColor,
             borderWidth:1,
             padding:12,
+            // Hide the projection dataset's overlap point (it duplicates the
+            // latest real swim) — only its end point gets a tooltip.
+            filter: (item) => !(item.datasetIndex === 1 && item.dataIndex < seconds.length),
             callbacks:{
               title: (items) => meets[items[0].dataIndex] ? `${meets[items[0].dataIndex]} — ${labels[items[0].dataIndex]}` : labels[items[0].dataIndex],
               label: (ctx) => {
+                if(ctx.datasetIndex === 1) return `Projected: ${HHST.fmtTime(ctx.parsed.y)} (trend)`;
                 const isPR = seconds[ctx.dataIndex] === bestSec;
                 return `Time: ${times[ctx.dataIndex]}${isPR ? '  ⭐ PR' : ''}`;
               }
@@ -1099,6 +1151,14 @@
       else cells.push(cell('Latest vs PR', '+'+latestGap.toFixed(2)+'s', 'Off their best time'));
     }
     if(gap > 0.001 && barrier > 0) cells.push(cell('Next Goal', 'Break '+HHST.fmtTime(barrier), 'Only '+gap.toFixed(2)+'s away', 'ed-goal'));
+    // Trend projection — "on pace for X" from the same fit that draws the
+    // dashed line on the chart. Only appears when the trend is improving.
+    const proj = predictEvent(b.history);
+    if(proj){
+      cells.push(cell('On Pace For', HHST.fmtTime(proj.predicted),
+        proj.beatsPR ? 'Next meet — would be a new PR ⭐' : `Trending −${proj.perRace.toFixed(2)}s per race`,
+        'ed-good'));
+    }
     host.innerHTML = cells.join('');
   }
 

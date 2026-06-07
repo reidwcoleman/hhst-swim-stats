@@ -305,6 +305,26 @@
     .gf-promo-tag{order:1}
     .gf-promo-cta{order:3}
   }
+
+  /* ---- Team milestones ticker: slim rotating strip under the pulse bar. ---- */
+  .tp-ticker{
+    max-width:760px;margin:10px auto 0;padding:9px 18px;
+    display:flex;align-items:center;justify-content:center;gap:10px;
+    border:1px solid var(--border);border-radius:999px;background:var(--surface);
+  }
+  .tp-ticker-chip{
+    flex:none;font-size:10.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+    color:#c98f0e;background:rgba(201,143,14,.14);border:1px solid rgba(201,143,14,.3);
+    padding:3px 10px;border-radius:999px;
+  }
+  .tp-ticker-text{
+    font-size:13.5px;font-weight:600;color:var(--text);
+    transition:opacity .45s ease;min-width:0;
+  }
+  .tp-ticker-text.is-fading{opacity:0}
+  @media (max-width:560px){
+    .tp-ticker{flex-direction:column;gap:6px;border-radius:16px;text-align:center}
+  }
 </style>
 
 <!-- Firebase compat SDK -->
@@ -477,6 +497,12 @@
         <span class="tp-label" id="tpRacesLabel">Races on file</span>
       </div>
     </div>
+  </div>
+  <!-- TEAM MILESTONES — rotating one-liners computed from the same data as
+       the pulse above ("47 PRs at Saturday's meet"). Hidden until filled. -->
+  <div class="tp-ticker" id="tpTicker" style="display:none" role="status" aria-live="off">
+    <span class="tp-ticker-chip">Milestones</span>
+    <span class="tp-ticker-text" id="tpTickerText"></span>
   </div>
 </div>
 
@@ -702,6 +728,67 @@
           seasonEl.style.display = '';
         }
       }
+
+      // ---- Team milestones ticker ----
+      // Rotating one-liners built from the same season data: PRs set at the
+      // most recent meet, total time dropped, round-number race milestones.
+      // Aggregate numbers only — no swimmer names on the public homepage.
+      try {
+        const tick = document.getElementById('tpTicker');
+        const tickText = document.getElementById('tpTickerText');
+        if(tick && tickText){
+          const scope = season ? 'this season' : 'on file';
+          const stats = HHST.teamStats(all.swimmers || {}, season ? { season } : {});
+          // Most recent meet = the real (non-practice) swim with the latest date.
+          let latestMeet = '', latestMs = -1;
+          swimmers.forEach(sw => (sw.results || []).forEach(r => {
+            if(!r || !inSeason(r) || !r.meet || r.timeTrial || HHST.isPracticeMeet(r.meet)) return;
+            const ms = new Date(r.date).getTime() || 0;
+            if(ms > latestMs){ latestMs = ms; latestMeet = r.meet; }
+          }));
+          // PRs set AT that meet: swimmer+event swims there that beat the
+          // swimmer's earlier best in the same event this season.
+          let prAtLatest = 0; const prSwimmers = new Set();
+          if(latestMeet){
+            swimmers.forEach(sw => {
+              const byEvent = {};
+              (sw.results || []).forEach(r => {
+                if(!r || !inSeason(r) || !isFinite(r.seconds) || r.timeTrial || HHST.isPracticeMeet(r.meet)) return;
+                (byEvent[r.event] = byEvent[r.event] || []).push(r);
+              });
+              Object.values(byEvent).forEach(list => {
+                const here = list.filter(r => r.meet === latestMeet);
+                const before = list.filter(r => r.meet !== latestMeet && (new Date(r.date).getTime() || 0) <= latestMs);
+                if(!here.length || !before.length) return;
+                if(Math.min(...here.map(r => r.seconds)) < Math.min(...before.map(r => r.seconds)) - 0.001){
+                  prAtLatest++; prSwimmers.add(sw.key || sw.name);
+                }
+              });
+            });
+          }
+          const items = [];
+          if(prAtLatest) items.push(`${prAtLatest} personal best${prAtLatest === 1 ? '' : 's'} set at ${latestMeet}`);
+          if(prSwimmers.size > 1) items.push(`${prSwimmers.size} swimmers beat their own best time at ${latestMeet}`);
+          if(stats.prRaces > 0 && stats.prRaces !== prAtLatest) items.push(`${stats.prRaces} personal bests ${scope} — and counting`);
+          if(stats.totalDropSec > 1) items.push(`${Math.round(stats.totalDropSec)} seconds of total time dropped ${scope}`);
+          if(raceCount >= 100) items.push(`Over ${Math.floor(raceCount / 100) * 100} races logged ${scope}`);
+          if(items.length){
+            tick.style.display = '';
+            tickText.textContent = items[0];
+            if(items.length > 1 && !reduce){
+              let i = 0;
+              setInterval(() => {
+                tickText.classList.add('is-fading');
+                setTimeout(() => {
+                  i = (i + 1) % items.length;
+                  tickText.textContent = items[i];
+                  tickText.classList.remove('is-fading');
+                }, 450);
+              }, 5000);
+            }
+          }
+        }
+      } catch(e){ /* the ticker is a delight, not core flow — fail silent */ }
     } catch(e){
       // Silently hide on error — the strip is a delight, not core flow.
       wrap.style.display = 'none';

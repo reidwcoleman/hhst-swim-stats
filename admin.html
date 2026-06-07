@@ -704,6 +704,17 @@
       <div id="seasonStatsBody"></div>
     </div>
 
+    <!-- SEASON-OVER-SEASON RETENTION (coach-only view: who came back) -->
+    <div class="card" id="retentionCard" style="display:none">
+      <div class="axp-card-headrow">
+        <div>
+          <h2>Roster retention</h2>
+          <p class="lead">Season over season: how many swimmers came back, how many are new, and who didn't return. Built from each swimmer's season memberships.</p>
+        </div>
+      </div>
+      <div id="retentionBody"></div>
+    </div>
+
     <!-- SWIMTOPIA EXPORT GUIDE -->
     <details class="card collapsible-card">
       <summary>
@@ -2439,6 +2450,7 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
       }
     }
     renderSeasonStats();
+    renderRetention();
     updateMigrateBanner();
   }
 
@@ -2506,6 +2518,81 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
               </tr>`;
             }).join('')}
           </tbody>
+        </table>
+      </div>`;
+  }
+
+  // Season-over-season retention: for each season (newest first), how many of
+  // the previous season's swimmers came back, how many are brand new, and who
+  // didn't return. Membership = the swimmer's seasons array (roster truth);
+  // legacy swimmers with no array fall back to the seasons they raced in.
+  function renderRetention(){
+    const card = document.getElementById('retentionCard');
+    const body = document.getElementById('retentionBody');
+    if(!card || !body) return;
+    const swimmers = Object.values(cachedData.swimmers || {});
+    const bySeason = {}; // season -> Map(swimmerKey -> name)
+    swimmers.forEach(sw => {
+      const seas = (Array.isArray(sw.seasons) && sw.seasons.length)
+        ? sw.seasons
+        : Array.from(new Set((sw.results||[]).map(r => r && r.season).filter(Boolean)));
+      seas.forEach(s => {
+        if(!s) return;
+        (bySeason[s] = bySeason[s] || new Map()).set(sw.key, sw.name || sw.key);
+      });
+    });
+    // Newest first, like the season-stats table; chronology pairs each season
+    // with the one BEFORE it for the came-back comparison.
+    const seasons = HHST.getAllSeasons(swimmers).filter(s => bySeason[s]);
+    if(seasons.length < 2){ card.style.display = 'none'; return; }
+    card.style.display = 'block';
+    const rows = seasons.map((s, i) => {
+      const cur = bySeason[s];
+      const prevSeason = seasons[i+1]; // next item = chronologically previous
+      if(!prevSeason){
+        return `<tr>
+          <td><strong>${escapeHtml(s)}</strong></td>
+          <td>${cur.size}</td><td>—</td><td>—</td><td>—</td>
+          <td style="color:var(--text-muted)">First season on file</td>
+        </tr>`;
+      }
+      const prev = bySeason[prevSeason];
+      let returned = 0;
+      const lostNames = [];
+      prev.forEach((name, key) => { if(cur.has(key)) returned++; else lostNames.push(name); });
+      const fresh = cur.size - returned;
+      const pct = prev.size ? Math.round(returned / prev.size * 100) : 0;
+      lostNames.sort((a,b) => a.localeCompare(b));
+      const lostCell = lostNames.length
+        ? `<details><summary style="cursor:pointer">${lostNames.length}</summary>
+             <div style="font-size:12px;color:var(--text-muted);margin-top:6px;max-width:340px;line-height:1.5">${lostNames.map(escapeHtml).join(', ')}</div>
+           </details>`
+        : '0';
+      const barColor = pct >= 75 ? '#22c55e' : pct >= 50 ? '#c98f0e' : '#ef4444';
+      return `<tr>
+        <td><strong>${escapeHtml(s)}</strong>${i === 0 ? ' <span class="training-chip" title="Most recent season" style="background:rgba(34,197,94,.18);color:#22c55e;border-color:rgba(34,197,94,.35)">Current</span>' : ''}
+          <div style="font-size:11.5px;color:var(--text-muted);font-weight:400;margin-top:2px">vs ${escapeHtml(prevSeason)}</div></td>
+        <td>${cur.size}</td>
+        <td style="color:#22c55e;font-weight:600">${returned}</td>
+        <td>${fresh}</td>
+        <td>${lostCell}</td>
+        <td style="min-width:130px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="flex:1;height:6px;border-radius:3px;background:var(--border);overflow:hidden">
+              <div style="width:${pct}%;height:100%;border-radius:3px;background:${barColor}"></div>
+            </div>
+            <span style="font-weight:700;font-variant-numeric:tabular-nums">${pct}%</span>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+    body.innerHTML = `
+      <div class="table-wrap">
+        <table class="roster-table" style="min-width:640px">
+          <thead><tr>
+            <th>Season</th><th>Swimmers</th><th>Returned</th><th>New</th><th>Didn't return</th><th>Retention</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
         </table>
       </div>`;
   }
