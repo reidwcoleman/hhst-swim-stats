@@ -120,13 +120,34 @@
   .meet-drop.drag{box-shadow:0 0 0 3px rgba(201,143,14,.25) inset}
   .meet-drop svg{color:var(--amber-500,#c98f0e)}
 
-  /* ---- "How to get this file from SwimTopia" stepper (meet card) ---- */
+  /* ---- "More tools" divider between daily-use cards and setup/cleanup ---- */
+  .admin-section-divider{display:flex;align-items:center;gap:14px;margin:34px 0 22px}
+  .admin-section-divider::before,.admin-section-divider::after{content:'';flex:1;height:1px;
+    background:var(--border)}
+  .admin-section-divider span{font-size:11.5px;font-weight:700;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--text-subtle);white-space:nowrap}
+
+  /* ---- "How to get this file from SwimTopia" — collapsed checklist ---- */
   .st-guide{margin:0 0 20px;padding:0;border:1px solid var(--border);border-radius:var(--radius-md);
     background:var(--bg-alt);overflow:hidden}
-  .st-guide-summary{display:flex;align-items:center;gap:10px;padding:14px 16px;
-    font-weight:600;color:var(--text);border-bottom:1px solid var(--border)}
+  .st-guide-summary{display:flex;align-items:center;gap:10px;padding:13px 16px;
+    font-weight:600;color:var(--text);cursor:pointer;list-style:none;
+    -webkit-tap-highlight-color:transparent;transition:background .15s ease}
+  .st-guide-summary::-webkit-details-marker{display:none}
+  .st-guide-summary:hover{background:var(--surface)}
+  .st-guide-summary:focus-visible{outline:none;box-shadow:inset 0 0 0 3px var(--ring)}
+  .st-guide[open] .st-guide-summary{border-bottom:1px solid var(--border)}
   .st-guide-summary > svg:first-child{width:18px;height:18px;color:var(--amber-500,#c98f0e);flex:none}
-  .st-steps{counter-reset:st;list-style:none;margin:0;padding:16px 18px 18px;display:grid;gap:11px}
+  .st-guide-hint{margin-left:auto;font-size:11.5px;font-weight:700;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--text-subtle);white-space:nowrap}
+  .st-guide-chevron{width:16px;height:16px;flex:none;color:var(--text-subtle);
+    transition:transform .2s cubic-bezier(.16,1,.3,1)}
+  .st-guide[open] .st-guide-chevron{transform:rotate(180deg)}
+  /* Steps + screenshot side-by-side: the checklist reads down the left while
+     the matching settings screenshot sits right beside it. */
+  .st-guide-grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);
+    gap:16px;align-items:start;padding:16px 18px 18px}
+  .st-steps{counter-reset:st;list-style:none;margin:0;padding:0;display:grid;gap:10px}
   .st-steps li{counter-increment:st;position:relative;padding-left:40px;font-size:13.5px;
     line-height:1.55;color:var(--text-muted)}
   .st-steps li::before{content:counter(st);position:absolute;left:0;top:-1px;width:25px;height:25px;
@@ -136,7 +157,7 @@
   .st-steps li strong{color:var(--text);font-weight:600}
   .st-steps code{background:var(--surface);border:1px solid var(--border);border-radius:6px;
     padding:1px 6px;font-size:12.5px;color:var(--text)}
-  .st-shot{margin:2px 18px 18px;border:1px solid var(--border);border-radius:var(--radius-md);
+  .st-shot{margin:0;border:1px solid var(--border);border-radius:var(--radius-md);
     overflow:hidden;background:#fff}
   .st-shot-link{display:block;position:relative;line-height:0;text-decoration:none;
     -webkit-tap-highlight-color:transparent}
@@ -153,17 +174,25 @@
   @media (hover:none){ .st-shot-zoom{opacity:1;transform:none} }
   .st-shot figcaption{padding:9px 14px;font-size:12.5px;color:var(--text-muted);
     background:var(--surface);border-top:1px solid var(--border)}
-  .st-shot-tap{display:none}                /* desktop: hover pill is enough */
-  @media (hover:none){ .st-shot-tap{display:inline;color:var(--text-subtle)} }
+  .st-shot-tap{display:none}
+  .st-shot-hover{display:inline}
+  @media (hover:none){
+    .st-shot-tap{display:inline}
+    .st-shot-hover{display:none}
+  }
   /* Phones: tighten the guide's padding, step badges and screenshot margins so
      it reads cleanly without forcing horizontal scroll. */
+  /* Stack the checklist over the screenshot once the card gets narrow. */
+  @media (max-width:760px){
+    .st-guide-grid{grid-template-columns:1fr;gap:14px}
+    .st-guide-hint{display:none}
+  }
   @media (max-width:480px){
     .st-guide{margin-bottom:16px}
-    .st-guide-summary{padding:13px 14px;font-size:14.5px;gap:9px}
-    .st-steps{padding:14px 14px 16px;gap:12px}
+    .st-guide-summary{padding:12px 14px;font-size:14.5px;gap:9px}
+    .st-guide-grid{padding:14px 14px 16px}
     .st-steps li{padding-left:34px;font-size:13px}
     .st-steps li::before{width:22px;height:22px;font-size:12px}
-    .st-shot{margin:0 14px 14px}
     .st-shot figcaption{padding:8px 12px;font-size:12px;line-height:1.5}
     .st-shot-zoom{right:8px;bottom:8px;padding:5px 9px;font-size:11.5px}
   }
@@ -685,6 +714,90 @@
       </div>
     </div>
 
+    <!-- ADD A MEET CARD — one meet at a time, named by the coach. The name you
+         type becomes the meet shown in every swimmer's stats; the file just
+         supplies the times. -->
+    <div class="card meet-card">
+      <div class="meet-card-head">
+        <span class="meet-card-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+        </span>
+        <div>
+          <h2>Add a Meet</h2>
+          <p class="lead">Pick the season and drop the results file — CSV/Excel or SwimTopia's <code>.hy3</code>/<code>.sd3</code>/<code>.zip</code>. Type a meet name to label one meet, or leave it blank for a whole-season export. Re-uploading is always safe: matching times merge, new ones are added, nothing duplicates.</p>
+        </div>
+      </div>
+
+      <div class="meet-form-grid">
+        <div class="field axp-field-flush">
+          <label for="meetNameInput" class="axp-label">Meet name <span class="opt">(leave blank for a whole-season file)</span></label>
+          <input type="text" id="meetNameInput" list="meetNameOptions" placeholder="e.g. Highcroft at Riverstone" autocomplete="off" class="axp-input"/>
+          <datalist id="meetNameOptions"></datalist>
+        </div>
+        <div class="field axp-field-flush">
+          <label for="meetDateInput" class="axp-label">Meet date <span class="opt">(optional)</span></label>
+          <input type="date" id="meetDateInput" class="axp-input"/>
+        </div>
+        <div class="field axp-field-flush">
+          <label for="seasonInput" class="axp-label">Season <span class="req">*</span></label>
+          <input type="text" id="seasonInput" list="seasonOptions" placeholder="e.g. 2025 Summer" autocomplete="off" class="axp-input"/>
+          <datalist id="seasonOptions"></datalist>
+        </div>
+      </div>
+      <p class="field-hint axp-hint axp-hint-block">
+        Files with age groups (like Top Times exports) auto-add new swimmers to this season's roster. A typed meet name overrides the file's own meet column; a typed date applies to the whole meet — leave either blank to use the file's values.
+      </p>
+
+      <details class="st-guide">
+        <summary class="st-guide-summary">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          <span>How to get this file from SwimTopia</span>
+          <span class="st-guide-hint">30-second checklist</span>
+          <svg class="st-guide-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+        </summary>
+        <div class="st-guide-grid">
+          <ol class="st-steps">
+            <li><strong>Sign in</strong> to the team site → <strong>Manage Team → Reports</strong>.</li>
+            <li><strong>Dates:</strong> Custom range, set tight around this meet.</li>
+            <li><strong>Display:</strong> Custom → <strong>Top 100 times</strong> · Course <code>Y — Short Course Yards</code>, 25.</li>
+            <li><strong>Converted times:</strong> include, from the matching <em>Home</em>/<em>Away meet</em> template.</li>
+            <li><strong>Match events</strong> by athlete age + competition category · include <em>exhibition swims</em>; leave relay lead-offs &amp; unofficial meets unchecked.</li>
+            <li><strong>Generate report → Download (csv)</strong> and drop it below — or skip all this and drop the <code>.hy3</code>/<code>.sd3</code>/<code>.zip</code> straight from Meet Maestro.</li>
+          </ol>
+          <figure class="st-shot">
+            <a class="st-shot-link" href="assets/swimtopia-report-settings.png" target="_blank" rel="noopener" aria-label="Open the SwimTopia settings screenshot at full size">
+              <img src="assets/swimtopia-report-settings.png" alt="SwimTopia Top Times report settings: Custom date range around the meet, Display Custom Top 100 times, Course Y Short Course Yards 25yd with converted times included from the Home Meet template, events matched by athlete age and competition category, exhibition swims included, relay lead-offs and unofficial meets unchecked." loading="lazy" decoding="async"/>
+              <span class="st-shot-zoom" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3M11 8v6M8 11h6"/></svg>
+                Zoom
+              </span>
+            </a>
+            <figcaption>Your settings should match this — <span class="st-shot-tap">tap to zoom</span><span class="st-shot-hover">click to zoom</span>.</figcaption>
+          </figure>
+        </div>
+      </details>
+
+      <label class="drop-zone meet-drop" id="dropZone" for="csvFile">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <h3>Drop this meet's results file</h3>
+        <p>or click to browse · CSV, Excel (.xlsx, .xls), or a SwimTopia results file (.hy3, .sd3, or .zip)</p>
+        <input type="file" id="csvFile" accept=".csv,.xlsx,.xls,.hy3,.sd3,.cl2,.zip,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,application/zip"/>
+      </label>
+      <div class="upload-status" id="uploadStatus" role="status" aria-live="polite"></div>
+
+      <details style="margin-top:20px;color:var(--text-muted);font-size:13px">
+        <summary style="cursor:pointer;font-weight:600;color:var(--text)">Results file formats &amp; columns the importer reads</summary>
+        <p style="margin:12px 0 8px"><strong>SwimTopia results files import directly.</strong> From Meet Maestro, export the meet results and drop the <code>.hy3</code> (Hy-Tek) or <code>.sd3</code> (SDIF) file here — or just drop the whole <code>.zip</code> bundle and the importer pulls the results file out of it. Each swimmer's name, event (distance + stroke), final time, place, and date are read automatically; you still type the meet name above so it reads nicely in stats.</p>
+        <p style="margin:12px 0 8px">The team's <strong>Top Times CSV/Excel export</strong> also drops in directly — its columns (<code>age_group</code>, <code>distance</code>, <code>stroke</code>, <code>place</code>, <code>converted_time</code>/<code>original_time</code>, <code>last_name</code>, <code>first_name</code>, <code>age</code>, <code>date</code>, <code>swim_meet</code>) are all recognized. Course-code suffixes on times (<code>18.06Y</code>, <code>1:00.42Y</code>) are handled automatically, and the gender + age bracket are read from the <code>age_group</code> label (e.g. <em>"Girls 6 &amp; Under"</em>).</p>
+        <p style="margin:0 0 8px">At minimum the importer needs a name (<code>first_name</code> + <code>last_name</code>, or a single <code>Athlete</code> column in <em>"Last, First"</em> form), a <code>stroke</code> (or <code>Event</code>), and a time. The <strong>meet name and date you type above win over the file's own <code>swim_meet</code>/<code>date</code> columns</strong>, so one upload becomes one named meet. Older exports (<code>Athlete,Event,Time,…</code>) still work too.</p>
+        <p style="margin:0 0 8px"><strong>Stroke-only files work too:</strong> if a file just lists the <code>Stroke</code> (Freestyle, Backstroke, …) and a <code>Time</code> with no distance, the distance is filled in from each swimmer's age group automatically — <code>6 &amp; Under</code> 15y, <code>7-8</code> and <code>9-10</code> 25y, <code>11-12</code> and older 50y — so the time lands on the right event and leaderboard.</p>
+<pre style="background:var(--bg-alt);padding:14px;border-radius:var(--radius);margin-top:12px;font-size:12.5px;overflow-x:auto;border:1px solid var(--border);color:var(--text)">age_group,distance,stroke,place,converted_time,converted_hundredths,original_time,last_name,first_name,age,team_abbr,team_name,date,swim_meet
+Girls 6 &amp; Under,15,Freestyle,1,18.06Y,1806,18.06Y,Purcell,Rylee,6,HHST,Highcroft Hurricanes Swim Team,06/02/26,Practice Meet vs. The Reserve
+Boys 13-14,50,Freestyle,3,32.18Y,3218,32.18Y,Coleman,Reid,14,HHST,Highcroft Hurricanes Swim Team,06/02/26,Practice Meet vs. The Reserve
+Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hurricanes Swim Team,06/02/26,Practice Meet vs. The Reserve</pre>
+      </details>
+    </div>
+
     <!-- TEAM MOMENTUM CHART -->
     <section class="card chart-card" id="adminChartCard">
       <h2>Team Momentum</h2>
@@ -704,15 +817,150 @@
       <div id="seasonStatsBody"></div>
     </div>
 
-    <!-- SEASON-OVER-SEASON RETENTION (coach-only view: who came back) -->
-    <div class="card" id="retentionCard" style="display:none">
-      <div class="axp-card-headrow">
+    <!-- UPLOADED FILES CARD — per-file, per-season history with one-click
+         remove. Lets a coach undo a single mistaken roster or meet file
+         instead of wiping everything. -->
+    <div class="card" id="uploadsCard">
+      <div class="axp-card-headrow axp-uploads-head">
         <div>
-          <h2>Roster retention</h2>
-          <p class="lead">Season over season: how many swimmers came back, how many are new, and who didn't return. Built from each swimmer's season memberships.</p>
+          <h2>Uploaded Files</h2>
+          <p class="lead">Every roster and meet file you've uploaded, grouped by season. Click the trash icon to remove just that file — its swimmers stay, but the times (or roster spots) it added are taken back out, and stats recompute.</p>
+        </div>
+        <select id="uploadsSeasonFilter" class="lb-select admin-filter" title="Show files for a single season">
+          <option value="">All seasons</option>
+        </select>
+      </div>
+      <div id="uploadsBody" class="axp-uploads-body"></div>
+    </div>
+
+    <!-- MANUAL TIME ENTRY CARD -->
+    <div class="card" id="manualTimeCard">
+      <h2>Add a Time Manually</h2>
+      <p class="lead">Search for a swimmer and log a single race time. It saves to Firebase and shows up on their profile, the season leaderboards, and the awards boards — exactly like a time from an uploaded meet file.</p>
+      <form id="manualTimeForm" autocomplete="off" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px">
+        <div class="field" style="grid-column:1/-1;max-width:440px">
+          <label>Swimmer *</label>
+          <input type="text" id="mtSwimmer" list="mtSwimmerList" placeholder="Start typing a name…" required autocomplete="off"/>
+          <datalist id="mtSwimmerList"></datalist>
+        </div>
+        <div class="field">
+          <label>Stroke *</label>
+          <select id="mtStroke" required>
+            <option value="Freestyle">Freestyle</option>
+            <option value="Backstroke">Backstroke</option>
+            <option value="Breaststroke">Breaststroke</option>
+            <option value="Butterfly">Butterfly</option>
+            <option value="IM">IM</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Distance (yards) *</label>
+          <select id="mtDistance" required>
+            <option value="15">15</option>
+            <option value="25">25</option>
+            <option value="50" selected>50</option>
+            <option value="100">100</option>
+            <option value="200">200</option>
+            <option value="400">400</option>
+            <option value="500">500</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Time *</label>
+          <input type="text" id="mtTime" placeholder="28.42 or 1:02.18" required inputmode="decimal"/>
+        </div>
+        <div class="field">
+          <label>Meet *</label>
+          <input type="text" id="mtMeet" list="mtMeetList" placeholder="e.g. Summer Invitational" required/>
+          <datalist id="mtMeetList"></datalist>
+        </div>
+        <div class="field">
+          <label>Date *</label>
+          <input type="date" id="mtDate" required/>
+        </div>
+        <div class="field">
+          <label>Season *</label>
+          <select id="mtSeason" required></select>
+        </div>
+        <div class="field" style="grid-column:1/-1">
+          <label style="display:inline-flex;align-items:center;gap:8px;font-weight:500;text-transform:none;letter-spacing:normal;cursor:pointer;color:var(--text-muted)">
+            <input type="checkbox" id="mtTimeTrial" style="width:auto;margin:0"/> Mark as a time trial (kept on the profile, but off the competitive boards)
+          </label>
+        </div>
+        <div style="display:flex;align-items:flex-end;grid-column:1/-1">
+          <button type="submit" class="btn lg" id="mtSubmit">Add time</button>
+        </div>
+      </form>
+      <div class="upload-status" id="mtStatus" style="margin-top:12px" role="status" aria-live="polite"></div>
+    </div>
+
+    <!-- MANUAL ADD CARD -->
+    <div class="card">
+      <h2>Add or Update Swimmer Manually</h2>
+      <p class="lead">Use this when you need to register a swimmer before their first meet, or fix a parent name / email. "Last, First" names are auto-flipped.</p>
+      <form id="manualForm" autocomplete="off" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px">
+        <div class="field"><label>Full name *</label><input type="text" id="mName" placeholder="Riley Carter or Carter, Riley" required/></div>
+        <div class="field"><label>Email *</label><input type="email" id="mEmail" placeholder="parent@example.com" required/></div>
+        <div class="field"><label>Parent name *</label><input type="text" id="mParent" required/></div>
+        <div class="field"><label>Age</label><input type="text" id="mAge"/></div>
+        <div class="field"><label>Training group</label><input type="text" id="mGroup" placeholder="e.g. Bronze"/></div>
+        <div class="field"><label>Gender</label>
+          <select id="mGender">
+            <option value="">—</option>
+            <option value="M">Boys</option>
+            <option value="F">Girls</option>
+          </select>
+        </div>
+        <div style="display:flex;align-items:flex-end">
+          <button type="submit" class="btn lg block">Save Swimmer</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- ——— Secondary tools: setup, cleanup & roster management ——— -->
+    <div class="admin-section-divider" role="separator" aria-label="More tools">
+      <span>More tools</span>
+    </div>
+
+    <!-- ROSTER UPLOAD CARD -->
+    <div class="card">
+      <h2>Upload Roster</h2>
+      <p class="lead">
+        Drop your Swimtopia <strong>roster export</strong> here — CSV or Excel (<code>.xlsx</code>, <code>.xls</code>). Recognized columns include
+        <code>Athlete First Name</code>, <code>Athlete Last Name</code>,
+        <code>Parent 1 Email</code> / <code>Account Email</code>,
+        <code>Account Name</code> (parent), <code>Group Name</code>, and <code>Date of Birth</code> (used to compute age).
+        You can drop multiple files at once. No times are required.
+      </p>
+
+      <!-- SEASON PICKER for the roster — tags each swimmer with the season
+           they're on the roster for. Required so times uploaded for the same
+           season can match against the right list, not the current season's. -->
+      <div class="season-picker axp-season-picker">
+        <div class="field axp-season-field">
+          <label for="rosterSeasonInput" class="axp-label">Season for this roster <span class="req">*</span></label>
+          <input type="text" id="rosterSeasonInput" list="seasonOptions" placeholder="e.g. 2025 Summer" autocomplete="off" class="axp-input"/>
+          <p class="field-hint axp-hint">
+            Every swimmer on this roster will be marked as "on the team" for the season you pick. When you later upload meet times for the same season, only those swimmers will match — old swimmers from previous seasons stay safely in the database for their own season's records.
+          </p>
         </div>
       </div>
-      <div id="retentionBody"></div>
+
+      <label class="drop-zone" id="rosterDrop" for="rosterFile">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <h3>Drag &amp; drop your roster file here</h3>
+        <p>or click to browse · CSV or Excel (.xlsx, .xls) · multiple files OK</p>
+        <input type="file" id="rosterFile" multiple accept=".csv,.xlsx,.xls,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"/>
+      </label>
+      <div class="upload-status" id="rosterStatus" role="status" aria-live="polite"></div>
+
+      <details style="margin-top:20px;color:var(--text-muted);font-size:13px">
+        <summary style="cursor:pointer;font-weight:600;color:var(--text)">Roster CSV columns the importer recognizes</summary>
+<pre style="background:var(--bg-alt);padding:14px;border-radius:var(--radius);margin-top:12px;font-size:12.5px;overflow-x:auto;border:1px solid var(--border);color:var(--text)">Athlete First Name,Athlete Last Name,Date of Birth,Group Name,Account Name,Parent 1 Email,Parent 2 Email,Address
+Riley,Carter,2014-08-12,Bronze,Jordan Carter,jordan@example.com,morgan@example.com,415 Coastline Drive
+Mateo,Rivera,2015-02-04,Silver,Sofia Rivera,sofia@example.com,,82 Pine Ridge Lane
+Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore Court</pre>
+      </details>
     </div>
 
     <!-- SWIMTOPIA EXPORT GUIDE -->
@@ -805,145 +1053,15 @@
       </div>
     </details>
 
-    <!-- ROSTER UPLOAD CARD -->
-    <div class="card">
-      <h2>Upload Roster</h2>
-      <p class="lead">
-        Drop your Swimtopia <strong>roster export</strong> here — CSV or Excel (<code>.xlsx</code>, <code>.xls</code>). Recognized columns include
-        <code>Athlete First Name</code>, <code>Athlete Last Name</code>,
-        <code>Parent 1 Email</code> / <code>Account Email</code>,
-        <code>Account Name</code> (parent), <code>Group Name</code>, and <code>Date of Birth</code> (used to compute age).
-        You can drop multiple files at once. No times are required.
-      </p>
-
-      <!-- SEASON PICKER for the roster — tags each swimmer with the season
-           they're on the roster for. Required so times uploaded for the same
-           season can match against the right list, not the current season's. -->
-      <div class="season-picker axp-season-picker">
-        <div class="field axp-season-field">
-          <label for="rosterSeasonInput" class="axp-label">Season for this roster <span class="req">*</span></label>
-          <input type="text" id="rosterSeasonInput" list="seasonOptions" placeholder="e.g. 2025 Summer" autocomplete="off" class="axp-input"/>
-          <p class="field-hint axp-hint">
-            Every swimmer on this roster will be marked as "on the team" for the season you pick. When you later upload meet times for the same season, only those swimmers will match — old swimmers from previous seasons stay safely in the database for their own season's records.
-          </p>
-        </div>
-      </div>
-
-      <label class="drop-zone" id="rosterDrop" for="rosterFile">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        <h3>Drag &amp; drop your roster file here</h3>
-        <p>or click to browse · CSV or Excel (.xlsx, .xls) · multiple files OK</p>
-        <input type="file" id="rosterFile" multiple accept=".csv,.xlsx,.xls,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"/>
-      </label>
-      <div class="upload-status" id="rosterStatus" role="status" aria-live="polite"></div>
-
-      <details style="margin-top:20px;color:var(--text-muted);font-size:13px">
-        <summary style="cursor:pointer;font-weight:600;color:var(--text)">Roster CSV columns the importer recognizes</summary>
-<pre style="background:var(--bg-alt);padding:14px;border-radius:var(--radius);margin-top:12px;font-size:12.5px;overflow-x:auto;border:1px solid var(--border);color:var(--text)">Athlete First Name,Athlete Last Name,Date of Birth,Group Name,Account Name,Parent 1 Email,Parent 2 Email,Address
-Riley,Carter,2014-08-12,Bronze,Jordan Carter,jordan@example.com,morgan@example.com,415 Coastline Drive
-Mateo,Rivera,2015-02-04,Silver,Sofia Rivera,sofia@example.com,,82 Pine Ridge Lane
-Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore Court</pre>
-      </details>
-    </div>
-
-    <!-- ADD A MEET CARD — one meet at a time, named by the coach. The name you
-         type becomes the meet shown in every swimmer's stats; the file just
-         supplies the times. -->
-    <div class="card meet-card">
-      <div class="meet-card-head">
-        <span class="meet-card-badge">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
-        </span>
+    <!-- SEASON-OVER-SEASON RETENTION (coach-only view: who came back) -->
+    <div class="card" id="retentionCard" style="display:none">
+      <div class="axp-card-headrow">
         <div>
-          <h2>Add a Meet</h2>
-          <p class="lead">Pick the season and drop the results file. Works with a CSV/Excel export <em>or</em> the results file straight from <strong>SwimTopia</strong> (<code>.hy3</code>, <code>.sd3</code>, or the <code>.zip</code> bundle). <strong>Two ways to use it:</strong> type a meet name to label one meet's file, <em>or</em> leave the name blank to drop a whole-season export — each row's own meet column is used. Either way you can re-upload the same file as more meets are added: matching times update in place, new ones are added — never duplicated. This works even if the meet name doesn't match — when a file's swims (same swimmers, events, and times) match a meet already on record, it's recognized as the same meet and merged: only the new times are added.</p>
+          <h2>Roster retention</h2>
+          <p class="lead">Season over season: how many swimmers came back, how many are new, and who didn't return. Built from each swimmer's season memberships.</p>
         </div>
       </div>
-
-      <div class="meet-form-grid">
-        <div class="field axp-field-flush">
-          <label for="meetNameInput" class="axp-label">Meet name <span class="opt">(leave blank for a whole-season file)</span></label>
-          <input type="text" id="meetNameInput" list="meetNameOptions" placeholder="e.g. Highcroft at Riverstone" autocomplete="off" class="axp-input"/>
-          <datalist id="meetNameOptions"></datalist>
-        </div>
-        <div class="field axp-field-flush">
-          <label for="meetDateInput" class="axp-label">Meet date <span class="opt">(optional)</span></label>
-          <input type="date" id="meetDateInput" class="axp-input"/>
-        </div>
-        <div class="field axp-field-flush">
-          <label for="seasonInput" class="axp-label">Season <span class="req">*</span></label>
-          <input type="text" id="seasonInput" list="seasonOptions" placeholder="e.g. 2025 Summer" autocomplete="off" class="axp-input"/>
-          <datalist id="seasonOptions"></datalist>
-        </div>
-      </div>
-      <p class="field-hint axp-hint axp-hint-block">
-        If the file lists each swimmer's age group (like the Top Times export), anyone new is added to this season's roster automatically as their times import — no separate roster upload needed. A times-only file (just names + times) still only matches swimmers already on the roster. <strong>Type a meet name</strong> to force one meet for the whole file (it overrides the file's own meet column); <strong>leave it blank</strong> and each row keeps its own meet — ideal for a whole-season export you re-upload as the season grows. A meet date entered here applies to the whole meet; leave it blank to use the file's own dates.
-      </p>
-
-      <section class="st-guide">
-        <div class="st-guide-summary">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-          <span>How to get this file from SwimTopia</span>
-        </div>
-        <ol class="st-steps">
-          <li><strong>Sign in to SwimTopia.</strong> Open the Highcroft Hurricanes team site and log in.</li>
-          <li>Go to <strong>Manage Team → Reports</strong>.</li>
-          <li><strong>Select dates → Custom date range.</strong> Set the start and end dates right around this meet's date — keep the window tight so no other meet sneaks into the report.</li>
-          <li><strong>Display → Custom → Top 100 times.</strong></li>
-          <li><strong>Course / pool length:</strong> <code>Y – Short Course Yards</code>, 25 yards.</li>
-          <li><strong>Include converted times</strong> from the matching <strong>template</strong> — the <em>Home meet</em> template for a home meet, the <em>Away meet</em> template for an away meet.</li>
-          <li><strong>Match events using</strong> athlete age and competition category.</li>
-          <li>Leave <strong>lead-off relay legs</strong> and <strong>unofficial meets</strong> unchecked — but <strong>do include exhibition swims</strong>.</li>
-          <li>Click <strong>Generate report</strong>, then <strong>download the CSV</strong>.</li>
-          <li><strong>Upload that CSV below</strong> (or just drop your <code>.hy3</code>/<code>.sd3</code> results file instead).</li>
-        </ol>
-        <figure class="st-shot">
-          <a class="st-shot-link" href="assets/swimtopia-report-settings.png" target="_blank" rel="noopener" aria-label="Open the SwimTopia settings screenshot at full size">
-            <img src="assets/swimtopia-report-settings.png" alt="SwimTopia Top Times report settings: Custom date range with start and end dates around the meet, Display set to Custom Top 100 times, Course Y - Short Course Yards 25yd with Include converted times checked, Events from the Home Meet template, Match events using athlete age and competition category, and Include with Exhibition swims checked but Lead-off relay legs and Unofficial meets unchecked." loading="lazy" decoding="async"/>
-            <span class="st-shot-zoom" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3M11 8v6M8 11h6"/></svg>
-              View full size
-            </span>
-          </a>
-          <figcaption>Your SwimTopia <strong>Reports → Top Times</strong> screen should match this, then click <strong>Download (csv)</strong>. <span class="st-shot-tap">Tap the image to zoom in.</span></figcaption>
-        </figure>
-      </section>
-
-      <label class="drop-zone meet-drop" id="dropZone" for="csvFile">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        <h3>Drop this meet's results file</h3>
-        <p>or click to browse · CSV, Excel (.xlsx, .xls), or a SwimTopia results file (.hy3, .sd3, or .zip)</p>
-        <input type="file" id="csvFile" accept=".csv,.xlsx,.xls,.hy3,.sd3,.cl2,.zip,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,application/zip"/>
-      </label>
-      <div class="upload-status" id="uploadStatus" role="status" aria-live="polite"></div>
-
-      <details style="margin-top:20px;color:var(--text-muted);font-size:13px">
-        <summary style="cursor:pointer;font-weight:600;color:var(--text)">Results file formats &amp; columns the importer reads</summary>
-        <p style="margin:12px 0 8px"><strong>SwimTopia results files import directly.</strong> From Meet Maestro, export the meet results and drop the <code>.hy3</code> (Hy-Tek) or <code>.sd3</code> (SDIF) file here — or just drop the whole <code>.zip</code> bundle and the importer pulls the results file out of it. Each swimmer's name, event (distance + stroke), final time, place, and date are read automatically; you still type the meet name above so it reads nicely in stats.</p>
-        <p style="margin:12px 0 8px">The team's <strong>Top Times CSV/Excel export</strong> also drops in directly — its columns (<code>age_group</code>, <code>distance</code>, <code>stroke</code>, <code>place</code>, <code>converted_time</code>/<code>original_time</code>, <code>last_name</code>, <code>first_name</code>, <code>age</code>, <code>date</code>, <code>swim_meet</code>) are all recognized. Course-code suffixes on times (<code>18.06Y</code>, <code>1:00.42Y</code>) are handled automatically, and the gender + age bracket are read from the <code>age_group</code> label (e.g. <em>"Girls 6 &amp; Under"</em>).</p>
-        <p style="margin:0 0 8px">At minimum the importer needs a name (<code>first_name</code> + <code>last_name</code>, or a single <code>Athlete</code> column in <em>"Last, First"</em> form), a <code>stroke</code> (or <code>Event</code>), and a time. The <strong>meet name and date you type above win over the file's own <code>swim_meet</code>/<code>date</code> columns</strong>, so one upload becomes one named meet. Older exports (<code>Athlete,Event,Time,…</code>) still work too.</p>
-        <p style="margin:0 0 8px"><strong>Stroke-only files work too:</strong> if a file just lists the <code>Stroke</code> (Freestyle, Backstroke, …) and a <code>Time</code> with no distance, the distance is filled in from each swimmer's age group automatically — <code>6 &amp; Under</code> 15y, <code>7-8</code> and <code>9-10</code> 25y, <code>11-12</code> and older 50y — so the time lands on the right event and leaderboard.</p>
-<pre style="background:var(--bg-alt);padding:14px;border-radius:var(--radius);margin-top:12px;font-size:12.5px;overflow-x:auto;border:1px solid var(--border);color:var(--text)">age_group,distance,stroke,place,converted_time,converted_hundredths,original_time,last_name,first_name,age,team_abbr,team_name,date,swim_meet
-Girls 6 &amp; Under,15,Freestyle,1,18.06Y,1806,18.06Y,Purcell,Rylee,6,HHST,Highcroft Hurricanes Swim Team,06/02/26,Practice Meet vs. The Reserve
-Boys 13-14,50,Freestyle,3,32.18Y,3218,32.18Y,Coleman,Reid,14,HHST,Highcroft Hurricanes Swim Team,06/02/26,Practice Meet vs. The Reserve
-Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hurricanes Swim Team,06/02/26,Practice Meet vs. The Reserve</pre>
-      </details>
-    </div>
-
-    <!-- UPLOADED FILES CARD — per-file, per-season history with one-click
-         remove. Lets a coach undo a single mistaken roster or meet file
-         instead of wiping everything. -->
-    <div class="card" id="uploadsCard">
-      <div class="axp-card-headrow axp-uploads-head">
-        <div>
-          <h2>Uploaded Files</h2>
-          <p class="lead">Every roster and meet file you've uploaded, grouped by season. Click the trash icon to remove just that file — its swimmers stay, but the times (or roster spots) it added are taken back out, and stats recompute.</p>
-        </div>
-        <select id="uploadsSeasonFilter" class="lb-select admin-filter" title="Show files for a single season">
-          <option value="">All seasons</option>
-        </select>
-      </div>
-      <div id="uploadsBody" class="axp-uploads-body"></div>
+      <div id="retentionBody"></div>
     </div>
 
     <!-- DUPLICATE-TIME CLEANUP — collapse a meet that got uploaded more than
@@ -961,90 +1079,6 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
         <button class="btn" id="dedupeApplyBtn" type="button" disabled>Remove duplicates</button>
       </div>
       <div class="upload-status" id="dedupeStatus" role="status" aria-live="polite"></div>
-    </div>
-
-    <!-- MANUAL ADD CARD -->
-    <div class="card">
-      <h2>Add or Update Swimmer Manually</h2>
-      <p class="lead">Use this when you need to register a swimmer before their first meet, or fix a parent name / email. "Last, First" names are auto-flipped.</p>
-      <form id="manualForm" autocomplete="off" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px">
-        <div class="field"><label>Full name *</label><input type="text" id="mName" placeholder="Riley Carter or Carter, Riley" required/></div>
-        <div class="field"><label>Email *</label><input type="email" id="mEmail" placeholder="parent@example.com" required/></div>
-        <div class="field"><label>Parent name *</label><input type="text" id="mParent" required/></div>
-        <div class="field"><label>Age</label><input type="text" id="mAge"/></div>
-        <div class="field"><label>Training group</label><input type="text" id="mGroup" placeholder="e.g. Bronze"/></div>
-        <div class="field"><label>Gender</label>
-          <select id="mGender">
-            <option value="">—</option>
-            <option value="M">Boys</option>
-            <option value="F">Girls</option>
-          </select>
-        </div>
-        <div style="display:flex;align-items:flex-end">
-          <button type="submit" class="btn lg block">Save Swimmer</button>
-        </div>
-      </form>
-    </div>
-
-    <!-- MANUAL TIME ENTRY CARD -->
-    <div class="card" id="manualTimeCard">
-      <h2>Add a Time Manually</h2>
-      <p class="lead">Search for a swimmer and log a single race time. It saves to Firebase and shows up on their profile, the season leaderboards, and the awards boards — exactly like a time from an uploaded meet file.</p>
-      <form id="manualTimeForm" autocomplete="off" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px">
-        <div class="field" style="grid-column:1/-1;max-width:440px">
-          <label>Swimmer *</label>
-          <input type="text" id="mtSwimmer" list="mtSwimmerList" placeholder="Start typing a name…" required autocomplete="off"/>
-          <datalist id="mtSwimmerList"></datalist>
-        </div>
-        <div class="field">
-          <label>Stroke *</label>
-          <select id="mtStroke" required>
-            <option value="Freestyle">Freestyle</option>
-            <option value="Backstroke">Backstroke</option>
-            <option value="Breaststroke">Breaststroke</option>
-            <option value="Butterfly">Butterfly</option>
-            <option value="IM">IM</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>Distance (yards) *</label>
-          <select id="mtDistance" required>
-            <option value="15">15</option>
-            <option value="25">25</option>
-            <option value="50" selected>50</option>
-            <option value="100">100</option>
-            <option value="200">200</option>
-            <option value="400">400</option>
-            <option value="500">500</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>Time *</label>
-          <input type="text" id="mtTime" placeholder="28.42 or 1:02.18" required inputmode="decimal"/>
-        </div>
-        <div class="field">
-          <label>Meet *</label>
-          <input type="text" id="mtMeet" list="mtMeetList" placeholder="e.g. Summer Invitational" required/>
-          <datalist id="mtMeetList"></datalist>
-        </div>
-        <div class="field">
-          <label>Date *</label>
-          <input type="date" id="mtDate" required/>
-        </div>
-        <div class="field">
-          <label>Season *</label>
-          <select id="mtSeason" required></select>
-        </div>
-        <div class="field" style="grid-column:1/-1">
-          <label style="display:inline-flex;align-items:center;gap:8px;font-weight:500;text-transform:none;letter-spacing:normal;cursor:pointer;color:var(--text-muted)">
-            <input type="checkbox" id="mtTimeTrial" style="width:auto;margin:0"/> Mark as a time trial (kept on the profile, but off the competitive boards)
-          </label>
-        </div>
-        <div style="display:flex;align-items:flex-end;grid-column:1/-1">
-          <button type="submit" class="btn lg" id="mtSubmit">Add time</button>
-        </div>
-      </form>
-      <div class="upload-status" id="mtStatus" style="margin-top:12px" role="status" aria-live="polite"></div>
     </div>
 
     <!-- ROSTER TABLE -->
