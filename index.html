@@ -136,6 +136,32 @@
     .idx-form .idx-input-wrap input{padding-right:38px}
     .idx-check{right:12px}
   }
+
+  /* ===== Homepage nav — always-visible "Admin" sign-in CTA =====
+     Replaces the old trio of role buttons with ONE primary Admin button that
+     opens the coach chooser (Admin / Head Coach / Assistant Coach) on
+     admin.html. It groups to the right with the menu on desktop and STAYS
+     VISIBLE on mobile beside the hamburger, so signing in never means hunting
+     inside the menu. */
+  header nav .nav-links{margin-left:auto}
+  header nav .nav-cta{gap:8px;white-space:nowrap}
+  header nav .nav-cta svg{width:16px;height:16px;flex:none}
+  @media (max-width:760px){
+    header nav .nav-cta{margin-left:auto}
+    header nav .nav-burger{margin-left:10px}
+  }
+  @media (max-width:440px){
+    /* Drop the second brand word ("Hurricanes") so the brand + Admin button +
+       burger comfortably share one row on phones. */
+    header nav .brand em{display:none}
+    header nav .nav-cta{padding:10px 15px}
+  }
+  @media (max-width:345px){
+    /* Very small phones: mark-only logo so the Admin button is never squeezed
+       off-screen. The brand mark keeps the identity. */
+    header nav{gap:8px}
+    header nav .brand{font-size:0}
+  }
 </style>
 
 <!-- Firebase compat SDK -->
@@ -160,9 +186,6 @@
     </a>
     <ul class="nav-links">
       <li><a href="#how">How it Works</a></li>
-      <li><a href="admin.html?login=head" class="btn ghost">Head Coach</a></li>
-      <li><a href="admin.html?login=assistant" class="btn ghost">Assistant Coach</a></li>
-      <li><a href="admin.html?login=admin" class="btn">Admin</a></li>
       <li>
         <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
           <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
@@ -170,6 +193,12 @@
         </button>
       </li>
     </ul>
+    <!-- Always-visible sign-in CTA (never hidden in the hamburger) — opens the
+         coach chooser on admin.html: Admin / Head Coach / Assistant Coach. -->
+    <a href="admin.html" class="btn nav-cta">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+      Admin
+    </a>
   </nav>
 </header>
 
