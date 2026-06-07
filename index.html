@@ -336,7 +336,8 @@
      rising, swaying air bubbles. The old static bobbers (.drop, shared
      styles.css) are retired on this page. ===== */
   .drops .drop{display:none}
-  .idx-bub-layer{position:absolute;inset:0;will-change:transform}
+  .drops{perspective:900px} /* gives the per-bubble translateZ real depth */
+  .idx-bub-layer{position:absolute;inset:0;will-change:transform;transform-style:preserve-3d}
   .idx-bub{
     position:absolute;bottom:-48px;left:var(--x);
     width:var(--size);height:var(--size);
@@ -359,27 +360,62 @@
     border-radius:50%;background:rgba(255,255,255,.75);
     transform:rotate(-28deg);filter:blur(.5px);
   }
+  /* Rise the FULL height of the hero (JS measures it into --heroH on the
+     .drops host) plus a margin, so every bubble breaks the surface at the
+     very top instead of fading mid-water. Each bubble also sits at its own
+     translateZ depth, so the perspective above makes the field truly 3-D. */
   @keyframes idx-rise{
-    0%{transform:translateY(0);opacity:0}
-    6%{opacity:var(--o,.55)}
-    88%{opacity:var(--o,.55)}
-    100%{transform:translateY(-110vh);opacity:0}
+    0%{transform:translateZ(var(--z,0)) translateY(0);opacity:0}
+    5%{opacity:var(--o,.55)}
+    96%{opacity:var(--o,.55)}
+    100%{transform:translateZ(var(--z,0)) translateY(calc(-1 * var(--heroH,110vh) - 70px));opacity:0}
   }
   @keyframes idx-sway{
     from{transform:translateX(calc(var(--sway,12px) * -1)) scale(.95)}
     to{transform:translateX(var(--sway,12px)) scale(1.05)}
   }
-  /* Click "fizz": a handful of quick bubbles from the click point. */
+  /* Click / hold "fizz": wobbling bubbles burst from the point, a ripple
+     shockwave expands, and holding the pointer down streams a steady fizz. */
   .idx-pop-bub{
-    position:absolute;width:var(--size);height:var(--size);border-radius:50%;
+    position:absolute;width:var(--size);height:var(--size);
+    pointer-events:none;opacity:0;
+    animation:idx-pop-rise var(--dur,.9s) cubic-bezier(.2,.6,.3,1) var(--pd,0s) forwards;
+  }
+  .idx-pop-bub i{
+    display:block;width:100%;height:100%;border-radius:50%;
     border:1.5px solid rgba(214,240,255,.65);
-    background:radial-gradient(circle at 32% 28%,rgba(255,255,255,.5),rgba(255,255,255,.05) 40%,transparent);
-    pointer-events:none;
-    animation:idx-pop-rise var(--dur,.8s) cubic-bezier(.2,.6,.3,1) forwards;
+    background:radial-gradient(circle at 32% 28%,rgba(255,255,255,.55),rgba(255,255,255,.06) 40%,rgba(127,227,239,.12));
+    box-shadow:0 0 8px rgba(127,227,239,.25);
+    animation:idx-pop-wiggle .42s ease-in-out infinite alternate;
   }
   @keyframes idx-pop-rise{
-    from{transform:translate(0,0) scale(.4);opacity:.95}
-    to{transform:translate(var(--dx,0),var(--dy,-90px)) scale(1);opacity:0}
+    0%{transform:translate(0,0) scale(.3);opacity:0}
+    8%{opacity:.95}
+    100%{transform:translate(var(--dx,0),var(--dy,-120px)) scale(1.05);opacity:0}
+  }
+  @keyframes idx-pop-wiggle{
+    from{transform:translateX(calc(var(--wig,5px) * -1))}
+    to{transform:translateX(var(--wig,5px))}
+  }
+  .idx-ripple{
+    position:absolute;border-radius:50%;pointer-events:none;
+    border:2px solid rgba(186,230,253,.7);
+    box-shadow:0 0 18px rgba(127,227,239,.35),inset 0 0 12px rgba(127,227,239,.2);
+    animation:idx-ripple-out var(--dur,.8s) cubic-bezier(.16,.84,.44,1) var(--pd,0s) forwards;
+    opacity:0;
+  }
+  @keyframes idx-ripple-out{
+    0%{transform:scale(.12);opacity:.9}
+    100%{transform:scale(1);opacity:0}
+  }
+  .idx-flash{
+    position:absolute;border-radius:50%;pointer-events:none;
+    background:radial-gradient(circle,rgba(255,255,255,.95),rgba(186,230,253,.4) 45%,transparent 70%);
+    animation:idx-flash-fade .45s ease-out forwards;
+  }
+  @keyframes idx-flash-fade{
+    from{transform:scale(.4);opacity:1}
+    to{transform:scale(1.5);opacity:0}
   }
 
   /* ===== Underwater light rays — soft beams swaying through the water,
@@ -408,12 +444,12 @@
   .lookup-card.idx-lift{transform-style:preserve-3d;will-change:transform}
   .lookup-card.is-tilting{transition:box-shadow .22s ease} /* JS owns transform while tilting */
   .idx-form{transform-style:preserve-3d}
-  .idx-form .field{transform:translateZ(12px)}
-  .lookup-card > h2{transform:translateZ(20px)}
-  .lookup-card > .sub{transform:translateZ(12px)}
-  .lookup-card > .idx-lane{transform:translateZ(26px)}
-  .idx-form .btn.lg.block{transform:translateZ(30px)}
-  .idx-form .idx-privacy{transform:translateZ(8px)}
+  .idx-form .field{transform:translateZ(14px)}
+  .lookup-card > h2{transform:translateZ(26px)}
+  .lookup-card > .sub{transform:translateZ(14px)}
+  .lookup-card > .idx-lane{transform:translateZ(32px)}
+  .idx-form .btn.lg.block{transform:translateZ(38px)}
+  .idx-form .idx-privacy{transform:translateZ(10px)}
   .idx-glare{
     position:absolute;inset:0;border-radius:inherit;pointer-events:none;
     background:radial-gradient(440px circle at var(--gx,50%) var(--gy,30%),rgba(255,255,255,.17),transparent 62%);
@@ -797,6 +833,9 @@
         b.style.setProperty('--swayDur', (2.2 + Math.random()*2.8).toFixed(2) + 's');
         b.style.setProperty('--o', (o.oMin + Math.random()*o.oRange).toFixed(2));
         b.style.setProperty('--blur', o.blur ? (Math.random()*1.6).toFixed(2) + 'px' : '0px');
+        // Per-bubble depth: with perspective on .drops this is true 3-D —
+        // deep bubbles render smaller and drift less, near ones loom.
+        if(o.z) b.style.setProperty('--z', (o.z[0] + Math.random()*(o.z[1]-o.z[0])).toFixed(0) + 'px');
         b.appendChild(document.createElement('i'));
         layer.appendChild(b);
       }
@@ -804,24 +843,42 @@
     // Three depth layers: far = small, hazy, slow; mid = the body of the
     // water; near = big, crisp, quick. Together they read as a full column
     // of water, and the pointer drift below moves each at its own rate.
-    spawn(far,  small ? 16 : 30, { min:4,  max:11, durMin:16, durMax:30, sway:14, oMin:.14, oRange:.22, blur:true });
-    spawn(mid,  small ? 12 : 22, { min:8,  max:18, durMin:11, durMax:20, sway:20, oMin:.24, oRange:.28, blur:false });
-    spawn(near, small ? 9  : 16, { min:14, max:34, durMin:8,  durMax:14, sway:28, oMin:.34, oRange:.34, blur:false });
-
-    if(reduce) return; // rising/sway are neutralised globally — skip the extras too
+    spawn(far,  small ? 22 : 40, { min:4,  max:11, durMin:16, durMax:30, sway:14, oMin:.14, oRange:.22, blur:true,  z:[-160,-60] });
+    spawn(mid,  small ? 16 : 30, { min:8,  max:18, durMin:11, durMax:20, sway:20, oMin:.24, oRange:.28, blur:false, z:[-50,30] });
+    spawn(near, small ? 12 : 22, { min:14, max:34, durMin:8,  durMax:14, sway:28, oMin:.34, oRange:.34, blur:false, z:[40,120] });
 
     const hero = document.querySelector('.hero');
 
-    // Pointer drift: the bubble layers lean gently with the cursor, near layer
-    // more than far, so the water reads as 3-D. Desktop pointers only.
+    // Bubbles rise the FULL hero height (the rise keyframe reads --heroH),
+    // so they always break the surface at the very top of the water.
+    function sizeWater(){
+      if(hero) host.style.setProperty('--heroH', hero.offsetHeight + 'px');
+    }
+    sizeWater();
+    window.addEventListener('resize', sizeWater, { passive:true });
+
+    if(reduce) return; // rising/sway are neutralised globally — skip the extras too
+
+    // Pointer drift: the bubble layers drift AND swivel with the cursor —
+    // each depth at its own rate — and the headline copy parallaxes too, so
+    // the whole hero reads as one 3-D scene. Desktop pointers only.
     if(hero && window.matchMedia('(pointer: fine)').matches){
+      // The hero copy's entrance animations fill forwards, which would
+      // override inline parallax transforms — release them once they're done.
+      const copy = ['.kicker','h1','.hero-sub'].map(s => hero.querySelector('.hero-inner > ' + s)).filter(Boolean);
+      setTimeout(() => copy.forEach(el => { el.style.opacity = '1'; el.style.animation = 'none'; }), 2400);
+      const copyDepth = [4, 8, 6]; // px of drift per element (kicker, h1, sub)
       let tx = 0, ty = 0, cx = 0, cy = 0, raf = 0;
       function step(){
         raf = 0;
         cx += (tx - cx) * .06; cy += (ty - cy) * .06;
-        far.style.transform  = `translate(${(-cx*8).toFixed(1)}px, ${(-cy*5).toFixed(1)}px)`;
-        mid.style.transform  = `translate(${(-cx*18).toFixed(1)}px, ${(-cy*11).toFixed(1)}px)`;
-        near.style.transform = `translate(${(-cx*32).toFixed(1)}px, ${(-cy*19).toFixed(1)}px)`;
+        const ry = (cx*2.4).toFixed(2), rx = (-cy*1.6).toFixed(2);
+        far.style.transform  = `translate(${(-cx*8).toFixed(1)}px, ${(-cy*5).toFixed(1)}px) rotateY(${ry*0.5}deg) rotateX(${rx*0.5}deg)`;
+        mid.style.transform  = `translate(${(-cx*18).toFixed(1)}px, ${(-cy*11).toFixed(1)}px) rotateY(${ry}deg) rotateX(${rx}deg)`;
+        near.style.transform = `translate(${(-cx*34).toFixed(1)}px, ${(-cy*20).toFixed(1)}px) rotateY(${ry*1.6}deg) rotateX(${rx*1.6}deg)`;
+        copy.forEach((el, i) => {
+          el.style.transform = `translate(${(cx*copyDepth[i]).toFixed(1)}px, ${(cy*copyDepth[i]*.7).toFixed(1)}px)`;
+        });
         if(Math.abs(tx - cx) + Math.abs(ty - cy) > .002) raf = requestAnimationFrame(step);
       }
       hero.addEventListener('pointermove', e => {
@@ -832,26 +889,75 @@
       }, { passive:true });
     }
 
-    // Click fizz: quick bubbles from the click point — only on open water,
-    // never on the form, links, or buttons.
+    // Click & hold fizz — only on open water, never on the form/links/buttons.
+    // A click lands a bright flash, a double ripple shockwave, and a staggered
+    // burst of wobbling bubbles; holding the pointer down streams a steady
+    // fizz that follows the cursor.
     if(hero){
-      hero.addEventListener('click', e => {
-        if(e.target.closest('a,button,input,label,select,textarea,.lookup-card')) return;
+      const isWater = t => !t.closest('a,button,input,label,select,textarea,.lookup-card');
+      const toLocal = e => {
         const r = host.getBoundingClientRect();
-        for(let i = 0; i < 8; i++){
-          const p = document.createElement('span');
-          p.className = 'idx-pop-bub';
-          const size = 4 + Math.random()*10;
-          p.style.setProperty('--size', size.toFixed(1) + 'px');
-          p.style.left = (e.clientX - r.left - size/2) + 'px';
-          p.style.top  = (e.clientY - r.top  - size/2) + 'px';
-          p.style.setProperty('--dx', ((Math.random() - .5)*90).toFixed(0) + 'px');
-          p.style.setProperty('--dy', (-(50 + Math.random()*110)).toFixed(0) + 'px');
-          p.style.setProperty('--dur', (.7 + Math.random()*.6).toFixed(2) + 's');
-          p.addEventListener('animationend', () => p.remove());
-          host.appendChild(p);
-        }
+        return { x: e.clientX - r.left, y: e.clientY - r.top };
+      };
+      function bubbleAt(x, y, big){
+        const p = document.createElement('span');
+        p.className = 'idx-pop-bub';
+        const size = big ? 6 + Math.random()*14 : 4 + Math.random()*8;
+        p.style.setProperty('--size', size.toFixed(1) + 'px');
+        p.style.left = (x - size/2) + 'px';
+        p.style.top  = (y - size/2) + 'px';
+        p.style.setProperty('--dx', ((Math.random() - .5) * (big ? 150 : 60)).toFixed(0) + 'px');
+        p.style.setProperty('--dy', (-(big ? 110 + Math.random()*190 : 70 + Math.random()*120)).toFixed(0) + 'px');
+        p.style.setProperty('--dur', (big ? .9 + Math.random()*.8 : .7 + Math.random()*.5).toFixed(2) + 's');
+        p.style.setProperty('--pd', (big ? Math.random()*.14 : 0).toFixed(2) + 's');
+        p.style.setProperty('--wig', (3 + Math.random()*6).toFixed(1) + 'px');
+        p.appendChild(document.createElement('i'));
+        p.addEventListener('animationend', e2 => { if(e2.target === p) p.remove(); });
+        host.appendChild(p);
+      }
+      function ringAt(x, y, d, delay){
+        const ring = document.createElement('span');
+        ring.className = 'idx-ripple';
+        ring.style.left = (x - d/2) + 'px';
+        ring.style.top  = (y - d/2) + 'px';
+        ring.style.width = ring.style.height = d + 'px';
+        ring.style.setProperty('--dur', (.65 + d/260) + 's');
+        ring.style.setProperty('--pd', delay + 's');
+        ring.addEventListener('animationend', () => ring.remove());
+        host.appendChild(ring);
+      }
+      hero.addEventListener('click', e => {
+        if(!isWater(e.target)) return;
+        const { x, y } = toLocal(e);
+        const flash = document.createElement('span');
+        flash.className = 'idx-flash';
+        flash.style.left = (x - 14) + 'px'; flash.style.top = (y - 14) + 'px';
+        flash.style.width = flash.style.height = '28px';
+        flash.addEventListener('animationend', () => flash.remove());
+        host.appendChild(flash);
+        ringAt(x, y, 90, 0);
+        ringAt(x, y, 170, .12);
+        for(let i = 0; i < 14; i++) bubbleAt(x, y, true);
       });
+      // Hold-to-stream: while the pointer is down on open water, fizz a
+      // bubble every ~70ms from wherever the cursor is (capped at 3s).
+      let streamTimer = 0, streamPos = null;
+      function stopStream(){
+        if(streamTimer){ clearInterval(streamTimer); streamTimer = 0; }
+        streamPos = null;
+      }
+      hero.addEventListener('pointerdown', e => {
+        if(!isWater(e.target) || e.button !== 0) return;
+        streamPos = toLocal(e);
+        let ticks = 0;
+        clearInterval(streamTimer);
+        streamTimer = setInterval(() => {
+          if(!streamPos || ++ticks > 42){ stopStream(); return; }
+          bubbleAt(streamPos.x + (Math.random()-.5)*14, streamPos.y + (Math.random()-.5)*8, false);
+        }, 70);
+      });
+      hero.addEventListener('pointermove', e => { if(streamPos) streamPos = toLocal(e); }, { passive:true });
+      ['pointerup','pointercancel','pointerleave'].forEach(ev => hero.addEventListener(ev, stopStream));
     }
   })();
 
@@ -881,7 +987,7 @@
     glare.setAttribute('aria-hidden', 'true');
     card.appendChild(glare);
 
-    const MAX = 5; // degrees of lean at the card's edges
+    const MAX = 6.5; // degrees of lean at the card's edges
     let tx = 0, ty = 0, cx = 0, cy = 0, raf = 0, active = false;
     function frame(){
       raf = 0;
