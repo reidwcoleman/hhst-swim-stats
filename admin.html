@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="assets/styles.css?v=26"/>
+<link rel="stylesheet" href="assets/styles.css?v=27"/>
 
 <!-- ============================================================
      ADMIN PAGE POLISH — visual/UX refinements layered on top of
@@ -2556,7 +2556,7 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
           : '';
         return `
         <tr>
-          <td class="cell-name">
+          <td class="cell-name" data-label="Swimmer">
             <div class="swimmer-name-cell">
               <strong>${escapeHtml(s.name)}</strong>
               ${genderChip}
@@ -2564,11 +2564,11 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
               ${seasonChip}
             </div>
           </td>
-          <td class="cell-age">${escapeHtml(info.age||'—')}</td>
-          <td class="cell-bracket"><span class="${bracketPillClass(bracket)}">${escapeHtml(bracket)}</span></td>
-          <td class="cell-parents">${parentsCell}</td>
-          <td class="cell-email">${emailCell}</td>
-          <td class="cell-races"><span class="race-count">${(s.results||[]).length}</span></td>
+          <td class="cell-age" data-label="Age">${escapeHtml(info.age||'—')}</td>
+          <td class="cell-bracket" data-label="Age Group"><span class="${bracketPillClass(bracket)}">${escapeHtml(bracket)}</span></td>
+          <td class="cell-parents" data-label="Parent">${parentsCell}</td>
+          <td class="cell-email" data-label="Email">${emailCell}</td>
+          <td class="cell-races" data-label="Races"><span class="race-count">${(s.results||[]).length}</span></td>
           <td class="row-actions cell-actions">
             <button data-edit="${s.key}" title="Edit swimmer">Edit</button>
             <button onclick="window.open('dashboard.html?s=${encodeURIComponent(s.key)}','_blank')" title="Open dashboard">View</button>
@@ -2589,7 +2589,7 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
           <span class="age-group-count">${list.length} swimmer${list.length===1?'':'s'}</span>
         </h3>
         <div class="table-wrap">
-        <table class="roster-table">
+        <table class="roster-table responsive-cards">
           <thead><tr><th>Swimmer</th><th>Age</th><th>Age Group</th><th>Parent</th><th>Email</th><th class="th-races">Races</th><th></th></tr></thead>
           <tbody>${rowsFor(list, g)}</tbody>
         </table>

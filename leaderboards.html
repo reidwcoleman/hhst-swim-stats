@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="assets/styles.css?v=26"/>
+<link rel="stylesheet" href="assets/styles.css?v=27"/>
 <style>
   /* Hide everything until auth check completes — admins only. */
   body:not(.auth-ready) > *{visibility:hidden}
@@ -239,7 +239,7 @@
     <div class="ss-section-title"><h2>By Age Group</h2><span id="byGroupSeason"></span></div>
     <div class="card">
       <div class="table-wrap">
-        <table class="roster-table" style="min-width:560px">
+        <table class="roster-table responsive-cards" style="min-width:560px">
           <thead><tr><th>Age Group</th><th>Swimmers</th><th>Races</th><th>PRs</th><th>Time Dropped</th></tr></thead>
           <tbody id="byGroupBody"></tbody>
         </table>
@@ -250,7 +250,7 @@
     <div class="ss-section-title"><h2>Meets</h2><span id="meetsSeason"></span></div>
     <div class="card">
       <div class="table-wrap">
-        <table class="roster-table" style="min-width:560px">
+        <table class="roster-table responsive-cards" style="min-width:560px">
           <thead><tr><th>Meet</th><th>Date</th><th>Swimmers</th><th>Races</th></tr></thead>
           <tbody id="meetsBody"></tbody>
         </table>
@@ -261,7 +261,7 @@
     <div class="ss-section-title"><h2>All Seasons</h2><span>Click a season to view its stats</span></div>
     <div class="card">
       <div class="table-wrap">
-        <table class="roster-table" style="min-width:620px">
+        <table class="roster-table responsive-cards" style="min-width:620px">
           <thead><tr><th>Season</th><th>Swimmers</th><th>Races</th><th>Meets</th><th>PRs</th><th>Time Dropped</th></tr></thead>
           <tbody id="allSeasonsBody"></tbody>
         </table>
@@ -434,11 +434,11 @@
       });
       const dmin = fmtDropMin(drop);
       return `<tr>
-        <td><span class="bracket-pill bracket-${bracket.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'')}">${escapeHtml(bracket)}</span></td>
-        <td>${swrs.length}</td>
-        <td>${fmtNum(races)}</td>
-        <td>${fmtNum(prs)}</td>
-        <td>${drop > 0 ? `<span class="ss-drop">${fmtDrop(drop)}</span>${dmin?`<div class="ss-drop-min">${dmin}</div>`:''}` : '<span class="ss-muted">—</span>'}</td>
+        <td data-label="Age Group"><span class="bracket-pill bracket-${bracket.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'')}">${escapeHtml(bracket)}</span></td>
+        <td data-label="Swimmers">${swrs.length}</td>
+        <td data-label="Races">${fmtNum(races)}</td>
+        <td data-label="PRs">${fmtNum(prs)}</td>
+        <td data-label="Time Dropped">${drop > 0 ? `<span class="ss-drop">${fmtDrop(drop)}</span>${dmin?`<div class="ss-drop-min">${dmin}</div>`:''}` : '<span class="ss-muted">—</span>'}</td>
       </tr>`;
     }).filter(Boolean).join('');
     body.innerHTML = rows || `<tr><td colspan="5" class="ss-empty-cell">No swimmers raced this season yet.</td></tr>`;
@@ -459,10 +459,10 @@
     const rows = ordered.filter(m => counts[m.meet]).map(m => {
       const c = counts[m.meet] || { races:0, swimmers:new Set() };
       return `<tr>
-        <td><strong>${escapeHtml(m.meet)}</strong></td>
-        <td class="ss-muted">${escapeHtml(fmtMeetDate(m.date))}</td>
-        <td>${c.swimmers.size}</td>
-        <td>${fmtNum(c.races)}</td>
+        <td data-label="Meet"><strong>${escapeHtml(m.meet)}</strong></td>
+        <td class="ss-muted" data-label="Date">${escapeHtml(fmtMeetDate(m.date))}</td>
+        <td data-label="Swimmers">${c.swimmers.size}</td>
+        <td data-label="Races">${fmtNum(c.races)}</td>
       </tr>`;
     }).join('');
     body.innerHTML = rows || `<tr><td colspan="4" class="ss-empty-cell">No meets recorded for this season yet.</td></tr>`;
@@ -475,12 +475,12 @@
       const real = s.season !== '(Untagged)';
       const dmin = fmtDropMin(s.totalDropSec);
       return `<tr class="${real ? 'ss-table-row-link' : ''}" ${real ? `data-season="${escapeHtml(s.season)}"` : ''}>
-        <td><strong>${escapeHtml(s.season)}</strong>${i===0 && real ? ' <span class="training-chip ss-cur-chip" title="Most recent season">Current</span>' : ''}</td>
-        <td>${fmtNum(s.swimmerCount)}</td>
-        <td>${fmtNum(s.totalRaces)}</td>
-        <td>${fmtNum(s.meetCount)}</td>
-        <td>${fmtNum(s.prRaces)}</td>
-        <td>${s.totalDropSec > 0 ? `<span class="ss-drop">${fmtDrop(s.totalDropSec)}</span>${dmin?`<div class="ss-drop-min">${dmin}</div>`:''}` : '<span class="ss-muted">—</span>'}</td>
+        <td data-label="Season"><strong>${escapeHtml(s.season)}</strong>${i===0 && real ? ' <span class="training-chip ss-cur-chip" title="Most recent season">Current</span>' : ''}</td>
+        <td data-label="Swimmers">${fmtNum(s.swimmerCount)}</td>
+        <td data-label="Races">${fmtNum(s.totalRaces)}</td>
+        <td data-label="Meets">${fmtNum(s.meetCount)}</td>
+        <td data-label="PRs">${fmtNum(s.prRaces)}</td>
+        <td data-label="Time Dropped">${s.totalDropSec > 0 ? `<span class="ss-drop">${fmtDrop(s.totalDropSec)}</span>${dmin?`<div class="ss-drop-min">${dmin}</div>`:''}` : '<span class="ss-muted">—</span>'}</td>
       </tr>`;
     }).join('');
     body.querySelectorAll('tr[data-season]').forEach(tr => tr.addEventListener('click', () => {

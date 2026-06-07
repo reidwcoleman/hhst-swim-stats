@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="assets/styles.css?v=26"/>
+<link rel="stylesheet" href="assets/styles.css?v=27"/>
 <style>
   /* ---- Page-scoped polish for the swimmer dashboard ----
      Aligns this page's inline-style risks to the shared design tokens
@@ -73,13 +73,12 @@
     .meet-filters select{min-width:0;width:100%;max-width:100%;box-sizing:border-box}
     .meet-filters .meet-counter{flex:1 1 100%}
   }
-  @media (max-width:480px){
-    /* Keep a modest table width so horizontal scroll inside .table-wrap reads
-       as intentional rather than a cramped wrap; nowrap the short columns. */
-    #meetTable{min-width:580px}
-    #meetTable th:nth-child(1),#meetTable td:nth-child(1),
-    #meetTable th:nth-child(4),#meetTable td:nth-child(4),
-    #meetTable th:nth-child(5),#meetTable td:nth-child(5){white-space:nowrap}
+  /* Phones: the 6-column meet table can't fit, and a horizontal scroll hides
+     the most important column (Time) off the right edge. Instead, stack each
+     race into a self-contained card (label : value rows) via .responsive-cards
+     in styles.css — every race shows its Event, Time and Place without scrolling. */
+  @media (max-width:560px){
+    #meetTable{min-width:0}
   }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -352,7 +351,7 @@
         <div class="meet-counter" id="meetCounter">—</div>
       </div>
       <div class="table-wrap">
-        <table id="meetTable">
+        <table id="meetTable" class="responsive-cards">
           <thead>
             <tr>
               <th>Date</th>
@@ -821,14 +820,20 @@
         const notes = [];
         if(isPR) notes.push('<span class="note-pr">PR</span>');
         if(r.split) notes.push(`<span class="note-split">Splits: ${escapeHtml(r.split)}</span>`);
+        // A DQ race carries no time — show it as a clear pill instead of a clock
+        // time so it never reads like a 0:00 swim, and drop the place (a DQ has none).
+        const timeCell = r.dq
+          ? `<span class="dq-pill" title="Disqualified — this swim earned no official time">DQ</span>`
+          : escapeHtml(r.time);
+        const placeOut = r.dq ? '—' : placeCell;
         return `
-          <tr>
-            <td>${escapeHtml(fmtDate(r.date))}</td>
-            <td>${escapeHtml(r.meet || '—')}</td>
-            <td>${escapeHtml(r.event)}</td>
-            <td class="time-cell">${escapeHtml(r.time)}</td>
-            <td>${placeCell}</td>
-            <td>${notes.join(' ') || ''}</td>
+          <tr${r.dq ? ' class="row-dq"' : ''}>
+            <td data-label="Date">${escapeHtml(fmtDate(r.date))}</td>
+            <td data-label="Meet">${escapeHtml(r.meet || '—')}</td>
+            <td data-label="Event">${escapeHtml(r.event)}</td>
+            <td class="time-cell" data-label="Time">${timeCell}</td>
+            <td data-label="Place">${placeOut}</td>
+            <td data-label="Notes">${notes.join(' ') || ''}</td>
           </tr>`;
       }).join('');
     }

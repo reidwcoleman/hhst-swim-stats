@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="assets/styles.css?v=26"/>
+<link rel="stylesheet" href="assets/styles.css?v=27"/>
 <style>
   /* ---- Time Trial Dashboard (page-scoped) ----
      Reuses the shared component tokens; only the bits unique to this page
@@ -272,7 +272,7 @@
           <span class="tt-count" id="tblCount"></span>
         </div>
         <div class="table-wrap">
-          <table>
+          <table class="responsive-cards">
             <thead><tr><th>Swimmer</th><th>Event</th><th>Time</th><th>Trial</th><th>Date</th></tr></thead>
             <tbody id="tblBody"></tbody>
           </table>
@@ -341,7 +341,7 @@
       <div class="card">
         <div class="tt-card-head"><div><h2>Time-trial history</h2></div></div>
         <div class="table-wrap">
-          <table>
+          <table class="responsive-cards">
             <thead><tr><th>Event</th><th>Time</th><th>Trial</th><th>Date</th></tr></thead>
             <tbody id="swHistBody"></tbody>
           </table>
@@ -506,11 +506,11 @@
     var host = document.getElementById('tblBody');
     if(!rows.length){ host.innerHTML = '<tr><td colspan="5"><div class="tt-inline-empty">No matching time trials.</div></td></tr>'; return; }
     host.innerHTML = rows.slice(0,400).map(function(r){
-      return '<tr><td><a class="tt-name-link" href="?s='+encodeURIComponent(r.key)+'">'+esc(r.name)+'</a></td>'
-        + '<td>'+esc(r.event)+'</td>'
-        + '<td class="time-cell">'+esc(r.time)+'</td>'
-        + '<td>'+esc(r.meet||'—')+'</td>'
-        + '<td>'+fmtDate(r.date)+'</td></tr>';
+      return '<tr><td data-label="Swimmer"><a class="tt-name-link" href="?s='+encodeURIComponent(r.key)+'">'+esc(r.name)+'</a></td>'
+        + '<td data-label="Event">'+esc(r.event)+'</td>'
+        + '<td class="time-cell" data-label="Time">'+esc(r.time)+'</td>'
+        + '<td data-label="Trial">'+esc(r.meet||'—')+'</td>'
+        + '<td data-label="Date">'+fmtDate(r.date)+'</td></tr>';
     }).join('');
   }
 
@@ -631,7 +631,7 @@
   function renderHistory(tt){
     var rows = tt.slice().sort(function(a,b){ return dnum(b.date)-dnum(a.date); });
     document.getElementById('swHistBody').innerHTML = rows.map(function(r){
-      return '<tr><td>'+esc(r.event)+'</td><td class="time-cell">'+esc(r.time)+'</td><td>'+esc(r.meet||'—')+'</td><td>'+fmtDate(r.date)+'</td></tr>';
+      return '<tr><td data-label="Event">'+esc(r.event)+'</td><td class="time-cell" data-label="Time">'+esc(r.time)+'</td><td data-label="Trial">'+esc(r.meet||'—')+'</td><td data-label="Date">'+fmtDate(r.date)+'</td></tr>';
     }).join('');
   }
 
