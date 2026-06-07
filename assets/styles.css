@@ -2821,27 +2821,44 @@ table:not(.roster-table) td, table:not(.roster-table) th{word-break:break-word}
   border-color:rgba(4,120,87,.18);
 }
 
-/* Drop amount cell — gradient green so the eye lands on the improvement */
+/* Drop amount cell — green so the eye lands on the improvement. The cell
+   stacks the big number over a tiny "total drop" caption so nobody misreads
+   the figure as a single-race time. */
 .award-card .improved-drop{
   color:#047857 !important;
   font-size:17px;
   letter-spacing:-.02em;
+}
+.improved-drop .drop-val{display:block}
+.improved-drop .drop-cap{
+  display:block;font-family:var(--font-body);font-weight:700;
+  font-size:8px;letter-spacing:.14em;text-transform:uppercase;
+  color:#3f9579;margin-top:2px;
 }
 .improved-events-sub{
   display:block;font-family:var(--font-body);font-weight:600;
   font-size:10.5px;color:#64748b;letter-spacing:.02em;text-transform:uppercase;
   margin-top:3px;
 }
+/* One-line explainer under the headline: what the green numbers mean. */
+.award-improved-note{
+  font-family:var(--font-body);font-weight:600;font-size:11.5px;
+  color:#64748b;text-align:center;align-self:center;
+  margin:-2px 0 8px;
+}
 .award-card-improved .award-name-cell{font-size:14px;max-width:none;white-space:normal;overflow:visible;vertical-align:top}
 .award-card-improved .award-table td{vertical-align:top}
-/* Per-event first-meet → second-meet time breakdown on the Most Improved poster */
+/* Per-event previous-best → this-meet breakdown on the Most Improved poster.
+   A 3-column grid (event · times · drop) so every line lands on the same
+   rails — reads like a tidy mini results table instead of loose text. */
 .improved-evlist{margin-top:5px;display:flex;flex-direction:column;gap:3px}
-.improved-evline{display:flex;align-items:baseline;gap:8px;font-family:var(--font-body);
+.improved-evline{display:grid;grid-template-columns:64px 1fr max-content;
+  align-items:baseline;column-gap:10px;font-family:var(--font-body);
   font-size:11px;line-height:1.25;white-space:nowrap}
-.improved-evline .iev-name{font-weight:700;color:#0c2237;min-width:62px}
-.improved-evline .iev-times{font-variant-numeric:tabular-nums;color:#334155;font-weight:600}
+.improved-evline .iev-name{font-weight:700;color:#0c2237}
+.improved-evline .iev-times{font-variant-numeric:tabular-nums;color:#475569;font-weight:600}
 .improved-evline .iev-arrow{color:#94a3b8;margin:0 4px}
-.improved-evline .iev-drop{font-weight:800;color:#047857;margin-left:auto}
+.improved-evline .iev-drop{font-weight:800;color:#047857;font-variant-numeric:tabular-nums;text-align:right}
 /* "+N more events" summary — print-only companion to the capped breakdown.
    On screen every event line is shown, so this line stays hidden here and is
    revealed inside @media print (where lines past the cap are hidden). */
@@ -2856,10 +2873,11 @@ table:not(.roster-table) td, table:not(.roster-table) th{word-break:break-word}
     inset 0 2px 2px rgba(255,255,255,.55),
     inset 0 -2px 2px rgba(0,0,0,.18) !important;
 }
-.award-card-improved .award-table tr:first-child .award-rank-cell::before{
-  content:'↑';color:#0fa171 !important;font-size:11px;
-  text-shadow:0 0 4px rgba(15,161,113,.55);
-}
+/* (The floating '↑' glyph that used to sit beside the #1 medal was removed —
+   it read as a stray mark on both screen and paper.) The base gold '★' from
+   the Fastest Five board is off-palette on the green improved board, and it
+   floats oddly next to the wrapped names — hide it here too. */
+.award-card-improved .award-table tr:first-child .award-rank-cell::before{ display:none; }
 /* Row washes: green tints instead of gold/silver/bronze */
 .award-card-improved .award-col tbody tr:first-child td{
   background:linear-gradient(90deg, rgba(15,161,113,.14) 0%, transparent 70%);
@@ -3503,6 +3521,20 @@ a.lb-entry-name:hover{color:var(--accent)!important;text-decoration:underline;te
     text-overflow:clip !important;
     overflow-wrap:break-word !important;
   }
+  /* HARD ROW CEILING — names may wrap to exactly TWO lines, never more.
+     With the swimmer count fixed at 5 and every other row part a fixed
+     height, a 2-line cap makes the tallest possible board arithmetic:
+     it CANNOT outgrow the sheet, so 100% print scale always fits. Only a
+     pathological 55+ character name would ever ellipsize at the cap. */
+  .poster-name, .improved-name{
+    display:-webkit-box !important;
+    -webkit-box-orient:vertical !important;
+    -webkit-line-clamp:2 !important;
+    overflow:hidden !important;
+  }
+  /* The tiny gold '★' beside each #1 medal reads as a stray ink fleck at
+     poster size — drop it from print on both poster types. */
+  .award-card .award-table tr:first-child .award-rank-cell::before{ display:none !important; }
   .award-card .award-time-cell{ font-size:32px !important; width:1.3in !important; }
   .award-card .improved-drop{ font-size:26px !important; }
   .improved-events-sub{ font-size:13px !important; margin-top:3px !important; }
@@ -3531,44 +3563,79 @@ a.lb-entry-name:hover{color:var(--accent)!important;text-decoration:underline;te
   .award-card-improved .award-group{ font-size:30px !important; }
   .award-card-improved .award-cols{ gap:0.35in !important; }
   .award-card-improved .award-col{ padding:6px 12px 4px !important; }
-  .award-card-improved .award-col-head{ font-size:16px !important; padding:2px 0 5px !important; margin-bottom:4px !important; }
-  .award-card-improved .award-table td{ padding:3px 5px !important; }
+  .award-card-improved .award-col-head{ font-size:16px !important; padding:2px 0 4px !important; margin-bottom:3px !important; }
+  .award-card-improved .award-table td{ padding:2.5px 5px !important; }
   .award-card-improved .award-rank-cell{ width:44px !important; }
   .award-card-improved .award-rank{ width:38px !important; height:38px !important; font-size:19px !important; }
   .award-card-improved .award-medal{ width:40px !important; height:40px !important; font-size:20px !important; }
-  /* Names WRAP on the improved posters (no ellipsis) — they share the row
-     with a breakdown, so a second line costs little and chops nobody. */
+  /* Names WRAP on the improved posters — capped at two lines by the shared
+     .improved-name clamp above, which is what makes the worst-case board
+     height bounded (5 rows × [2-line name + 3 breakdown lines + "+N more"]
+     measures ~0.3in under the sheet even with every cap maxed out). */
   .award-card-improved .award-name-cell{
-    font-size:18px !important;
-    line-height:1.18 !important;
+    font-size:17px !important;
+    line-height:1.16 !important;
     white-space:normal !important;
     overflow:visible !important;
     text-overflow:clip !important;
     overflow-wrap:break-word !important;
   }
-  .award-card-improved .award-time-cell{ width:0.95in !important; }
+  .award-card-improved .award-time-cell{ width:1.15in !important; }
   .award-card-improved .improved-drop{ font-size:25px !important; }
+  /* "total drop" caption under the big green number — small, solid green
+     (no opacity: transparency would re-trigger driver rasterization). */
+  .improved-drop .drop-cap{
+    display:block !important;font-size:9px !important;
+    letter-spacing:.16em !important;color:#3f9579 !important;margin-top:3px !important;
+  }
+  /* Explainer line under the headline — centered, quiet, vector text. */
+  .award-improved-note{
+    font-size:13px !important;color:#475569 !important;
+    margin:0 0 6px !important;align-self:center !important;
+  }
   /* The events-improved sub-line is redundant on paper — the breakdown
      lines + the "+N more" summary carry the same information — and hiding
      it buys the height that keeps five full rows on one sheet. */
   .award-card-improved .improved-events-sub{ display:none !important; }
-  .award-card-improved .improved-evlist{ margin-top:2px !important; gap:2px !important; }
-  .award-card-improved .improved-evline{ font-size:11px !important; line-height:1.22 !important; }
+  .award-card-improved .improved-evlist{ margin-top:2px !important; gap:1.5px !important; }
+  /* Breakdown lines on the printed sheet: same 3-column rails as on screen,
+     with a wider event column so "100 Breast" never collides with times. */
+  .award-card-improved .improved-evline{
+    font-size:11px !important; line-height:1.2 !important;
+    grid-template-columns:0.85in 1fr max-content !important;
+    column-gap:12px !important;
+    white-space:nowrap !important;
+  }
+  .award-card-improved .improved-evline .iev-name{ color:#334155 !important; }
   .award-card-improved .improved-evline.iev-extra{ display:none !important; }
   .award-card-improved .improved-evmore{
     display:block !important;
-    font-size:11px !important; font-weight:700 !important;
+    font-size:10px !important; font-weight:700 !important;
     color:#64748b !important; margin-top:2px !important;
     font-family:var(--font-body) !important;
+    letter-spacing:.02em !important;
+    white-space:nowrap !important;
   }
   .award-card-improved .award-footer{ padding-top:8px !important; }
 
   /* ---- Long-name tier (both poster types) -----------------------------
-     Markup tags any name over 16 characters with .nm-long. Those step down
-     one type size so they wrap to a compact two lines; everyone else gets
-     the full-size type. This is the trade that lets the poster fonts run
-     at maximum size: the page only has to absorb big wrapped rows for the
-     names that actually need them. Placed last so it wins the cascade. */
+     Markup tags long names with .nm-long (Fastest Five: >22 chars, Most
+     Improved: >26 — the improved type is smaller so it holds more). Those
+     step down one size so TWO clamped lines hold the whole name; everyone
+     else keeps the full-size type. Together with the 2-line clamp this is
+     what makes 100% print scale safe: short names get maximum type, long
+     names shrink instead of growing the row, and only a truly pathological
+     name (40+ chars) would ever ellipsize. */
+  .award-card .award-name-cell .poster-name.nm-long{ font-size:21px !important; line-height:1.12 !important; }
+  .award-card-improved .improved-name.nm-long{ font-size:15px !important; }
+  /* Further step-downs for marathon names. Thresholds are set so each
+     tier's two clamped lines comfortably hold every name routed to it
+     (FF: ≤20 chars @25px, ≤31 @21px, ≤41 @17px, beyond @14px — verified
+     against 45-character double-barrel names). Real rosters essentially
+     never leave the first two tiers. */
+  .award-card .award-name-cell .poster-name.nm-xlong{ font-size:17px !important; line-height:1.15 !important; }
+  .award-card .award-name-cell .poster-name.nm-xxl{ font-size:14px !important; line-height:1.18 !important; }
+  .award-card-improved .improved-name.nm-xlong{ font-size:13px !important; }
   /* ================= PRINT FLATTEN — kill ALL transparency ==============
      Every rgba() color, gradient-with-alpha, opacity and blur on the poster
      becomes a transparency group / soft mask in the printed PDF. Printer
