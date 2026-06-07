@@ -382,6 +382,58 @@
     to{transform:translate(var(--dx,0),var(--dy,-90px)) scale(1);opacity:0}
   }
 
+  /* ===== Underwater light rays — soft beams swaying through the water,
+     screen-blended so they read as light, not paint. ===== */
+  .idx-rays{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden;mix-blend-mode:screen}
+  .idx-ray{
+    position:absolute;top:-22%;height:150%;
+    background:linear-gradient(180deg,rgba(127,227,239,.17),rgba(127,227,239,0) 72%);
+    filter:blur(22px);
+    animation:idx-ray-sway 9s ease-in-out infinite alternate;
+  }
+  .idx-ray:nth-child(1){left:10%;width:150px;animation-duration:11s}
+  .idx-ray:nth-child(2){left:36%;width:230px;opacity:.7;animation-duration:14s;animation-delay:-4s}
+  .idx-ray:nth-child(3){left:68%;width:170px;opacity:.85;animation-duration:9.5s;animation-delay:-7s}
+  @keyframes idx-ray-sway{
+    from{transform:rotate(14deg) translateX(-34px)}
+    to{transform:rotate(22deg) translateX(44px)}
+  }
+  @media (max-width:640px){.idx-ray{filter:blur(16px)}}
+
+  /* ===== Lookup card in 3-D =====
+     The card leans toward the cursor (JS sets the perspective/rotate inline);
+     its children sit at different translateZ depths so the tilt reads as real
+     parallax — the lane, fields, and button float above the card surface. A
+     glare highlight tracks the pointer. Desktop pointers only. */
+  .lookup-card.idx-lift{transform-style:preserve-3d;will-change:transform}
+  .lookup-card.is-tilting{transition:box-shadow .22s ease} /* JS owns transform while tilting */
+  .idx-form{transform-style:preserve-3d}
+  .idx-form .field{transform:translateZ(12px)}
+  .lookup-card > h2{transform:translateZ(20px)}
+  .lookup-card > .sub{transform:translateZ(12px)}
+  .lookup-card > .idx-lane{transform:translateZ(26px)}
+  .idx-form .btn.lg.block{transform:translateZ(30px)}
+  .idx-form .idx-privacy{transform:translateZ(8px)}
+  .idx-glare{
+    position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+    background:radial-gradient(440px circle at var(--gx,50%) var(--gy,30%),rgba(255,255,255,.17),transparent 62%);
+    opacity:0;transition:opacity .3s ease;
+    transform:translateZ(36px);
+  }
+  /* Entrance: the card surfaces with a 3-D pitch instead of a flat slide. */
+  .hero-inner > .lookup-card{animation-name:idx-heroIn3d}
+  @keyframes idx-heroIn3d{
+    from{opacity:0;transform:perspective(950px) translateY(32px) rotateX(10deg)}
+    to{opacity:1;transform:perspective(950px) translateY(0) rotateX(0deg)}
+  }
+  .lookup-card.is-tilting .idx-glare{opacity:1}
+  /* Touch + reduced motion: everything stays flat (the tilt JS never runs,
+     but the Z-depths are harmless either way). */
+  @media (prefers-reduced-motion: reduce){
+    .idx-form .field,.lookup-card > h2,.lookup-card > .sub,
+    .lookup-card > .idx-lane,.idx-form .btn.lg.block,.idx-form .idx-privacy{transform:none}
+  }
+
   /* ===== Lookup card: swim-lane progress meter =====
      A little swimmer dot advances down a lane as each of the three fields
      validates; at 3-of-3 it reaches the backstroke flags and the card says
@@ -507,6 +559,7 @@
 </a>
 
 <section class="hero">
+  <div class="idx-rays" aria-hidden="true"><i class="idx-ray"></i><i class="idx-ray"></i><i class="idx-ray"></i></div>
   <div class="drops" id="drops"></div>
   <div class="idx-waves" aria-hidden="true">
     <svg class="idx-wave-a" viewBox="0 0 1440 120" preserveAspectRatio="none" fill="currentColor">
@@ -724,10 +777,12 @@
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const small  = window.matchMedia('(max-width: 640px)').matches;
     const far  = document.createElement('div');
+    const mid  = document.createElement('div');
     const near = document.createElement('div');
     far.className  = 'idx-bub-layer idx-bub-far';
+    mid.className  = 'idx-bub-layer idx-bub-mid';
     near.className = 'idx-bub-layer idx-bub-near';
-    host.append(far, near);
+    host.append(far, mid, near);
     function spawn(layer, n, o){
       for(let i = 0; i < n; i++){
         const b = document.createElement('span');
@@ -746,9 +801,12 @@
         layer.appendChild(b);
       }
     }
-    // Far layer: small, hazy, slow (background depth). Near: bigger, crisper, quicker.
-    spawn(far,  small ? 10 : 18, { min:5,  max:13, durMin:14, durMax:26, sway:14, oMin:.16, oRange:.24, blur:true });
-    spawn(near, small ? 7  : 12, { min:12, max:30, durMin:9,  durMax:16, sway:26, oMin:.32, oRange:.34, blur:false });
+    // Three depth layers: far = small, hazy, slow; mid = the body of the
+    // water; near = big, crisp, quick. Together they read as a full column
+    // of water, and the pointer drift below moves each at its own rate.
+    spawn(far,  small ? 16 : 30, { min:4,  max:11, durMin:16, durMax:30, sway:14, oMin:.14, oRange:.22, blur:true });
+    spawn(mid,  small ? 12 : 22, { min:8,  max:18, durMin:11, durMax:20, sway:20, oMin:.24, oRange:.28, blur:false });
+    spawn(near, small ? 9  : 16, { min:14, max:34, durMin:8,  durMax:14, sway:28, oMin:.34, oRange:.34, blur:false });
 
     if(reduce) return; // rising/sway are neutralised globally — skip the extras too
 
@@ -761,8 +819,9 @@
       function step(){
         raf = 0;
         cx += (tx - cx) * .06; cy += (ty - cy) * .06;
-        far.style.transform  = `translate(${(-cx*10).toFixed(1)}px, ${(-cy*6).toFixed(1)}px)`;
-        near.style.transform = `translate(${(-cx*24).toFixed(1)}px, ${(-cy*14).toFixed(1)}px)`;
+        far.style.transform  = `translate(${(-cx*8).toFixed(1)}px, ${(-cy*5).toFixed(1)}px)`;
+        mid.style.transform  = `translate(${(-cx*18).toFixed(1)}px, ${(-cy*11).toFixed(1)}px)`;
+        near.style.transform = `translate(${(-cx*32).toFixed(1)}px, ${(-cy*19).toFixed(1)}px)`;
         if(Math.abs(tx - cx) + Math.abs(ty - cy) > .002) raf = requestAnimationFrame(step);
       }
       hero.addEventListener('pointermove', e => {
@@ -794,6 +853,63 @@
         }
       });
     }
+  })();
+
+  // 3-D tilt on the lookup card (desktop pointers only): the card leans
+  // toward the cursor with a moving glare, and its translateZ-staggered
+  // children parallax against the surface. Reduced motion / touch: flat.
+  (function(){
+    const card = document.querySelector('.lookup-card');
+    if(!card) return;
+    if(window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if(!window.matchMedia('(pointer: fine)').matches) return;
+    // The hero entrance animation FILLS its final transform forever, which
+    // would override our inline tilt — hand control to JS once it finishes
+    // (with a timer fallback in case animationend never fires).
+    let entranceDone = false;
+    function takeOver(){
+      if(entranceDone) return;
+      entranceDone = true;
+      card.style.opacity = '1';
+      card.style.animation = 'none';
+    }
+    card.addEventListener('animationend', e => { if(e.target === card) takeOver(); });
+    setTimeout(takeOver, 2600);
+
+    const glare = document.createElement('div');
+    glare.className = 'idx-glare';
+    glare.setAttribute('aria-hidden', 'true');
+    card.appendChild(glare);
+
+    const MAX = 5; // degrees of lean at the card's edges
+    let tx = 0, ty = 0, cx = 0, cy = 0, raf = 0, active = false;
+    function frame(){
+      raf = 0;
+      cx += (tx - cx) * .14; cy += (ty - cy) * .14;
+      if(entranceDone){
+        card.style.transform =
+          `perspective(950px) rotateX(${(-cy*MAX).toFixed(2)}deg) rotateY(${(cx*MAX).toFixed(2)}deg)`
+          + (active ? ' translateY(-2px)' : '');
+      }
+      if(active || Math.abs(cx) + Math.abs(cy) > .004) raf = requestAnimationFrame(frame);
+      else if(entranceDone) card.style.transform = ''; // settled flat — release
+    }
+    card.addEventListener('pointermove', e => {
+      const r = card.getBoundingClientRect();
+      const px = (e.clientX - r.left) / r.width;
+      const py = (e.clientY - r.top) / r.height;
+      tx = (px - .5) * 2; ty = (py - .5) * 2;
+      card.style.setProperty('--gx', (px*100).toFixed(1) + '%');
+      card.style.setProperty('--gy', (py*100).toFixed(1) + '%');
+      active = true;
+      card.classList.add('is-tilting');
+      if(!raf) raf = requestAnimationFrame(frame);
+    }, { passive:true });
+    card.addEventListener('pointerleave', () => {
+      active = false; tx = 0; ty = 0;
+      card.classList.remove('is-tilting');
+      if(!raf) raf = requestAnimationFrame(frame);
+    });
   })();
 
   // Lookup form
