@@ -583,6 +583,76 @@
       }));
     }
 
+    // ---- Same-meet content detection ----
+    // The per-row de-dupe below keys on the MEET NAME, so re-uploading a meet
+    // under a slightly different name (or a fuller export of the same meet:
+    // identical swims plus a couple of late additions) would stack every swim
+    // a second time. Catch that here: fingerprint each incoming swim as
+    // swimmer + stroke + exact time, group by incoming meet, and if most of an
+    // existing meet's swims (same season) reappear verbatim under a different
+    // incoming name, treat them as the SAME meet — incoming rows are
+    // re-labelled to the existing meet's name, so the duplicates merge in
+    // place and only the genuinely new times are added.
+    const meetAlias = {};   // incoming meet name -> existing meet name
+    const mergedMeets = []; // [{from, to, matched}] reported back to the admin page
+    if(mode === 'results' && !timeTrial){
+      const fingerprint = (key, rec) => {
+        const stroke = extractStroke(rec.event || '');
+        const secs = timeToSeconds(fmtTime(rec.time || ''));
+        if(!stroke || !isFinite(secs)) return null; // DQ/NS rows can't fingerprint
+        return `${key}|${stroke}|${secs.toFixed(2)}`;
+      };
+      // Incoming swims grouped by the meet name they'd land under, plus the
+      // set of seasons this file touches (existing results are only compared
+      // within those seasons — same time in a different season is not a dupe).
+      const incomingByMeet = {};
+      const seasonsTouched = new Set();
+      for(const rec of records){
+        if(!(rec.event && rec.time)) continue;
+        const fp = fingerprint(rec.__key, rec);
+        if(!fp) continue;
+        const m = meetName || rec.meet || 'Unknown Meet';
+        (incomingByMeet[m] = incomingByMeet[m] || new Set()).add(fp);
+        seasonsTouched.add(meetName ? season : ((rec.season || '').toString().trim() || season));
+      }
+      // Existing swims (same seasons, real times only) grouped by meet, across
+      // the swimmers this file mentions.
+      const existingByMeet = {};
+      const seenKeys = new Set(records.map(r => r.__key));
+      seenKeys.forEach(k => {
+        const sw = existing[k];
+        if(!sw || !Array.isArray(sw.results)) return;
+        for(const r of sw.results){
+          if(!r || r.timeTrial || !isFinite(r.seconds)) continue;
+          if(!seasonsTouched.has((r.season || '').toString())) continue;
+          const stroke = r.stroke || extractStroke(r.event || '');
+          if(!stroke) continue;
+          const m = r.meet || 'Unknown Meet';
+          (existingByMeet[m] = existingByMeet[m] || new Set())
+            .add(`${k}|${stroke}|${(+r.seconds).toFixed(2)}`);
+        }
+      });
+      for(const inMeet of Object.keys(incomingByMeet)){
+        const inSet = incomingByMeet[inMeet];
+        let best = '', bestMatch = 0;
+        for(const exMeet of Object.keys(existingByMeet)){
+          if(exMeet === inMeet) continue; // same name already merges in place
+          let match = 0;
+          inSet.forEach(fp => { if(existingByMeet[exMeet].has(fp)) match++; });
+          if(match > bestMatch){ bestMatch = match; best = exMeet; }
+        }
+        if(!best) continue;
+        const overlap = bestMatch / Math.min(inSet.size, existingByMeet[best].size);
+        // "Same meet" = at least 3 identical swims AND most of the smaller
+        // side matches. A couple of coincidentally equal times across two
+        // genuinely different meets can't clear this bar.
+        if(bestMatch >= 3 && overlap >= 0.6){
+          meetAlias[inMeet] = best;
+          mergedMeets.push({ from: inMeet, to: best, matched: bestMatch });
+        }
+      }
+    }
+
     const skippedSwimmers = new Set();
     const writtenKeys = new Set();
     const meetTimeWrites = [];
@@ -822,12 +892,15 @@
         // seconds, a junk event label) cluttering the meet-history table.
         const racedNoTime = !isFinite(seconds) && isRacedStatus(rec.time);
         if(!isFinite(seconds) && !racedNoTime) continue;
+        // Same-meet detection (above) may have recognized this file's meet as
+        // an existing one under a different name — relabel so the rows merge.
+        const rawMeet = meetName || rec.meet || 'Unknown Meet';
         const result = {
           event: eventLabel,
           distance,
           stroke,
           time: racedNoTime ? 'DQ' : timeStr,
-          meet: meetName || rec.meet || 'Unknown Meet',
+          meet: meetAlias[rawMeet] || rawMeet,
           date: meetDate || rec.date || '',
           place: racedNoTime ? '' : (rec.place || ''),
           split: rec.split || '',
@@ -1006,6 +1079,7 @@
           newSwimmerKeys: Array.from(newSwimmerKeys),
           touchedSwimmerKeys: Array.from(writtenKeys),
           meetNames: Array.from(meetNames),
+          mergedMeets,
           uploadedAt: FB.FieldValue.serverTimestamp()
         }, { merge: true });
       } catch(e){
@@ -1024,6 +1098,7 @@
       profileUpdates: profileUpdated.size,
       skippedSwimmers: Array.from(skippedSwimmers),
       meets: meetNames.size,
+      mergedMeets,
       uploadId: uploadId || '',
       errors
     };
@@ -1311,7 +1386,7 @@
         bracket,
         totalDrop: total,
         eventsDropped: eventsDropped.map(d => ({
-          event: d.event, drop: d.drop,
+          event: d.event, stroke: d.stroke, dist: d.dist, drop: d.drop,
           fromSec: d.fromSec, toSec: d.toSec,
           fromTime: d.fromTime, toTime: d.toTime,
           fromMeet: d.fromMeet
