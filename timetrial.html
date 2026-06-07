@@ -20,11 +20,12 @@
   .tt-step-pill{display:inline-flex;align-items:center;gap:8px;padding:7px 14px;border-radius:999px;
     font-size:13px;font-weight:600;color:var(--text-muted);background:var(--surface);border:1px solid var(--border);
     transition:color .18s cubic-bezier(.16,1,.3,1),background .18s cubic-bezier(.16,1,.3,1),border-color .18s cubic-bezier(.16,1,.3,1)}
-  .tt-step-pill.active{color:var(--accent-contrast);background:var(--accent);border-color:var(--accent)}
+  .tt-step-pill.active{color:var(--accent-contrast);background:var(--accent);border-color:var(--accent);box-shadow:var(--shadow-sm)}
   .tt-step-pill.done{color:var(--green-light);border-color:rgba(16,185,129,.35);background:rgba(16,185,129,.10)}
   .tt-step-pill .n{width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;
-    font-size:11px;font-weight:800;background:rgba(255,255,255,.18)}
-  .tt-step-sep{color:var(--text-subtle);font-size:13px}
+    font-size:11px;font-weight:800;background:rgba(255,255,255,.18);transition:background .18s cubic-bezier(.16,1,.3,1)}
+  .tt-step-pill.done .n{background:rgba(16,185,129,.22)}
+  .tt-step-sep{color:var(--text-subtle);font-size:13px;transition:color .18s cubic-bezier(.16,1,.3,1)}
 
   /* Config grid + fields (one input recipe for every field) */
   .tt-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px;margin-bottom:8px}
@@ -43,7 +44,14 @@
   .tt-choice:hover{border-color:var(--accent);transform:translateY(-1px)}
   .tt-choice:active{transform:translateY(0)}
   .tt-choice:focus-visible{outline:none;box-shadow:0 0 0 3px var(--ring)}
-  .tt-choice.active{background:var(--accent);color:var(--accent-contrast);border-color:var(--accent)}
+  .tt-choice.active{background:var(--accent);color:var(--accent-contrast);border-color:var(--accent);box-shadow:var(--shadow-sm)}
+
+  /* Stroke choosers adopt the site's canonical stroke-color identity when active */
+  .tt-choice[data-stroke="Freestyle"].active{background:var(--brand-500,#3b82f6);border-color:var(--brand-500,#3b82f6);color:#fff}
+  .tt-choice[data-stroke="Backstroke"].active{background:var(--green,#10b981);border-color:var(--green,#10b981);color:#fff}
+  .tt-choice[data-stroke="Breaststroke"].active{background:var(--amber-500,#f59e0b);border-color:var(--amber-500,#f59e0b);color:#0b1d3a}
+  .tt-choice[data-stroke="Butterfly"].active{background:var(--purple,#a855f7);border-color:var(--purple,#a855f7);color:#fff}
+  .tt-choice[data-stroke="IM"].active{background:var(--purple,#a855f7);border-color:var(--purple,#a855f7);color:#fff}
 
   /* Roster / lineup picker */
   .tt-picker{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:24px}
@@ -57,7 +65,8 @@
   .tt-search input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--ring)}
   .tt-list{max-height:340px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding-right:4px}
   .tt-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius-md);background:var(--surface);
-    border:1px solid var(--border)}
+    border:1px solid var(--border);transition:border-color .18s cubic-bezier(.16,1,.3,1),background .18s cubic-bezier(.16,1,.3,1)}
+  .tt-row:not(.is-added):hover{border-color:var(--border-strong)}
   .tt-row .nm{font-weight:600;color:var(--text);font-size:14px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .tt-row .ag{font-size:11px;color:var(--text-muted);flex:0 0 auto}
   .tt-row.is-added{opacity:.45}
@@ -71,7 +80,10 @@
   .tt-lane-num{width:26px;height:26px;border-radius:50%;background:var(--accent);color:var(--accent-contrast);
     font-weight:800;font-size:12px;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;
     font-variant-numeric:tabular-nums}
-  .tt-empty{padding:24px;text-align:center;color:var(--text-muted);font-size:14px;border:1px dashed var(--border-strong);border-radius:var(--radius-md)}
+  .tt-empty{display:flex;flex-direction:column;align-items:center;gap:10px;padding:26px 20px;text-align:center;
+    color:var(--text-muted);font-size:14px;line-height:1.55;border:1px dashed var(--border-strong);border-radius:var(--radius-md);
+    background:var(--bg-alt)}
+  .tt-empty svg{color:var(--text-subtle);opacity:.85}
 
   /* Timing stage */
   .tt-stage{text-align:center;padding:8px 0 4px}
@@ -83,7 +95,7 @@
     font-size:clamp(56px,16vw,128px);line-height:1;letter-spacing:-.02em;color:var(--text);
     margin:6px 0 4px;transition:color .18s cubic-bezier(.16,1,.3,1)}
   .tt-clock.running{color:var(--accent)}
-  .tt-clock-hint{font-size:13px;color:var(--text-subtle);margin-bottom:20px}
+  .tt-clock-hint{font-size:13px;color:var(--text-muted);margin-bottom:20px;line-height:1.7}
   .tt-controls{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:8px}
   .tt-bigbtn{padding:18px 34px;border-radius:var(--radius);border:none;font-family:inherit;font-weight:800;font-size:18px;
     cursor:pointer;transition:transform .18s cubic-bezier(.16,1,.3,1),box-shadow .18s cubic-bezier(.16,1,.3,1),background .18s cubic-bezier(.16,1,.3,1);min-width:170px}
@@ -102,13 +114,19 @@
   .tt-secbtn:active{transform:scale(.98)}
   .tt-secbtn:focus-visible{outline:none;box-shadow:0 0 0 3px var(--ring)}
 
-  /* Done list (timed swimmers) */
+  /* Done list (timed swimmers) — captured swims echo the green capture state */
   .tt-done{margin-top:24px;display:flex;flex-direction:column;gap:8px}
+  .tt-done-head{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);
+    margin:0 0 2px 2px}
   .tt-done-row{display:grid;grid-template-columns:26px 1fr auto auto;gap:12px;align-items:center;padding:10px 14px;
-    border-radius:var(--radius-md);background:var(--surface);border:1px solid var(--border)}
-  .tt-done-row .nm{font-weight:600;color:var(--text);font-size:14px}
-  .tt-done-row .tm{font-family:'Inter';font-variant-numeric:tabular-nums;font-weight:800;font-size:17px;color:var(--accent)}
+    border-radius:var(--radius-md);background:var(--surface);border:1px solid var(--border);
+    transition:border-color .18s cubic-bezier(.16,1,.3,1),background .18s cubic-bezier(.16,1,.3,1)}
+  .tt-done-row.done{border-color:rgba(16,185,129,.28);background:rgba(16,185,129,.05)}
+  .tt-done-row .nm{font-weight:600;color:var(--text);font-size:14px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tt-done-row .tm{font-family:'Inter';font-variant-numeric:tabular-nums;font-weight:800;font-size:17px;color:var(--green);text-align:right}
+  [data-theme="light"] .tt-done-row .tm{color:#047857}
   .tt-done-row .tm.dns{color:var(--text-subtle);font-weight:600;font-size:13px}
+  [data-theme="light"] .tt-done-row .tm.dns{color:var(--text-subtle)}
 
   /* Review table */
   .tt-review-row td{vertical-align:middle}
@@ -118,14 +136,16 @@
   .tt-time-input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--ring)}
 
   /* Hero */
-  .tt-hero h1{font-family:'Fraunces',serif;font-weight:800;font-size:clamp(26px,5vw,40px);letter-spacing:-.02em;margin:0 0 6px;color:var(--text)}
+  .tt-hero{margin-bottom:4px}
+  .tt-hero h1{font-family:'Fraunces',serif;font-weight:800;font-size:clamp(26px,5vw,40px);letter-spacing:-.02em;margin:0 0 8px;color:var(--text)}
   .tt-hero p{color:var(--text-muted);font-size:15px;line-height:1.6;margin:0 0 24px;max-width:640px}
   .kbd{display:inline-block;padding:1px 7px;border-radius:6px;border:1px solid var(--border-strong);
     background:var(--bg-alt);font-family:'Inter';font-size:12px;font-weight:700;color:var(--text-muted)}
 
   /* Info note (explains time trials don't affect competitive boards) */
-  .tt-note{display:flex;gap:10px;align-items:flex-start;padding:14px 16px;border-radius:var(--radius-md);
-    background:rgba(96,165,250,.08);border:1px solid var(--border-strong);color:var(--text-muted);font-size:14px;line-height:1.6;margin-top:24px}
+  .tt-note{display:flex;gap:11px;align-items:flex-start;padding:15px 17px;border-radius:var(--radius-md);
+    background:rgba(96,165,250,.08);border:1px solid rgba(96,165,250,.22);color:var(--text-muted);font-size:14px;line-height:1.6;margin-top:24px}
+  [data-theme="light"] .tt-note{background:rgba(37,99,235,.06);border-color:rgba(37,99,235,.18)}
   .tt-note:first-child{margin-top:0}
   .tt-note svg{flex:0 0 auto;color:var(--accent);margin-top:1px}
   .tt-note strong{color:var(--text);font-weight:700}
@@ -151,20 +171,38 @@
   [data-theme="light"] .tt-clock.captured{color:#047857}
 
   /* Next-up preview */
-  .tt-nextup{margin-top:16px;font-size:14px;color:var(--text-muted)}
-  .tt-nextup strong{color:var(--text)}
-  .tt-nextup.last{color:var(--text-subtle)}
+  .tt-nextup{margin-top:18px;font-size:13px;font-weight:600;letter-spacing:.02em;color:var(--text-muted)}
+  .tt-nextup strong{color:var(--text);font-weight:700}
+  .tt-nextup.last{color:var(--text-subtle);font-weight:600}
 
   /* Review summary strip */
-  .tt-summary{display:flex;gap:22px;flex-wrap:wrap;padding:16px 18px;border-radius:var(--radius-md);background:var(--bg-alt);
+  .tt-summary{display:flex;gap:18px 26px;flex-wrap:wrap;padding:18px 20px;border-radius:var(--radius-md);background:var(--bg-alt);
     border:1px solid var(--border);margin-bottom:24px}
-  .tt-summary .s-item{display:flex;flex-direction:column}
+  .tt-summary .s-item{display:flex;flex-direction:column;position:relative;padding-left:18px}
+  .tt-summary .s-item:first-child{padding-left:0}
+  .tt-summary .s-item::before{content:"";position:absolute;left:0;top:2px;bottom:2px;width:1px;background:var(--border)}
+  .tt-summary .s-item:first-child::before{display:none}
   .tt-summary .s-label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted)}
-  .tt-summary .s-val{font-family:'Fraunces',serif;font-weight:800;font-size:21px;color:var(--text);margin-top:3px;letter-spacing:-.02em;
-    font-variant-numeric:tabular-nums}
+  .tt-summary .s-val{font-family:'Fraunces',serif;font-weight:800;font-size:22px;color:var(--text);margin-top:4px;letter-spacing:-.02em;
+    font-variant-numeric:tabular-nums;line-height:1.1}
+
+  /* Step sections fade+rise in on show (display flips from none→block in JS) */
+  @keyframes ttstepin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  #setupStep,#timeStep,#reviewStep{animation:ttstepin .32s cubic-bezier(.16,1,.3,1) both}
+
+  /* Loading + auth-gate states (lifted off inline styles) */
+  .tt-state{text-align:center}
+  .tt-state-pad{padding:48px 24px}
+  .tt-state-auth{padding:44px 24px}
+  .tt-state h2{margin-top:0}
+  .tt-state .lead{margin:0 auto 18px;max-width:440px}
+  .tt-state .btn.lg{display:inline-flex}
 
   /* Setup error + save spinner + after-save action (promoted off inline styles) */
   .tt-error{color:var(--red-light);font-size:14px;margin-top:14px;display:none}
+  [data-theme="light"] .tt-error{color:var(--red)}
+  .tt-load-err{margin:0;color:var(--red-light)}
+  [data-theme="light"] .tt-load-err{color:var(--red)}
   .tt-spinner{display:inline-block;width:32px;height:32px;border:3px solid var(--border-strong);border-top-color:var(--accent);
     border-radius:50%;animation:ttspin .8s linear infinite;margin-bottom:14px}
   .tt-review-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:24px}
@@ -217,8 +255,10 @@
     /* Lineup/roster rows: smaller controls, no overflow */
     .tt-row{padding:9px 10px;gap:8px}
 
-    /* Review summary: wrap to a 2-up grid, smaller gap */
-    .tt-summary{gap:14px 18px;padding:14px 16px}
+    /* Review summary: wrap to a 2-up grid, drop dividers, smaller gap */
+    .tt-summary{display:grid;grid-template-columns:1fr 1fr;gap:14px 18px;padding:14px 16px}
+    .tt-summary .s-item{padding-left:0}
+    .tt-summary .s-item::before{display:none}
     .tt-summary .s-val{font-size:18px}
 
     /* Review time input: don't force a wide fixed width */
@@ -239,10 +279,11 @@
     .tt-summary{gap:12px}
   }
 
-  /* Honor reduced-motion: kill the spinner + button lifts (JS smooth-scroll untouched) */
+  /* Honor reduced-motion: kill the spinner + button lifts + step transitions (JS smooth-scroll untouched) */
   @media (prefers-reduced-motion:reduce){
     .tt-spinner{animation-duration:.001ms!important;animation-iteration-count:1!important}
-    .tt-choice,.tt-bigbtn,.tt-secbtn,.tt-step-pill,.tt-iconbtn{transition-duration:.001ms!important}
+    #setupStep,#timeStep,#reviewStep{animation:none!important}
+    .tt-choice,.tt-bigbtn,.tt-secbtn,.tt-step-pill,.tt-iconbtn,.tt-row,.tt-done-row,.tt-clockwrap,.tt-clock{transition-duration:.001ms!important}
     .tt-choice:hover,.tt-bigbtn:active,.tt-secbtn:active{transform:none!important}
   }
 </style>
@@ -282,17 +323,17 @@
 <main class="admin-shell">
 
   <!-- Loading -->
-  <div id="loading" class="card" style="text-align:center;padding:48px 24px">
-    <div class="tt-spinner"></div>
-    <p class="lead" style="margin:0">Loading…</p>
+  <div id="loading" class="card tt-state tt-state-pad" role="status" aria-live="polite">
+    <div class="tt-spinner" aria-hidden="true"></div>
+    <p class="lead" style="margin:0">Loading roster…</p>
   </div>
   <style>@keyframes ttspin{to{transform:rotate(360deg)}}</style>
 
   <!-- Auth gate -->
-  <div id="authGate" class="card" style="display:none;text-align:center;padding:44px 24px">
-    <h2 style="margin-top:0">Coaches only</h2>
-    <p class="lead" style="margin:0 auto 18px;max-width:440px">Log in on the Admin page first — the time trial saves directly to swimmers' profiles, so it needs a coach sign-in.</p>
-    <a class="btn lg" href="admin.html" style="display:inline-flex">Go to Admin login</a>
+  <div id="authGate" class="card tt-state tt-state-auth" style="display:none">
+    <h2>Coaches only</h2>
+    <p class="lead">Log in on the Admin page first — the time trial saves directly to swimmers' profiles, so it needs a coach sign-in.</p>
+    <a class="btn lg" href="admin.html">Go to Admin login</a>
   </div>
 
   <div id="tool" style="display:none">
@@ -353,7 +394,7 @@
           </div>
           <div>
             <div class="tt-pick-head"><h4>Lineup (swim order)</h4><span class="cnt" id="lineupCnt">0 swimmers</span></div>
-            <div class="tt-list" id="lineupList"><div class="tt-empty">Tap swimmers on the left to add them. Use ↑ ↓ to set the order they'll swim.</div></div>
+            <div class="tt-list" id="lineupList"><div class="tt-empty"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M21 21v-2a4 4 0 0 0-3-3.87"/><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg><span>Tap a swimmer on the left to add them. Use ↑ ↓ to set their swim order.</span></div></div>
           </div>
         </div>
 
@@ -366,7 +407,7 @@
     <section id="timeStep" style="display:none">
       <div class="card">
         <div class="tt-pbar"><div class="tt-pbar-fill" id="ttPbar"></div></div>
-        <div class="tt-pbar-label"><span id="ttProgress">Swimmer 1 of 1</span><span class="ev" id="ttEventLabel"></span></div>
+        <div class="tt-pbar-label"><span id="ttProgress" aria-live="polite">Swimmer 1 of 1</span><span class="ev" id="ttEventLabel"></span></div>
         <div class="tt-stage">
           <div class="tt-bignum" id="ttLaneNum">1</div>
           <div class="tt-current" id="ttCurrent">—</div>
@@ -397,7 +438,7 @@
             <tbody id="reviewBody"></tbody>
           </table>
         </div>
-        <div id="saveStatus" class="upload-status" style="margin-top:16px"></div>
+        <div id="saveStatus" class="upload-status" style="margin-top:16px" role="status" aria-live="polite"></div>
         <div class="tt-review-actions">
           <button class="tt-secbtn" id="backToTimeBtn" style="min-width:auto">← Back to timing</button>
           <button class="btn lg" id="saveAllBtn" style="flex:1;min-width:200px">Save all times to profiles</button>
@@ -466,7 +507,8 @@
       $('tool').style.display='block';
     } catch(e){
       console.error(e);
-      $('loading').innerHTML = '<p class="lead" style="margin:0;color:var(--red-light)">Could not load the roster. Reload the page to try again.</p>';
+      $('loading').classList.remove('tt-state-pad'); $('loading').classList.add('tt-state-auth');
+      $('loading').innerHTML = '<p class="lead tt-load-err">Could not load the roster. Reload the page to try again.</p>';
     }
   });
 
@@ -504,7 +546,7 @@
     const q = ($('rosterSearch').value||'').trim().toLowerCase();
     const inLineup = new Set(lineup.map(l=>l.key));
     const rows = rosterArr.filter(r => !q || r.name.toLowerCase().includes(q));
-    if(!rows.length){ $('rosterList').innerHTML = '<div class="tt-empty">No swimmers match that search.</div>'; return; }
+    if(!rows.length){ $('rosterList').innerHTML = '<div class="tt-empty"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><span>No swimmers match that search.</span></div>'; return; }
     $('rosterList').innerHTML = rows.map(r=>{
       const added = inLineup.has(r.key);
       const ag = ageLabelFor(roster[r.key]);
@@ -521,7 +563,7 @@
 
   function renderLineup(){
     $('lineupCnt').textContent = lineup.length + (lineup.length===1?' swimmer':' swimmers');
-    if(!lineup.length){ $('lineupList').innerHTML = '<div class="tt-empty">Tap swimmers on the left to add them. Use ↑ ↓ to set the order they\'ll swim.</div>'; renderRosterList(); return; }
+    if(!lineup.length){ $('lineupList').innerHTML = '<div class="tt-empty"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M21 21v-2a4 4 0 0 0-3-3.87"/><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg><span>Tap a swimmer on the left to add them. Use ↑ ↓ to set their swim order.</span></div>'; renderRosterList(); return; }
     $('lineupList').innerHTML = lineup.map((l,i)=>{
       const ag = ageLabelFor(roster[l.key]);
       return `<div class="tt-row">
@@ -643,10 +685,11 @@
   function renderDoneList(){
     const done = lineup.slice(0, curIdx);
     if(!done.length){ $('ttDone').innerHTML=''; return; }
-    $('ttDone').innerHTML = done.map((l,i)=>{
+    $('ttDone').innerHTML = '<div class="tt-done-head">Recorded so far</div>' + done.map((l,i)=>{
       const t = times[l.key];
-      const tm = (t && t.status==='done') ? `<span class="tm">${fmtClock(t.seconds*1000)}</span>` : `<span class="tm dns">DNS</span>`;
-      return `<div class="tt-done-row">
+      const isDone = t && t.status==='done';
+      const tm = isDone ? `<span class="tm">${fmtClock(t.seconds*1000)}</span>` : `<span class="tm dns">DNS</span>`;
+      return `<div class="tt-done-row ${isDone?'done':''}">
         <span class="tt-lane-num">${i+1}</span>
         <span class="nm">${escapeHtml(l.name)}</span>
         ${tm}
@@ -691,7 +734,7 @@
         <td>${i+1}</td>
         <td>${escapeHtml(l.name)}</td>
         <td>${escapeHtml(evLabel)}</td>
-        <td><input class="tt-time-input" data-key="${escapeHtml(l.key)}" value="${escapeHtml(val)}" placeholder="—"/></td>
+        <td><input class="tt-time-input" data-key="${escapeHtml(l.key)}" value="${escapeHtml(val)}" placeholder="—" inputmode="decimal" aria-label="Time for ${escapeHtml(l.name)}, ${escapeHtml(evLabel)}"/></td>
       </tr>`;
     }).join('');
     $('reviewLead').textContent = `${cfg.name} · ${evLabel} · ${cfg.season}. Check each time, fix any typos, then save them all to the swimmers' profiles. Leave a box blank to skip that swimmer.`;

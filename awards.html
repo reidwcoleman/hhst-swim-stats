@@ -35,19 +35,18 @@
     display:flex;flex-wrap:wrap;align-items:center;gap:8px;
     margin-top:12px;position:relative;z-index:1;
   }
+  /* Non-interactive status chips — no hover affordance (the badges aren't
+     buttons or filters). Read as a quiet meta line under the heading. */
   .aw-badge{
     display:inline-flex;align-items:center;gap:7px;
-    padding:5px 11px 5px 9px;border-radius:999px;
+    padding:5px 12px 5px 9px;border-radius:999px;
     font-size:12px;font-weight:600;line-height:1;
     background:var(--surface-glass);
     border:1px solid var(--border);
     color:var(--text);
     letter-spacing:.01em;
     box-shadow:var(--shadow-sm);
-    transition:border-color .18s cubic-bezier(.16,1,.3,1),
-               background .18s cubic-bezier(.16,1,.3,1);
   }
-  .aw-badge:hover{ background:var(--surface-2); border-color:var(--border-strong); }
   .aw-badge svg{width:13px;height:13px;flex-shrink:0;color:var(--accent)}
   .aw-badge .aw-badge-label{
     font-weight:700;text-transform:uppercase;letter-spacing:.08em;
@@ -58,8 +57,12 @@
     color:var(--text);font-variant-numeric:tabular-nums;
   }
   .aw-badge.aw-badge-count svg{color:var(--amber-300)}
-  .aw-badge.aw-badge-improved svg{color:#34d399}
+  .aw-badge.aw-badge-improved svg{color:var(--green-light)}
   .aw-badge[hidden]{display:none}
+  /* Light theme: the dark-tuned amber/green washes out on a white chip —
+     step to the saturated variants so the icon stays legible. */
+  [data-theme="light"] .aw-badge.aw-badge-count svg{color:var(--amber-500)}
+  [data-theme="light"] .aw-badge.aw-badge-improved svg{color:var(--green)}
 
   /* --- Sticky "Print all" affordance, appears once posters render. Rides the
      shared .btn + .btn-gradient recipe; only the fixed-position chrome (and
@@ -77,9 +80,14 @@
                opacity .22s cubic-bezier(.16,1,.3,1);
   }
   .aw-sticky.aw-show{display:inline-flex;opacity:1;transform:translateY(0)}
-  .aw-sticky.aw-show:hover{transform:translateY(-1px)}
+  .aw-sticky.aw-show:hover{transform:translateY(-1px);box-shadow:var(--shadow-blue)}
   .aw-sticky.aw-show:active{transform:translateY(0) scale(.98)}
+  .aw-sticky:focus-visible{outline:none;box-shadow:0 0 0 3px var(--ring),var(--shadow-blue)}
   .aw-sticky svg{width:16px;height:16px;flex-shrink:0}
+  @media (prefers-reduced-motion:reduce){
+    .aw-sticky{transition:none}
+    .aw-sticky.aw-show:hover{transform:none}
+  }
   .aw-sticky .aw-sticky-count{
     display:inline-flex;align-items:center;justify-content:center;
     min-width:20px;height:20px;padding:0 6px;border-radius:999px;
@@ -97,7 +105,7 @@
   /* --- Section header above each poster group --- */
   .aw-section-head{
     display:flex;align-items:center;gap:12px;
-    margin:6px 2px 0;
+    margin:10px 2px 2px;
     scroll-margin-top:80px;
   }
   .aw-section-head .aw-section-rule{
@@ -105,54 +113,93 @@
     background:linear-gradient(90deg,var(--border-strong),transparent);
   }
   .aw-section-head .aw-section-eyebrow{
+    display:inline-flex;align-items:center;gap:8px;
     font-size:11px;font-weight:700;text-transform:uppercase;
     letter-spacing:.14em;color:var(--text-subtle);
     white-space:nowrap;
   }
-  #improvedSectionHead{ margin-top:14px; }
+  /* small accent dot anchors the eyebrow to the page's accent language */
+  .aw-section-head .aw-section-eyebrow::before{
+    content:"";width:6px;height:6px;border-radius:999px;
+    background:var(--accent);flex-shrink:0;
+  }
+  #improvedSectionHead{ margin-top:16px; }
 
   /* Section rhythm between the Fastest Five posters and the Most Improved
      intro (was an inline margin-top; keep it on one spacing step). */
   #mostImprovedIntro{ margin-top:48px; }
 
-  /* --- Richer empty states (replaces inline-styled blocks) --- */
+  /* --- State family: loading / page-empty / host-empty share one visual
+     language. Each state centers a single rounded icon "chip" over a
+     Fraunces head and a muted lead, on the same vertical rhythm, so all
+     three read as siblings rather than three different components. --- */
+
+  /* Richer empty states (replaces inline-styled blocks) */
   .aw-empty{
-    text-align:center;padding:54px 28px;
-    display:flex;flex-direction:column;align-items:center;gap:6px;
+    text-align:center;padding:56px 28px;
+    display:flex;flex-direction:column;align-items:center;gap:8px;
   }
   .aw-empty .aw-empty-icon{
-    width:56px;height:56px;border-radius:var(--radius-md);
-    display:grid;place-items:center;margin:0 auto 8px;
+    width:64px;height:64px;border-radius:var(--radius-md);
+    display:grid;place-items:center;margin:0 auto 10px;
     background:var(--surface-glass);border:1px solid var(--border);
-    color:var(--accent);
+    color:var(--accent);box-shadow:var(--shadow-sm);
   }
-  .aw-empty .aw-empty-icon svg{width:26px;height:26px}
+  .aw-empty .aw-empty-icon svg{width:28px;height:28px}
   .aw-empty h2{
     font-family:'Fraunces',serif;font-weight:800;font-size:22px;line-height:1.2;
     color:var(--text);letter-spacing:-.01em;margin:0;
   }
-  .aw-empty .lead{max-width:420px;margin:0 auto}
+  .aw-empty .lead{max-width:420px;margin:2px auto 0}
   .aw-empty .btn{margin-top:14px}
 
-  /* In-host empty (no posters for a section) — reuse .empty look, add icon */
+  /* In-host empty (no posters for a section) — same icon-chip family as
+     .aw-empty, just one step smaller so it reads as a nested/section note. */
   .aw-host-empty{
+    text-align:center;padding:44px 28px;
     display:flex;flex-direction:column;align-items:center;gap:8px;
-    text-align:center;
   }
-  .aw-host-empty svg{
-    width:34px;height:34px;color:var(--text-subtle);opacity:.6;margin-bottom:2px;
+  .aw-host-empty .aw-empty-icon{
+    width:52px;height:52px;border-radius:var(--radius-md);
+    display:grid;place-items:center;margin:0 auto 6px;
+    background:var(--surface-glass);border:1px solid var(--border);
+    color:var(--accent);box-shadow:var(--shadow-sm);
   }
-  .aw-host-empty strong{color:var(--text);font-weight:700}
+  .aw-host-empty .aw-empty-icon svg{width:24px;height:24px}
+  .aw-host-empty strong{
+    display:block;color:var(--text);font-weight:700;font-size:15px;
+  }
+  .aw-host-empty span{
+    color:var(--text-muted);font-size:13.5px;line-height:1.55;
+    max-width:380px;margin:0 auto;
+  }
 
-  /* --- Loading spinner shell (replaces inline-styled block) --- */
-  .aw-loading{ text-align:center;padding:48px 24px; }
-  .aw-loading .aw-spinner{
-    display:inline-block;width:32px;height:32px;margin-bottom:14px;
-    border:3px solid var(--border-strong);border-top-color:var(--accent);
-    border-radius:50%;animation:awspin .8s linear infinite;
+  /* Loading spinner shell — same centered chip rhythm; the spinner ring
+     replaces the static icon. (replaces inline-styled block) */
+  .aw-loading{
+    text-align:center;padding:56px 28px;
+    display:flex;flex-direction:column;align-items:center;gap:8px;
   }
-  .aw-loading .lead{ margin:0; }
+  .aw-loading .aw-spinner{
+    display:inline-block;width:64px;height:64px;
+    border-radius:var(--radius-md);
+    background:var(--surface-glass);border:1px solid var(--border);
+    box-shadow:var(--shadow-sm);position:relative;margin:0 auto 10px;
+  }
+  .aw-loading .aw-spinner::after{
+    content:"";position:absolute;inset:0;margin:auto;
+    width:30px;height:30px;border-radius:50%;
+    border:3px solid var(--border-strong);border-top-color:var(--accent);
+    animation:awspin .8s linear infinite;
+  }
+  .aw-loading .lead{ margin:2px auto 0; }
   @keyframes awspin{to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion:reduce){
+    .aw-loading .aw-spinner::after{ animation:none; }
+  }
+  /* Load-failure message (replaces an inline color style in the JS catch). */
+  .aw-error{ color:var(--red-light);margin:0;font-weight:600; }
+  [data-theme="light"] .aw-error{ color:var(--red); }
 
   /* --- Print-all controls column + caption (relocated from inline styles).
      Shares one rhythm with the rest of the page. --- */
@@ -180,6 +227,23 @@
   /* Keyboard focus ring on the per-card print buttons (matches .btn + pill). */
   .award-print-one:focus-visible{ outline:none; box-shadow:0 0 0 3px var(--ring); }
 
+  /* On-screen only: quiet the "—" filler rows that pad each board to five so
+     they stop competing with real entries. Wrapped in @media screen so the
+     printed certificate keeps the styles.css filler rendering untouched. */
+  @media screen{
+    /* Fade the filler placeholders further (styles.css ships .35) so the
+       padded-to-five rows recede behind the real names. The rank chip stays
+       a touch more present so the board still reads as a 1–5 ladder. */
+    .award-card .award-empty-row td{ opacity:.26; }
+    .award-card .award-empty-row .award-rank{ opacity:.55; }
+
+    /* The certificate's corner brackets are intentionally bold on paper but
+       read busy on a dark screen. Dial them back on-screen only; print still
+       renders them at full strength via styles.css @media print. (Waves and
+       lane rails are already display:none on screen, so they need no tweak.) */
+    .award-card .award-corner{ opacity:.5; }
+  }
+
   /* Anchored scrolls (e.g. the ?print=fastest deep-link) clear the header. */
   .awards-host, .awards-host-improved{ scroll-margin-top:80px; }
 
@@ -197,6 +261,26 @@
     #printAllAwards{ width:100%;justify-content:center; }
     .aw-meta{ gap:6px; }
     .aw-section-head{ margin-left:0;margin-right:0;min-width:0; }
+  }
+
+  /* Phone (≤480): keep the meta chips and section heads on a tight rhythm so
+     they don't feel orphaned once the posters stack to one column. */
+  @media (max-width:480px){
+    .aw-meta{ margin-top:10px; }
+    .aw-section-head{ gap:10px;margin-top:8px; }
+    .aw-section-head .aw-section-eyebrow{ letter-spacing:.12em; }
+    .aw-empty{ padding:44px 22px; }
+    .aw-loading{ padding:44px 22px; }
+    .aw-host-empty{ padding:36px 22px; }
+    #mostImprovedIntro{ margin-top:36px; }
+  }
+
+  /* Very-narrow band (≤430): the certificate poster's fixed feel is the first
+     thing to overflow — clamp the empty/loading icon chips so they never push
+     a card edge, and tighten the badge wells. */
+  @media (max-width:430px){
+    .aw-empty .aw-empty-icon{ width:56px;height:56px; }
+    .aw-loading .aw-spinner{ width:56px;height:56px; }
   }
 
   /* Very narrow phones (≤380px): the certificate posters carry a lot of
@@ -286,7 +370,7 @@
     </div>
   </div>
 
-  <div id="loadingState" class="card no-print aw-loading">
+  <div id="loadingState" class="card no-print aw-loading" role="status" aria-live="polite">
     <div class="aw-spinner" aria-hidden="true"></div>
     <p class="lead">Loading team data…</p>
   </div>
@@ -392,7 +476,7 @@
       }
     } catch(err){
       console.error(err);
-      loading.innerHTML = '<p class="lead" style="color:var(--red-light);margin:0">Couldn\'t load team data. Try refreshing.</p>';
+      loading.innerHTML = '<p class="lead aw-error">Couldn\'t load team data. Try refreshing.</p>';
     }
   })();
 
@@ -555,7 +639,9 @@
 
     if(!cards){
       awardsHost.innerHTML = `<div class="card empty aw-host-empty no-print" style="margin-top:16px">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 1.5"/><path d="M5 3 2 6M19 3l3 3"/></svg>
+        <div class="aw-empty-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 1.5"/><path d="M5 3 2 6M19 3l3 3"/></svg>
+        </div>
         <strong>No freestyle times yet at the configured distances.</strong>
         <span>Once results come in, posters generate automatically — one per age group.</span>
       </div>`;
@@ -716,7 +802,9 @@
     const brackets = HHST.AGE_GROUP_ORDER.filter(b => byBracket[b]);
     if(!brackets.length){
       improvedHost.innerHTML = `<div class="card empty aw-host-empty no-print" style="margin-top:16px">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 7-7"/><path d="M17 8h4v4"/></svg>
+        <div class="aw-empty-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 7-7"/><path d="M17 8h4v4"/></svg>
+        </div>
         <strong>No improvements measurable at this meet yet.</strong>
         <span>Once swimmers have prior results to compare against, time drops show up here.</span>
       </div>`;

@@ -20,6 +20,16 @@
     padding:32px max(24px,env(safe-area-inset-right)) calc(64px + env(safe-area-inset-bottom)) max(24px,env(safe-area-inset-left))}
   .tt-hero-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:20px}
 
+  /* Loading state — matches the spinner pattern used on awards/timetrial */
+  .tt-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+    padding:96px max(24px,env(safe-area-inset-left)) 96px max(24px,env(safe-area-inset-right));
+    text-align:center}
+  .tt-spinner{width:38px;height:38px;border-radius:999px;
+    border:3px solid var(--border);border-top-color:var(--accent);
+    animation:tt-spin .8s linear infinite}
+  .tt-loading .lead{margin:0;color:var(--text-muted)}
+  @keyframes tt-spin{to{transform:rotate(360deg)}}
+
   /* Hero kicker: reuse the shared leaderboard-hero ice recipe */
   .dash-hero .kicker{
     color:var(--ice-300);background:rgba(125,211,252,.1);border:1px solid rgba(125,211,252,.22);
@@ -40,10 +50,10 @@
   .tt-back:focus-visible{outline:none;box-shadow:0 0 0 3px var(--ring);border-color:var(--accent)}
   .tt-back svg{width:14px;height:14px}
 
-  .tt-card-head{display:flex;justify-content:space-between;align-items:center;gap:12px;
+  .tt-card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;
     flex-wrap:wrap;margin-bottom:24px}
   .tt-card-head h2{margin:0}
-  .tt-card-head .lead{margin:0;color:var(--text-muted);font-size:13px}
+  .tt-card-head .lead{margin:5px 0 0;color:var(--text-muted);font-size:13px;max-width:52ch}
   .tt-select{font-family:inherit;font-size:16px;padding:13px 16px;border-radius:var(--radius);
     background:var(--surface);color:var(--text);border:1px solid var(--border-strong);max-width:100%;
     transition:border-color .18s cubic-bezier(.16,1,.3,1),box-shadow .18s cubic-bezier(.16,1,.3,1)}
@@ -59,28 +69,37 @@
   .tt-lb-row:hover{border-color:var(--accent);transform:translateY(-1px);box-shadow:var(--shadow-md)}
   .tt-lb-row:active{transform:translateY(0)}
   .tt-lb-row:focus-visible{outline:none;box-shadow:0 0 0 3px var(--ring);border-color:var(--accent)}
-  .tt-lb-1{border-color:rgba(251,191,36,.4);background:linear-gradient(90deg,rgba(251,191,36,.07),var(--surface) 60%)}
-  .tt-lb-rank{font-family:'Fraunces',serif;font-weight:800;color:var(--text-muted);text-align:center;font-variant-numeric:tabular-nums}
+  .tt-lb-1{border-color:rgba(251,191,36,.42);background:linear-gradient(90deg,rgba(251,191,36,.08),var(--surface) 62%)}
+  .tt-lb-1:hover{border-color:rgba(251,191,36,.6)}
+  .tt-lb-rank{font-family:'Fraunces',serif;font-weight:800;font-size:17px;color:var(--text-subtle);text-align:center;font-variant-numeric:tabular-nums}
+  .tt-lb-1 .tt-lb-rank{color:var(--amber-400)}
+  [data-theme=light] .tt-lb-1 .tt-lb-rank{color:#b45309}
   .tt-lb-name{font-weight:600;font-size:15px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .tt-lb-name small{display:block;color:var(--text-subtle);font-weight:500;font-size:12px}
+  .tt-lb-name small{display:block;color:var(--text-subtle);font-weight:500;font-size:12px;margin-top:1px}
   .tt-lb-bar{height:8px;border-radius:999px;background:var(--bg-alt);overflow:hidden;border:1px solid var(--border)}
-  .tt-lb-bar span{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--brand-500),var(--ice-400))}
+  .tt-lb-bar span{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--brand-500),var(--ice-400));
+    transition:width .4s cubic-bezier(.16,1,.3,1)}
   .tt-lb-1 .tt-lb-bar span{background:linear-gradient(90deg,#f59e0b,#fbbf24)}
   .tt-lb-time{font-family:'Fraunces',serif;font-weight:700;color:var(--accent);
-    font-variant-numeric:tabular-nums;white-space:nowrap;font-size:15px}
+    font-variant-numeric:tabular-nums;white-space:nowrap;font-size:15px;text-align:right}
+  /* Numeric gap fallback shown only when the bar is hidden (≤480) */
+  .tt-lb-gap{display:none;font-size:11px;font-weight:600;color:var(--text-subtle);
+    font-variant-numeric:tabular-nums;letter-spacing:.02em;margin-top:2px}
 
   /* Movers */
-  .tt-movers{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:20px}
+  .tt-movers{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px}
   .tt-mover{display:flex;align-items:center;justify-content:space-between;gap:12px;
     padding:18px 20px;border-radius:var(--radius-md);background:var(--surface);border:1px solid var(--border);
-    color:var(--text)!important;
+    color:var(--text)!important;min-width:0;
     transition:border-color .18s cubic-bezier(.16,1,.3,1),transform .18s cubic-bezier(.16,1,.3,1),box-shadow .18s cubic-bezier(.16,1,.3,1)}
   .tt-mover:hover{border-color:var(--accent);transform:translateY(-1px);box-shadow:var(--shadow-md)}
   .tt-mover:active{transform:translateY(0)}
   .tt-mover:focus-visible{outline:none;box-shadow:0 0 0 3px var(--ring);border-color:var(--accent)}
-  .tt-mover-name{font-weight:600;font-size:15px;display:block;line-height:1.2}
-  .tt-mover-sub{font-size:13px;color:var(--text-subtle)}
-  .tt-mover .chip-stat{font-variant-numeric:tabular-nums}
+  .tt-mover-id{min-width:0;flex:1}
+  .tt-mover-name{font-weight:600;font-size:15px;display:block;line-height:1.25;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tt-mover-sub{font-size:13px;color:var(--text-subtle);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
+  .tt-mover .chip-stat{font-variant-numeric:tabular-nums;flex:none}
 
   /* Results table bar */
   .tt-tablebar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:24px}
@@ -95,31 +114,52 @@
   .tt-name-link:focus-visible{outline:none;box-shadow:0 0 0 3px var(--ring)}
   .tt-name-link:active{transform:translateY(0)}
 
-  .tt-info-note{display:flex;gap:12px;align-items:flex-start;padding:18px 20px;border-radius:var(--radius-md);
+  .tt-info-note{display:flex;gap:12px;align-items:flex-start;padding:16px 20px;border-radius:var(--radius-md);
     background:rgba(96,165,250,.07);border:1px solid var(--border-strong);border-left:3px solid var(--accent);
     color:var(--text-muted);font-size:13px;line-height:1.55;margin-bottom:24px}
+  .tt-info-note strong{color:var(--text);font-weight:600}
   .tt-info-note svg{width:20px;height:20px;color:var(--accent);flex:none;margin-top:1px}
   [data-theme=light] .tt-info-note{background:rgba(37,99,235,.06);border-left:3px solid var(--accent)}
 
   /* Shared empty-state heading (no per-element Fraunces overrides in markup) */
   .empty h3{font-family:'Fraunces',serif;color:var(--text);margin:6px 0 4px;font-size:18px;font-weight:700;line-height:1.3}
+  /* Inline empties inside cards/tables — dashed, centered, on-brand */
+  .tt-inline-empty{display:flex;flex-direction:column;align-items:center;gap:6px;
+    padding:32px 24px;border-radius:var(--radius-md);
+    border:1px dashed var(--border-strong);background:var(--bg-alt);
+    color:var(--text-muted);font-size:14px;line-height:1.5;text-align:center}
 
   /* Tabular figures for KPI readouts (page-scoped fallback; aligns with the global rule) */
   .kpi .value{font-variant-numeric:tabular-nums}
+  .tt-card-head .tt-select{align-self:flex-start}
+
+  /* Hero copy rhythm (lifted from inline styles) */
+  .tt-hero-title{margin-top:14px}
+  .tt-hero-tagline{max-width:600px}
 
   @media (max-width:768px){
     .tt-shell{padding:24px max(24px,env(safe-area-inset-right)) calc(64px + env(safe-area-inset-bottom)) max(24px,env(safe-area-inset-left))}
+  }
+  @media (max-width:760px){
+    .tt-card-head .tt-select{align-self:stretch;width:100%}
   }
   @media (max-width:480px){
     .tt-shell{padding:20px max(16px,env(safe-area-inset-right)) calc(56px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
     .tt-lb-row{grid-template-columns:26px minmax(0,1fr) auto;gap:10px;padding:16px}
     .tt-mover{padding:16px}
+    /* Bar drops out at phone width — surface the numeric gap cue instead */
     .tt-lb-bar{display:none}
-    .tt-movers{gap:16px}
+    .tt-lb-gap{display:block}
+    .tt-movers{gap:12px}
+    .tt-info-note{padding:14px 16px}
   }
   @media (max-width:430px){
     .chart-host{height:240px}
     .stroke-chart-host{height:190px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .tt-spinner{animation:none}
+    .tt-lb-bar span{transition:none}
   }
 </style>
 
@@ -160,8 +200,9 @@
 </header>
 
 <!-- LOADING -->
-<div id="loadingState" style="padding:80px 24px;text-align:center">
-  <p class="lead" style="color:var(--text-muted);margin:0">Loading time trials…</p>
+<div id="loadingState" class="tt-loading" role="status" aria-live="polite">
+  <div class="tt-spinner" aria-hidden="true"></div>
+  <p class="lead">Loading time trials…</p>
 </div>
 
 <!-- ============ TEAM OVERVIEW ============ -->
@@ -169,8 +210,8 @@
   <div class="dash-hero">
     <div class="dash-hero-inner">
       <div class="kicker"><span class="pulse"></span> Practice swims · off the competitive boards</div>
-      <h1 class="swimmer-name" style="margin-top:14px">Time Trial Dashboard</h1>
-      <p class="swimmer-tagline" style="max-width:600px">Every time-trial swim across the team, with detailed stats — fastest trials by event, who's improving the most, and a full searchable log. Tap a swimmer to see their personal progression.</p>
+      <h1 class="swimmer-name tt-hero-title">Time Trial Dashboard</h1>
+      <p class="swimmer-tagline tt-hero-tagline">Every time-trial swim across the team, with detailed stats — fastest trials by event, who's improving the most, and a full searchable log. Tap a swimmer to see their personal progression.</p>
       <div class="tt-hero-actions">
         <a class="btn" href="timetrial.html">⏱ Run a Time Trial</a>
         <a class="btn ghost" href="index.html">Swimmer Lookup</a>
@@ -357,7 +398,7 @@
       allSwimmers = (all && all.swimmers) || {};
     } catch(e){
       console.error(e);
-      loading.innerHTML = '<p class="lead" style="color:var(--red-light);margin:0">Couldn\'t load time trials. <a href="index.html">Back to site</a>.</p>';
+      loading.innerHTML = '<p class="lead" style="color:var(--red-light);margin:0">Couldn’t load time trials. <a href="index.html">Back to site</a>.</p>';
       return;
     }
     loading.style.display = 'none';
@@ -424,15 +465,16 @@
       if(!best) return null;
       return { key:x.key, name:x.sw.name, group:HHST.competitionGroup(x.sw), seconds:best.seconds, time:best.time };
     }).filter(Boolean).sort(function(a,b){ return a.seconds-b.seconds; });
-    if(!entries.length){ host.innerHTML = '<div class="empty" style="padding:28px">No time trials for this event yet.</div>'; return; }
+    if(!entries.length){ host.innerHTML = '<div class="tt-inline-empty">No time trials for this event yet.</div>'; return; }
     var fastest = entries[0].seconds;
     host.innerHTML = entries.map(function(e,i){
       var pct = Math.max(10, Math.round(fastest / e.seconds * 100));
       var medal = i===0?' 🥇':i===1?' 🥈':i===2?' 🥉':'';
       var grp = (e.group && e.group !== 'Unknown') ? '<small>'+esc(e.group)+'</small>' : '';
+      var gap = i===0 ? 'Fastest' : '+'+fmtDrop(e.seconds - fastest);
       return '<a class="tt-lb-row'+(i===0?' tt-lb-1':'')+'" href="?s='+encodeURIComponent(e.key)+'">'
         + '<span class="tt-lb-rank">'+(i+1)+'</span>'
-        + '<span class="tt-lb-name">'+esc(e.name)+grp+'</span>'
+        + '<span class="tt-lb-name">'+esc(e.name)+grp+'<span class="tt-lb-gap">'+gap+'</span></span>'
         + '<span class="tt-lb-bar"><span style="width:'+pct+'%"></span></span>'
         + '<span class="tt-lb-time">'+esc(e.time)+medal+'</span></a>';
     }).join('');
@@ -444,10 +486,10 @@
       var st = HHST.statsForSwimmer({ key:x.key, name:x.sw.name, seasonInfo:x.sw.seasonInfo, results:x.tt }, { includeTimeTrials:true });
       return { key:x.key, name:x.sw.name, drop:st.recentMeetDropSec, best:st.mostImproved };
     }).filter(function(m){ return m.drop > 0; }).sort(function(a,b){ return b.drop-a.drop; }).slice(0,8);
-    if(!movers.length){ host.innerHTML = '<div class="empty" style="padding:28px;grid-column:1/-1">Need at least two trials of the same event to measure improvement.</div>'; return; }
+    if(!movers.length){ host.innerHTML = '<div class="tt-inline-empty" style="grid-column:1/-1">Need at least two trials of the same event to measure improvement.</div>'; return; }
     host.innerHTML = movers.map(function(m){
       return '<a class="tt-mover" href="?s='+encodeURIComponent(m.key)+'">'
-        + '<span><span class="tt-mover-name">'+esc(m.name)+'</span>'
+        + '<span class="tt-mover-id"><span class="tt-mover-name">'+esc(m.name)+'</span>'
         + '<span class="tt-mover-sub">'+(m.best?esc(m.best.event):'')+'</span></span>'
         + '<span class="chip-stat chip-down">▼ '+fmtDrop(m.drop)+'</span></a>';
     }).join('');
@@ -462,7 +504,7 @@
     rows.sort(function(a,b){ return dnum(b.date)-dnum(a.date); });
     setText('tblCount', rows.length + ' result' + (rows.length===1?'':'s'));
     var host = document.getElementById('tblBody');
-    if(!rows.length){ host.innerHTML = '<tr><td colspan="5"><div class="empty" style="padding:24px">No matching time trials.</div></td></tr>'; return; }
+    if(!rows.length){ host.innerHTML = '<tr><td colspan="5"><div class="tt-inline-empty">No matching time trials.</div></td></tr>'; return; }
     host.innerHTML = rows.slice(0,400).map(function(r){
       return '<tr><td><a class="tt-name-link" href="?s='+encodeURIComponent(r.key)+'">'+esc(r.name)+'</a></td>'
         + '<td>'+esc(r.event)+'</td>'

@@ -39,6 +39,9 @@
   .admin-page-head::after{content:"";position:absolute;left:0;bottom:-1px;
     width:64px;height:2px;border-radius:2px;
     background:linear-gradient(90deg,var(--accent),transparent)}
+  .admin-page-head h1{letter-spacing:-.025em}
+  .admin-page-head p{color:var(--text-muted);line-height:1.6;
+    max-width:62ch}
 
   /* ---- Card heading eyebrow bar — applied consistently to every section
          card title, whether the <h2> is a direct child or wrapped. ---- */
@@ -91,16 +94,23 @@
     box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 8px 20px -10px #7c3aed}
 
   /* ---- Drop zones: one signature accent (icon lift + drag ring). The
-         redundant always-on radial overlay is dropped for restraint. ---- */
+         redundant always-on radial overlay is dropped for restraint. The
+         GENERIC roster zone reads quieter; the NAMED-MEET zone is the warm
+         primary action — sharper hierarchy between the two. ---- */
   .drop-zone{position:relative;overflow:hidden}
   .drop-zone svg{transition:transform .22s cubic-bezier(.16,1,.3,1)}
   .drop-zone:hover svg{transform:translateY(-3px) scale(1.04)}
-  .drop-zone.drag{box-shadow:0 0 0 3px var(--ring) inset}
+  .drop-zone:hover{border-color:var(--accent)}
+  .drop-zone.drag{box-shadow:0 0 0 3px var(--ring) inset;
+    border-color:var(--accent)}
   .drop-zone.drag svg{transform:translateY(-4px) scale(1.08)}
-  /* A small "primary action" tint for the named-meet zone */
+  .drop-zone:focus-within{box-shadow:0 0 0 3px var(--ring)}
+  /* The named-meet zone is the warmer "primary" — a faint amber wash + a
+     left-anchored accent glow on drag set it apart from the roster zone. */
   .meet-drop{background:rgba(245,158,11,.05)}
-  .meet-drop:hover,.meet-drop.drag{border-color:var(--amber-500,#f59e0b);
+  .meet-drop:hover,.meet-drop.drag{border-color:var(--amber-500,#f59e0b)!important;
     background:rgba(245,158,11,.10)}
+  .meet-drop.drag{box-shadow:0 0 0 3px rgba(245,158,11,.25) inset}
   .meet-drop svg{color:var(--amber-500,#f59e0b)}
 
   /* ---- One shared recipe for the section text inputs (season/meet
@@ -114,10 +124,59 @@
     transition:border-color .18s ease,box-shadow .18s ease;
   }
   .axp-input::placeholder{color:var(--text-subtle)}
+  .axp-input:hover{border-color:var(--accent)}
   .axp-input:focus{
     outline:none;border-color:var(--accent);
     box-shadow:0 0 0 3px var(--ring);
   }
+
+  /* ---- Login chooser back-link (was inline) ---- */
+  .axp-login-back{text-align:center;font-size:13px;color:var(--text-subtle);
+    margin-top:22px}
+  .axp-login-back a{color:var(--text-muted);text-decoration:none;
+    transition:color .18s ease}
+  .axp-login-back a:hover{color:var(--text)}
+  .axp-login-back a:focus-visible{outline:none;border-radius:var(--radius-sm);
+    box-shadow:0 0 0 3px var(--ring)}
+
+  /* ---- Field label + hint helpers (replace repeated inline blocks on the
+         season / meet pickers). The required marker is its own accent token. */
+  .axp-label{display:block;margin-bottom:6px;font-weight:600;color:var(--text)}
+  .axp-label .req{color:var(--accent)}
+  .axp-label .opt{color:var(--text-muted);font-weight:400}
+  .axp-hint{margin:6px 0 0;font-size:13px;color:var(--text-muted);
+    line-height:1.55}
+  .axp-hint-block{margin:0 0 16px}
+  .axp-field-flush{margin:0}
+
+  /* ---- Section pickers: align the season/meet rows on one rhythm ---- */
+  .axp-season-picker{margin:0 0 16px;display:flex;flex-wrap:wrap;
+    align-items:flex-end;gap:16px}
+  .axp-season-field{flex:1;min-width:220px;margin:0}
+
+  /* ---- "Add a Meet" head + season-stats head: a shared flex row so the
+         heading and lead share the card's left rail. ---- */
+  .axp-card-headrow{display:flex;align-items:center;
+    justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:12px}
+  .axp-card-headrow h2,.meet-card-head h2,
+  #uploadsCard h2{margin:0}
+  .axp-card-headrow .lead,.meet-card-head .lead,
+  #uploadsCard .lead{margin:4px 0 0}
+  .axp-uploads-head{align-items:flex-start;gap:16px;margin-bottom:0}
+  .axp-uploads-body{margin-top:16px}
+
+  /* ---- Dedupe controls row ---- */
+  .axp-dedupe-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;
+    margin-bottom:6px}
+  .axp-dedupe-select{flex:1}
+
+  /* ---- Unified loading / empty state for JS-rendered regions. The shared
+         .empty recipe lives in styles.css; this just tightens the icon +
+         copy rhythm so the uploads/roster empties read as one family. ---- */
+  #uploadsBody .empty,#rosterWrap .empty{padding:32px 20px}
+  #uploadsBody .empty svg,#rosterWrap .empty svg{opacity:.7}
+  .axp-empty-sub{margin-top:4px;font-size:13px;color:var(--text-subtle);
+    max-width:46ch;margin-left:auto;margin-right:auto;line-height:1.55}
 
   /* ---- One shared recipe for the page's filter selects (uploads / dedupe
          / roster season). Replaces inline min-width:190/200/220/240px. ---- */
@@ -132,6 +191,16 @@
 
   /* ---- "Add a Meet" card: keep the warm badge identity ---- */
   .meet-card-badge{box-shadow:0 8px 18px -8px rgba(245,158,11,.6)}
+
+  /* ---- Upload status: padding / surface / radius come from styles.css.
+         Add only line-height + a darkened light-theme text so the green/red
+         BODY text clears 4.5:1 on the pale tint (--green-light / --red-light
+         wash out on white). ---- */
+  .upload-status.ok,.upload-status.err{line-height:1.55}
+  [data-theme="light"] .upload-status.ok{color:#047857;
+    background:rgba(16,185,129,.10);border-color:rgba(16,185,129,.35)}
+  [data-theme="light"] .upload-status.err{color:#b91c1c;
+    background:rgba(239,68,68,.09);border-color:rgba(239,68,68,.32)}
 
   /* ---- Uploaded Files panel ---- */
   #uploadsBody .upload-file-row{
@@ -215,6 +284,12 @@
     .drop-zone{width:100%}
   }
 
+  /* The 481–768 in-between band: modal actions stay right-aligned but the
+     buttons get breathing room so Cancel / Save never crowd. */
+  @media (min-width:481px) and (max-width:768px){
+    .modal-card .modal-actions{gap:10px}
+  }
+
   @media (max-width:480px){
     /* Tighter chart on the smallest phones. */
     #adminChartCard .chart-host{height:230px!important}
@@ -228,6 +303,39 @@
     /* Modal actions stack so buttons stay full-width and tappable. */
     .modal-card .modal-actions{flex-wrap:wrap;gap:8px}
     .modal-card .modal-actions .btn{flex:1 1 auto}
+
+    /* Section picker collapses to one column; field fills the row. */
+    .axp-season-field{min-width:0;width:100%}
+
+    /* Dedupe controls stack: select full-width, buttons share a row. */
+    #dedupeCard .axp-dedupe-row{flex-direction:column;align-items:stretch}
+    #dedupeCard .axp-dedupe-row .btn{flex:1 1 0}
+
+    /* Uploaded-file rows: let the trash button breathe at the smallest size. */
+    #uploadsBody .upload-file-row strong{max-width:62vw}
+  }
+
+  @media (max-width:430px){
+    /* Smallest phones: the momentum chart legend + axes get cramped, so
+       give the canvas a touch more height back. */
+    #adminChartCard .chart-host{height:240px!important}
+  }
+
+  /* ===================================================================
+     REDUCED MOTION — neutralize every transform/lift this page adds, on top
+     of the global guard in styles.css. Keeps focus rings + color changes.
+     =================================================================== */
+  @media (prefers-reduced-motion: reduce){
+    main.admin-shell > .card,
+    main.admin-shell > details.card,
+    .kpi,.quick-nav-card,.kpi-icon,.kpi:hover .kpi-icon,
+    .quick-nav-arrow,.quick-nav-card:hover .quick-nav-arrow,
+    .drop-zone svg,.drop-zone:hover svg,.drop-zone.drag svg,
+    #uploadsBody .upload-file-row,#uploadsBody .icon-trash,
+    .roster-table tbody tr,.maintenance-btn,.maintenance-btn:hover,
+    .chip,.chip-x,.axp-input{
+      transition:none!important;transform:none!important;
+    }
   }
 </style>
 
@@ -277,7 +385,7 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
         </button>
       </div>
-      <p style="text-align:center;font-size:13px;color:var(--text-subtle);margin-top:22px">
+      <p class="axp-login-back">
         <a href="index.html">← Back to public site</a>
       </p>
     </div>
@@ -460,15 +568,15 @@
       <h2>Team Momentum</h2>
       <p class="lead">Races by stroke at each meet, oldest to newest — with the personal bests set along the way.</p>
       <div class="chart-host" style="height:300px"><canvas id="adminChart"></canvas></div>
-      <div class="empty" id="adminChartEmpty" style="display:none">Upload meet results to see team momentum.</div>
+      <div class="empty" id="adminChartEmpty" style="display:none" role="status">Upload meet results to see team momentum.</div>
     </section>
 
     <!-- TIME DROPPED PER SEASON -->
     <div class="card" id="seasonStatsCard" style="display:none">
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:12px">
+      <div class="axp-card-headrow">
         <div>
-          <h2 style="margin:0">Time dropped by season</h2>
-          <p class="lead" style="margin:4px 0 0">Total seconds shaved off PRs in each season, plus how many swimmers contributed.</p>
+          <h2>Time dropped by season</h2>
+          <p class="lead">Total seconds shaved off PRs in each season, plus how many swimmers contributed.</p>
         </div>
       </div>
       <div id="seasonStatsBody"></div>
@@ -576,11 +684,11 @@
       <!-- SEASON PICKER for the roster — tags each swimmer with the season
            they're on the roster for. Required so times uploaded for the same
            season can match against the right list, not the current season's. -->
-      <div class="season-picker" style="margin:0 0 16px;display:flex;flex-wrap:wrap;align-items:flex-end;gap:16px">
-        <div class="field" style="flex:1;min-width:220px;margin:0">
-          <label for="rosterSeasonInput" style="display:block;margin-bottom:6px;font-weight:600;color:var(--text)">Season for this roster <span style="color:var(--accent)">*</span></label>
+      <div class="season-picker axp-season-picker">
+        <div class="field axp-season-field">
+          <label for="rosterSeasonInput" class="axp-label">Season for this roster <span class="req">*</span></label>
           <input type="text" id="rosterSeasonInput" list="seasonOptions" placeholder="e.g. 2025 Summer" autocomplete="off" class="axp-input"/>
-          <p class="field-hint" style="margin:6px 0 0;font-size:13px;color:var(--text-muted)">
+          <p class="field-hint axp-hint">
             Every swimmer on this roster will be marked as "on the team" for the season you pick. When you later upload meet times for the same season, only those swimmers will match — old swimmers from previous seasons stay safely in the database for their own season's records.
           </p>
         </div>
@@ -592,7 +700,7 @@
         <p>or click to browse · CSV or Excel (.xlsx, .xls) · multiple files OK</p>
         <input type="file" id="rosterFile" multiple accept=".csv,.xlsx,.xls,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"/>
       </label>
-      <div class="upload-status" id="rosterStatus"></div>
+      <div class="upload-status" id="rosterStatus" role="status" aria-live="polite"></div>
 
       <details style="margin-top:20px;color:var(--text-muted);font-size:13px">
         <summary style="cursor:pointer;font-weight:600;color:var(--text)">Roster CSV columns the importer recognizes</summary>
@@ -612,28 +720,28 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
         </span>
         <div>
-          <h2 style="margin:0">Add a Meet</h2>
-          <p class="lead" style="margin:4px 0 0">Name the meet, pick its season, and drop the results file. The name you type — like <em>“Highcroft at Riverstone”</em> — is what shows in each swimmer's stats. One file = one meet.</p>
+          <h2>Add a Meet</h2>
+          <p class="lead">Name the meet, pick its season, and drop the results file. The name you type — like <em>“Highcroft at Riverstone”</em> — is what shows in each swimmer's stats. One file = one meet.</p>
         </div>
       </div>
 
       <div class="meet-form-grid">
-        <div class="field" style="margin:0">
-          <label for="meetNameInput" style="display:block;margin-bottom:6px;font-weight:600;color:var(--text)">Meet name <span style="color:var(--accent)">*</span></label>
+        <div class="field axp-field-flush">
+          <label for="meetNameInput" class="axp-label">Meet name <span class="req">*</span></label>
           <input type="text" id="meetNameInput" list="meetNameOptions" placeholder="e.g. Highcroft at Riverstone" autocomplete="off" class="axp-input"/>
           <datalist id="meetNameOptions"></datalist>
         </div>
-        <div class="field" style="margin:0">
-          <label for="meetDateInput" style="display:block;margin-bottom:6px;font-weight:600;color:var(--text)">Meet date <span style="color:var(--text-muted);font-weight:400">(optional)</span></label>
+        <div class="field axp-field-flush">
+          <label for="meetDateInput" class="axp-label">Meet date <span class="opt">(optional)</span></label>
           <input type="date" id="meetDateInput" class="axp-input"/>
         </div>
-        <div class="field" style="margin:0">
-          <label for="seasonInput" style="display:block;margin-bottom:6px;font-weight:600;color:var(--text)">Season <span style="color:var(--accent)">*</span></label>
+        <div class="field axp-field-flush">
+          <label for="seasonInput" class="axp-label">Season <span class="req">*</span></label>
           <input type="text" id="seasonInput" list="seasonOptions" placeholder="e.g. 2025 Summer" autocomplete="off" class="axp-input"/>
           <datalist id="seasonOptions"></datalist>
         </div>
       </div>
-      <p class="field-hint" style="margin:0 0 16px;font-size:13px;color:var(--text-muted)">
+      <p class="field-hint axp-hint axp-hint-block">
         If the file lists each swimmer's age group (like the Top Times export), anyone new is added to this season's roster automatically as their times import — no separate roster upload needed. A times-only file (just names + times) still only matches swimmers already on the roster. A meet date entered here applies to the whole meet; leave it blank to use the file's own dates.
       </p>
 
@@ -643,7 +751,7 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
         <p>or click to browse · one CSV or Excel (.xlsx, .xls) file</p>
         <input type="file" id="csvFile" accept=".csv,.xlsx,.xls,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"/>
       </label>
-      <div class="upload-status" id="uploadStatus"></div>
+      <div class="upload-status" id="uploadStatus" role="status" aria-live="polite"></div>
 
       <details style="margin-top:20px;color:var(--text-muted);font-size:13px">
         <summary style="cursor:pointer;font-weight:600;color:var(--text)">Results file columns the importer needs</summary>
@@ -661,16 +769,16 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
          remove. Lets a coach undo a single mistaken roster or meet file
          instead of wiping everything. -->
     <div class="card" id="uploadsCard">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap">
+      <div class="axp-card-headrow axp-uploads-head">
         <div>
-          <h2 style="margin:0">Uploaded Files</h2>
-          <p class="lead" style="margin:4px 0 0">Every roster and meet file you've uploaded, grouped by season. Click the trash icon to remove just that file — its swimmers stay, but the times (or roster spots) it added are taken back out, and stats recompute.</p>
+          <h2>Uploaded Files</h2>
+          <p class="lead">Every roster and meet file you've uploaded, grouped by season. Click the trash icon to remove just that file — its swimmers stay, but the times (or roster spots) it added are taken back out, and stats recompute.</p>
         </div>
         <select id="uploadsSeasonFilter" class="lb-select admin-filter" title="Show files for a single season">
           <option value="">All seasons</option>
         </select>
       </div>
-      <div id="uploadsBody" style="margin-top:16px"></div>
+      <div id="uploadsBody" class="axp-uploads-body"></div>
     </div>
 
     <!-- DUPLICATE-TIME CLEANUP — collapse a meet that got uploaded more than
@@ -680,14 +788,14 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
     <div class="card" id="dedupeCard">
       <h2>Clean up duplicate times</h2>
       <p class="lead">If a meet got uploaded more than once, swimmers can end up with the same race logged several times. Pick that meet to keep only the <strong>fastest time per event</strong> (so a swimmer who raced two distances of one stroke keeps both). Preview first — nothing changes until you apply.</p>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:6px">
-        <select id="dedupeMeetSelect" class="lb-select admin-filter" style="flex:1" title="Pick the meet to clean up">
+      <div class="axp-dedupe-row">
+        <select id="dedupeMeetSelect" class="lb-select admin-filter axp-dedupe-select" title="Pick the meet to clean up">
           <option value="">Select a meet…</option>
         </select>
         <button class="btn ghost" id="dedupePreviewBtn" type="button">Preview</button>
         <button class="btn" id="dedupeApplyBtn" type="button" disabled>Remove duplicates</button>
       </div>
-      <div class="upload-status" id="dedupeStatus"></div>
+      <div class="upload-status" id="dedupeStatus" role="status" aria-live="polite"></div>
     </div>
 
     <!-- MANUAL ADD CARD -->
@@ -771,7 +879,7 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
           <button type="submit" class="btn lg" id="mtSubmit">Add time</button>
         </div>
       </form>
-      <div class="upload-status" id="mtStatus" style="margin-top:12px"></div>
+      <div class="upload-status" id="mtStatus" style="margin-top:12px" role="status" aria-live="polite"></div>
     </div>
 
     <!-- ROSTER TABLE -->
@@ -1865,9 +1973,10 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
     const activeFilter = filterSel ? (filterSel.value || '') : '';
 
     if(!cachedUploads.length){
-      body.innerHTML = `<div class="empty" style="padding:28px 16px">
+      body.innerHTML = `<div class="empty">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        <div>No files uploaded yet. Roster and meet files you upload above will appear here so you can remove any single one.</div>
+        <div>No files uploaded yet</div>
+        <div class="axp-empty-sub">Roster and meet files you upload above will appear here, grouped by season — so you can remove any single one.</div>
       </div>`;
       return;
     }
@@ -1884,7 +1993,11 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
       return renderSeasonBlock(season, files);
     }).join('') + (noSeason.length ? renderSeasonBlock('', noSeason) : '');
 
-    body.innerHTML = html || `<div class="empty" style="padding:20px">No files for this season.</div>`;
+    body.innerHTML = html || `<div class="empty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <div>No files for this season</div>
+        <div class="axp-empty-sub">Switch the season filter above, or pick “All seasons”.</div>
+      </div>`;
 
     body.querySelectorAll('button[data-upl]').forEach(b => b.addEventListener('click', async () => {
       // deleteUpload does a non-transactional read-modify-write across the whole
@@ -2170,12 +2283,18 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
 
     const wrap = document.getElementById('rosterWrap');
     if(swimmers.length === 0){
-      const reason = seasonFilter
-        ? `No swimmers on the <strong>${escapeHtml(seasonFilter)}</strong> roster yet. Upload a roster file tagged with "${escapeHtml(seasonFilter)}" — or pick "All seasons" above to see every swimmer ever uploaded.`
-        : 'No swimmers in the roster yet. Upload a roster CSV to get started.';
+      const head = seasonFilter
+        ? `No swimmers on the <strong>${escapeHtml(seasonFilter)}</strong> roster yet`
+        : (filter ? 'No swimmers match your search' : 'No swimmers in the roster yet');
+      const sub = filter && !seasonFilter
+        ? 'Try a different name, parent, email, or group — or clear the search.'
+        : seasonFilter
+        ? `Upload a roster file tagged with “${escapeHtml(seasonFilter)}”, or pick “All seasons” above to see every swimmer ever uploaded.`
+        : 'Upload a roster CSV above to get started.';
       wrap.innerHTML = `<div class="empty">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-        <div>${reason}</div>
+        <div>${head}</div>
+        <div class="axp-empty-sub">${sub}</div>
       </div>`;
       return;
     }
