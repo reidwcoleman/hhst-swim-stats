@@ -642,6 +642,10 @@
       ]);
       loadingEl.style.display = 'none';
       if(!sw){
+        // Hide the hero too — otherwise it sits above the not-found card
+        // stuck on the "Loading…" name and placeholder initials.
+        const hero = document.querySelector('.dash-hero');
+        if(hero) hero.style.display = 'none';
         notFoundEl.style.display = 'block';
         return;
       }

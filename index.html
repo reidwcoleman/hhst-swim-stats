@@ -337,6 +337,8 @@
      styles.css) are retired on this page. ===== */
   .drops .drop{display:none}
   .drops{perspective:900px} /* gives the per-bubble translateZ real depth */
+  /* Off-screen battery saver — JS toggles this when the hero leaves view */
+  .drops.idx-water-paused *{animation-play-state:paused !important}
   .idx-bub-layer{position:absolute;inset:0;will-change:transform;transform-style:preserve-3d}
   .idx-bub{
     position:absolute;bottom:-48px;left:var(--x);
@@ -848,6 +850,20 @@
     spawn(near, small ? 12 : 22, { min:14, max:34, durMin:8,  durMax:14, sway:28, oMin:.34, oRange:.34, blur:false, z:[40,120] });
 
     const hero = document.querySelector('.hero');
+
+    // Battery saver: pause every bubble animation while the hero is scrolled
+    // out of view (or the tab is hidden) — 50-90 infinite blur/3-D animations
+    // are pure waste when the water isn't on screen.
+    if('IntersectionObserver' in window && hero){
+      const io = new IntersectionObserver(([en]) => {
+        host.classList.toggle('idx-water-paused', !en.isIntersecting);
+      }, { threshold: 0 });
+      io.observe(hero);
+    }
+    document.addEventListener('visibilitychange', () => {
+      if(document.hidden) host.classList.add('idx-water-paused');
+      else if(!hero || hero.getBoundingClientRect().bottom > 0) host.classList.remove('idx-water-paused');
+    });
 
     // Bubbles rise the FULL hero height (the rise keyframe reads --heroH),
     // so they always break the surface at the very top of the water.
