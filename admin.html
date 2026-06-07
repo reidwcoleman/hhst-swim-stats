@@ -1095,7 +1095,7 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
   </div>
 </div>
 
-<script src="assets/data.js?v=27"></script>
+<script src="assets/data.js?v=28"></script>
 <script>
   HHST.initTheme();
 
@@ -1541,19 +1541,29 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
         body = `Saved roster for season "${uploadSeason}"`
           + (totals.profileUpdates ? `; updated ${totals.profileUpdates} profile${totals.profileUpdates===1?'':'s'}` : '')
           + (totals.added ? `; added ${totals.added} race${totals.added===1?'':'s'}` : '')
+          + (totals.updated ? `; refreshed ${totals.updated} existing time${totals.updated===1?'':'s'}` : '')
           + '.';
       } else {
-        body = `Added "${meetName}" to season "${uploadSeason}" — ${totals.added} race${totals.added===1?'':'s'} across ${touchedSwimmers} swimmer${touchedSwimmers===1?'':'s'}.`;
+        // Name the scope: a typed meet, or the whole-season file (N meets).
+        const scope = meetName
+          ? `"${meetName}"`
+          : `the season file (${totals.meets} meet${totals.meets===1?'':'s'})`;
+        const parts = [];
+        if(totals.added)   parts.push(`${totals.added} new time${totals.added===1?'':'s'} added`);
+        if(totals.updated) parts.push(`${totals.updated} updated`);
+        body = parts.length
+          ? `Imported ${scope} into season "${uploadSeason}" — ${parts.join(', ')} (no duplicates).`
+          : `Imported ${scope} into season "${uploadSeason}" — already up to date, nothing to add.`;
         if(totals.newSwimmers){
           body += ` Created ${totals.newSwimmers} new swimmer${totals.newSwimmers===1?'':'s'} from the file's roster info (name + age group).`;
         }
         if(prunedNames.length){
           body += ` Removed ${prunedNames.length} orphan swimmer${prunedNames.length===1?'':'s'} (no roster, no times on file).`;
         }
-        // Clear the meet fields only when the upload actually landed races and
+        // Clear the meet fields only when the upload actually changed something and
         // skipped no one — so a coach who uploaded before the roster existed
         // (every swimmer skipped) doesn't have to re-type the name to retry.
-        if(totals.filesOk && !totals.errors.length && totals.added > 0 && !totals.skippedSwimmers.size){
+        if(totals.filesOk && !totals.errors.length && (totals.added > 0 || totals.updated > 0) && !totals.skippedSwimmers.size){
           const nm = document.getElementById('meetNameInput'); if(nm) nm.value = '';
           const dt = document.getElementById('meetDateInput'); if(dt) dt.value = '';
         }
