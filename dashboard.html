@@ -189,6 +189,63 @@
   .dash-cols-rank .stroke-mix{grid-template-columns:1fr;gap:14px}
   .dash-cols-rank .stroke-chart-host{height:190px}
   @media(max-width:960px){.dash-cols-rank{grid-template-columns:1fr}}
+
+  /* ==================== Trophy Case (achievements) ==================== */
+  .badge-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .badge-progress{
+    font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--accent);padding:4px 12px;border-radius:999px;
+    background:rgba(95,169,236,.10);border:1px solid rgba(95,169,236,.26);
+    white-space:nowrap;
+  }
+  .badge-grid{
+    display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));
+    gap:12px;margin-top:6px;
+  }
+  .badge-tile{
+    position:relative;display:flex;flex-direction:column;align-items:center;gap:5px;
+    text-align:center;padding:18px 12px 14px;border-radius:var(--radius-md);
+    border:1px solid var(--border);background:var(--card-grad);
+    transition:transform .22s cubic-bezier(.16,1,.3,1),border-color .22s ease,box-shadow .22s ease;
+  }
+  .badge-tile:hover{transform:translateY(-3px)}
+  .badge-ico{font-size:30px;line-height:1;filter:drop-shadow(0 4px 8px rgba(11,29,58,.25))}
+  .badge-name{font-family:var(--font-display);font-weight:700;font-size:14.5px;color:var(--text);letter-spacing:-.01em}
+  .badge-how{font-size:11.5px;color:var(--text-muted);line-height:1.4;min-height:2.8em;display:flex;align-items:center}
+  .badge-meter{width:100%;height:5px;border-radius:999px;background:var(--bg-alt);
+    border:1px solid var(--border);overflow:hidden;margin-top:2px}
+  .badge-meter i{display:block;height:100%;border-radius:999px;
+    background:linear-gradient(90deg,var(--brand-500,#3a8ce3),var(--ice-400,#45d0e4));
+    transition:width .6s cubic-bezier(.16,1,.3,1)}
+  .badge-state{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-subtle)}
+  /* Earned: golden ring + lifted icon + filled meter */
+  .badge-earned{border-color:rgba(226,172,45,.55);
+    box-shadow:0 6px 18px -10px rgba(226,172,45,.55), inset 0 1px 0 rgba(255,255,255,.06)}
+  .badge-earned .badge-ico{transform:scale(1.08)}
+  .badge-earned .badge-state{color:#c98f0e}
+  .badge-earned .badge-meter i{background:linear-gradient(90deg,#e2ac2d,#c98f0e)}
+  .badge-earned:hover{box-shadow:0 10px 24px -10px rgba(226,172,45,.7)}
+  /* Locked: dimmed, icon desaturated */
+  .badge-locked .badge-ico{filter:grayscale(1) opacity(.45)}
+  .badge-locked .badge-name{color:var(--text-muted)}
+  @media (max-width:480px){
+    .badge-grid{grid-template-columns:repeat(2,1fr);gap:10px}
+    .badge-how{min-height:3.4em}
+  }
+
+  /* ---- Chase chips: best-time barrier + rank ladder ---- */
+  .chip-stat.chip-chase{
+    background:rgba(226,172,45,.12);color:#c98f0e;border:1px solid rgba(226,172,45,.32);
+  }
+  [data-theme="dark"] .chip-stat.chip-chase{color:#efc75e}
+  .rank-chase{
+    display:inline-block;margin-left:8px;font-size:11px;font-weight:700;
+    color:#c98f0e;letter-spacing:.02em;white-space:nowrap;
+  }
+  [data-theme="dark"] .rank-chase{color:#efc75e}
+  .rank-chase-lead{color:var(--green,#0fa171)}
+  [data-theme="dark"] .rank-chase-lead{color:#34c796}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
@@ -387,6 +444,16 @@
       </div>
     </div>
 
+    <!-- TROPHY CASE — achievement badges computed from real race results -->
+    <div class="chart-card" id="badgeCard">
+      <div class="badge-head">
+        <h3>Trophy Case</h3>
+        <span class="badge-progress" id="badgeProgress"></span>
+      </div>
+      <p class="lead">Badges earned from real races. Locked ones show exactly what it takes to earn them — keep swimming.</p>
+      <div class="badge-grid" id="badgeGrid"></div>
+    </div>
+
     <!-- PR SHARE CARD modal (filled by buildShareCard) -->
     <div class="shr-overlay" id="shrOverlay" role="dialog" aria-modal="true" aria-label="Shareable personal-records card" style="display:none">
       <div class="shr-modal">
@@ -505,7 +572,7 @@
   Highcroft Hurricanes Swim Team · <a href="index.html">Back to home</a>
 </footer>
 
-<script src="assets/data.js?v=34"></script>
+<script src="assets/data.js?v=35"></script>
 <script src="assets/training.js?v=3"></script>
 <script>
   HHST.initTheme();
@@ -581,6 +648,12 @@
       return `${m}:${s.padStart(5,'0')}`;
     }
     return sec.toFixed(2) + 's';
+  }
+  // "breaking 30" / "breaking 1:02" — label for the next whole-second barrier.
+  function fmtBarrier(sec){
+    const whole = Math.floor(sec);
+    if(whole < 60) return String(whole);
+    return `${Math.floor(whole/60)}:${String(whole % 60).padStart(2,'0')}`;
   }
   function ordinal(n){
     const s = ['th','st','nd','rd'], v = n % 100;
@@ -710,6 +783,13 @@
           ? `<span class="chip-stat chip-down">−${fmtDrop(b.improvement)}<small>(${b.improvementPct.toFixed(1)}%)</small></span>`
           : (b.count >= 2 ? `<span class="chip-stat chip-flat">Even</span>` : '');
         const prBadge = b.latestIsPR ? `<span class="chip-stat chip-pr">PR · latest</span>` : '';
+        // "So close" chase chip: within three-quarters of a second of breaking
+        // the next whole-second barrier (sub-30, sub-1:02, ...). Pure fun — the
+        // kind of target kids actually chase at practice.
+        const frac = b.seconds - Math.floor(b.seconds);
+        const chaseChip = (b.count >= 2 && frac > 0.005 && frac <= 0.75)
+          ? `<span class="chip-stat chip-chase">${frac.toFixed(2)}s from breaking ${fmtBarrier(b.seconds)}</span>`
+          : '';
         const strokeClass = (b.stroke||'Other').toLowerCase().replace(/\s+/g,'');
         return `
           <button type="button" class="bt-card stroke-${strokeClass}" data-event-idx="${i}">
@@ -724,7 +804,7 @@
             <div class="bt-meta">
               ${b.bestDate ? `<span>Set at ${escapeHtml(b.bestMeet||'')} · ${escapeHtml(fmtDateShort(b.bestDate))}</span>` : ''}
             </div>
-            <div class="bt-chips">${dropChip}${prBadge}</div>
+            <div class="bt-chips">${dropChip}${prBadge}${chaseChip}</div>
           </button>`;
       }).join('');
 
@@ -745,6 +825,9 @@
 
     // Team rankings
     renderRanks(sw);
+
+    // Trophy case
+    renderAchievements();
 
     // Season-over-season progress + record-breaker timeline (deep stats)
     renderSeasonProgress(sw);
@@ -854,9 +937,16 @@
       const badge = r.rank === 1 ? '🥇' : r.rank === 2 ? '🥈' : r.rank === 3 ? '🥉' : '';
       const rankClass = r.rank === 1 ? 'rank-1' : r.rank <= 3 ? 'rank-top3' : r.rank <= Math.max(5, r.total*0.25) ? 'rank-top' : '';
       const pctLabel = r.total > 1 ? `Top ${Math.max(1, Math.round((r.rank / r.total) * 100))}%` : 'Only swimmer';
+      // The chase line turns a static rank into a target: how close the next
+      // place up is — or, for the leader, how big the cushion is.
+      const chase = (r.rank > 1 && r.gapAhead > 0.005)
+        ? `<span class="rank-chase">▲ ${r.gapAhead.toFixed(2)}s to ${ordinal(r.rank - 1)}</span>`
+        : (r.rank === 1 && r.gapBehind > 0.005)
+          ? `<span class="rank-chase rank-chase-lead">leads by ${r.gapBehind.toFixed(2)}s</span>`
+          : '';
       return `
         <div class="rank-row ${rankClass}">
-          <div class="rank-event">${escapeHtml(event)}</div>
+          <div class="rank-event">${escapeHtml(event)}${chase}</div>
           <div class="rank-bar" title="${pctLabel}">
             <div class="rank-bar-fill" style="width:${(pct*100).toFixed(1)}%"></div>
           </div>
@@ -867,6 +957,67 @@
           </div>
         </div>`;
     }).join('');
+  }
+
+  // ============ Trophy Case — achievements from real race results ============
+  // Computed from the same season-scoped stats the rest of the page shows, so
+  // switching seasons re-evaluates the case. Locked badges show live progress.
+  function renderAchievements(){
+    const host = document.getElementById('badgeGrid');
+    const progEl = document.getElementById('badgeProgress');
+    if(!host) return;
+    const isPractice = m => /practice/i.test((m || '').toString());
+    const realResults = (swimmer.results || []).filter(r =>
+      r && !r.timeTrial && !isPractice(r.meet) && (!activeSeason || r.season === activeSeason));
+    const myMeets = new Set(realResults.filter(r => r.meet).map(r => r.meet));
+    let teamMeetCount = 0;
+    try{
+      if(activeSeason) teamMeetCount = (HHST.meetsInSeason(Object.values(allSwimmers), activeSeason) || []).length;
+    }catch(e){ /* badge simply stays locked without team meet data */ }
+    const strokesRaced = new Set(stats.bestTimes.map(b => b.stroke).filter(s =>
+      ['Freestyle','Backstroke','Breaststroke','Butterfly'].includes(s)));
+    const biggestDrop = stats.bestTimes.reduce((m, b) => Math.max(m, b.improvement || 0), 0);
+
+    const BADGES = [
+      { icon:'🌊', name:'First Splash', how:'Race in a real meet',
+        n: Math.min(realResults.length, 1), goal: 1 },
+      { icon:'⚡', name:'PR Machine', how:'Hold 3 personal records at once',
+        n: stats.prCount, goal: 3 },
+      { icon:'🎯', name:'Stroke Collector', how:'Race all four strokes',
+        n: strokesRaced.size, goal: 4 },
+      { icon:'🏅', name:'Podium Regular', how:'Take 3 top-3 finishes',
+        n: stats.podiumCount, goal: 3 },
+      { icon:'🥇', name:'Golden', how:'Win an event',
+        n: stats.gold, goal: 1 },
+      { icon:'💥', name:'Big Drop', how:'Cut 2+ seconds off one event',
+        n: +biggestDrop.toFixed(2), goal: 2, fmt: v => v.toFixed(1) + 's' },
+      { icon:'🛡️', name:'Iron Hurricane', how: activeSeason ? 'Swim every meet this season' : 'Swim every meet of a season',
+        n: teamMeetCount ? Math.min(myMeets.size, teamMeetCount) : 0,
+        goal: teamMeetCount || 1, needsTeam: true, teamReady: teamMeetCount >= 2 },
+      { icon:'⏱️', name:'Time Machine', how:'Drop 10 total seconds',
+        n: +Math.max(0, stats.totalTimeDropSec || 0).toFixed(1), goal: 10, fmt: v => v.toFixed(1) + 's' }
+    ];
+
+    let unlockedCount = 0;
+    host.innerHTML = BADGES.map(b => {
+      const ready = b.needsTeam ? b.teamReady : true;
+      const unlocked = ready && b.n >= b.goal;
+      if(unlocked) unlockedCount++;
+      const fmt = b.fmt || (v => v);
+      const progress = unlocked
+        ? 'Earned'
+        : ready ? `${fmt(Math.min(b.n, b.goal))} / ${fmt(b.goal)}` : '—';
+      const pct = ready ? Math.max(0, Math.min(1, b.n / b.goal)) : 0;
+      return `
+        <div class="badge-tile ${unlocked ? 'badge-earned' : 'badge-locked'}" title="${escapeHtml(b.how)}">
+          <span class="badge-ico" aria-hidden="true">${b.icon}</span>
+          <span class="badge-name">${escapeHtml(b.name)}</span>
+          <span class="badge-how">${escapeHtml(b.how)}</span>
+          <span class="badge-meter" aria-hidden="true"><i style="width:${(pct*100).toFixed(0)}%"></i></span>
+          <span class="badge-state">${progress}</span>
+        </div>`;
+    }).join('');
+    if(progEl) progEl.textContent = `${unlockedCount} of ${BADGES.length} earned`;
   }
 
   let strokeChart;

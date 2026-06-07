@@ -2779,7 +2779,13 @@
       });
       competitors.sort((a,b)=> a.sec - b.sec);
       const idx = competitors.findIndex(c => c.key === sw.key);
-      ranks[event] = { rank: idx + 1, total: competitors.length };
+      ranks[event] = {
+        rank: idx + 1, total: competitors.length, mySec,
+        // Chase data for the dashboard: how far to the swimmer one place up,
+        // and (for the leader) how big the cushion to second place is.
+        gapAhead: idx > 0 ? mySec - competitors[idx - 1].sec : 0,
+        gapBehind: (idx >= 0 && idx < competitors.length - 1) ? competitors[idx + 1].sec - mySec : 0
+      };
     });
     // Build a human label: "Girls 11-12" when we know the gender, else just "11-12".
     const gLabel = genderLabel(myGender);
