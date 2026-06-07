@@ -2336,7 +2336,10 @@
     {
       const meetTs = {}, meetSeasonTag = {};
       results.forEach(r => {
-        if(!r || !r.meet || (r.timeTrial && !includeTimeTrials)) return;
+        // Two REAL meets only: practice / best-times sessions and time trials
+        // never count as one of the two meets (the Time Trial dashboard opts
+        // back in via includeTimeTrials).
+        if(!r || !r.meet || (!includeTimeTrials && (r.timeTrial || isPracticeMeet(r.meet)))) return;
         const ts = parseFlexibleDate(r.date);
         const t = isFinite(ts) ? ts : -Infinity;
         if(meetTs[r.meet] === undefined || t > meetTs[r.meet]) meetTs[r.meet] = t;
@@ -2356,7 +2359,7 @@
           const bestByEvent = meetName => {
             const m = {};
             results.forEach(r => {
-              if(!r || r.meet !== meetName || (r.timeTrial && !includeTimeTrials) || !isFinite(r.seconds)) return;
+              if(!r || r.meet !== meetName || (!includeTimeTrials && (r.timeTrial || isPracticeMeet(r.meet))) || !isFinite(r.seconds)) return;
               const stroke = (r.stroke || extractStroke(r.event) || '').trim();
               if(!stroke) return;                 // unstroked legacy row — can't match
               const dist = (r.distance != null ? String(r.distance) : (extractDistance(r.event) || '')).trim();
