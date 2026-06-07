@@ -2779,44 +2779,26 @@
     const ag = resolveBracket(myInfo);
     const myGender = myInfo.gender || '';
     const inSeason = r => !season || (r && r.season === season);
-    // Times are CAREER BESTS (every real swim on record, any season) — early
-    // in a season the season-best IS just the latest meet's time, which made
-    // ranks look like a "who swam fastest last Saturday" board. PRs are what
-    // families expect a rank to mean. Scope stays season-shaped everywhere
-    // else: the EVENTS listed are the ones swum this season, the bracket and
-    // gender resolve for this season, and only swimmers on this season's
-    // roster are in the comparison set (legacy swimmers with no seasons array
-    // still match).
-    const careerBest = results => {
-      const best = {};
-      (results||[]).forEach(r => {
-        if(!r || !isFinite(r.seconds) || r.timeTrial || isPracticeMeet(r.meet)) return;
-        if(best[r.event] === undefined || r.seconds < best[r.event]) best[r.event] = r.seconds;
-      });
-      return best;
-    };
-    const onRoster = other => {
-      if(!season) return true;
-      const ss = Array.isArray(other.seasons) ? other.seasons : [];
-      return !ss.length || ss.includes(season);
-    };
-    const myBest = careerBest(sw.results);
+    // Times are SEASON BESTS — each swimmer's fastest real swim of the
+    // selected season per event, so the board reflects current-season form.
     const myEvents = {};
     (sw.results||[]).forEach(r => {
-      if(!r || !isFinite(r.seconds) || !inSeason(r) || r.timeTrial || isPracticeMeet(r.meet)) return;
-      if(myBest[r.event] !== undefined) myEvents[r.event] = myBest[r.event];
+      if(!isFinite(r.seconds) || !inSeason(r) || r.timeTrial || isPracticeMeet(r.meet)) return;
+      if(!(r.event in myEvents) || r.seconds < myEvents[r.event]) myEvents[r.event] = r.seconds;
     });
     const ranks = {};
     Object.entries(myEvents).forEach(([event, mySec]) => {
       const competitors = [];
       Object.values(allSwimmers).forEach(other => {
-        if(!onRoster(other)) return;
         const oInfo = swimmerSeasonInfo(other, season);
         if(resolveBracket(oInfo) !== ag) return;
         // Same-gender heat only — skip the other gender when we know ours.
         if(myGender && oInfo.gender && oInfo.gender !== myGender) return;
-        const best = careerBest(other.results)[event];
-        if(best !== undefined) competitors.push({ key: other.key, sec: best });
+        let best = Infinity;
+        (other.results||[]).forEach(r => {
+          if(r.event === event && isFinite(r.seconds) && inSeason(r) && !r.timeTrial && !isPracticeMeet(r.meet) && r.seconds < best) best = r.seconds;
+        });
+        if(isFinite(best)) competitors.push({ key: other.key, sec: best });
       });
       competitors.sort((a,b)=> a.sec - b.sec);
       const idx = competitors.findIndex(c => c.key === sw.key);
