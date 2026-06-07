@@ -3513,7 +3513,7 @@ a.lb-entry-name:hover{color:var(--accent)!important;text-decoration:underline;te
      worst-case board (every name 28+ characters, all ten wrapping) still
      fits the one-page sheet, verified by print-emulation measurement. */
   .award-card .award-name-cell{
-    font-size:25px !important;
+    font-size:30px !important;
     line-height:1.1 !important;
     max-width:none !important;
     white-space:normal !important;
@@ -3535,7 +3535,10 @@ a.lb-entry-name:hover{color:var(--accent)!important;text-decoration:underline;te
   /* The tiny gold '★' beside each #1 medal reads as a stray ink fleck at
      poster size — drop it from print on both poster types. */
   .award-card .award-table tr:first-child .award-rank-cell::before{ display:none !important; }
-  .award-card .award-time-cell{ font-size:32px !important; width:1.3in !important; }
+  .award-card .award-time-cell{ font-size:38px !important; width:1.4in !important; }
+  /* Minute-format times ("1:02.18", 7 glyphs) overflow the cell at 38px —
+     step those down so the longest possible time still fits the column. */
+  .award-card .award-time-cell.t-min{ font-size:33px !important; }
   .award-card .improved-drop{ font-size:26px !important; }
   .improved-events-sub{ font-size:13px !important; margin-top:3px !important; }
   .award-col-empty-msg{ font-size:18px !important; }
@@ -3573,15 +3576,15 @@ a.lb-entry-name:hover{color:var(--accent)!important;text-decoration:underline;te
      height bounded (5 rows × [2-line name + 3 breakdown lines + "+N more"]
      measures ~0.3in under the sheet even with every cap maxed out). */
   .award-card-improved .award-name-cell{
-    font-size:17px !important;
+    font-size:20px !important;
     line-height:1.16 !important;
     white-space:normal !important;
     overflow:visible !important;
     text-overflow:clip !important;
     overflow-wrap:break-word !important;
   }
-  .award-card-improved .award-time-cell{ width:1.15in !important; }
-  .award-card-improved .improved-drop{ font-size:25px !important; }
+  .award-card-improved .award-time-cell{ width:1.35in !important; }
+  .award-card-improved .improved-drop{ font-size:30px !important; }
   /* "total drop" caption under the big green number — small, solid green
      (no opacity: transparency would re-trigger driver rasterization). */
   .improved-drop .drop-cap{
@@ -3619,23 +3622,24 @@ a.lb-entry-name:hover{color:var(--accent)!important;text-decoration:underline;te
   .award-card-improved .award-footer{ padding-top:8px !important; }
 
   /* ---- Long-name tier (both poster types) -----------------------------
-     Markup tags long names with .nm-long (Fastest Five: >22 chars, Most
+     Markup tags long names with .nm-long (Fastest Five: >20 chars, Most
      Improved: >26 — the improved type is smaller so it holds more). Those
      step down one size so TWO clamped lines hold the whole name; everyone
      else keeps the full-size type. Together with the 2-line clamp this is
      what makes 100% print scale safe: short names get maximum type, long
      names shrink instead of growing the row, and only a truly pathological
      name (40+ chars) would ever ellipsize. */
-  .award-card .award-name-cell .poster-name.nm-long{ font-size:21px !important; line-height:1.12 !important; }
-  .award-card-improved .improved-name.nm-long{ font-size:15px !important; }
+  .award-card .award-name-cell .poster-name.nm-long{ font-size:20px !important; line-height:1.12 !important; }
+  .award-card-improved .improved-name.nm-long{ font-size:17px !important; }
   /* Further step-downs for marathon names. Thresholds are set so each
      tier's two clamped lines comfortably hold every name routed to it
-     (FF: ≤20 chars @25px, ≤31 @21px, ≤41 @17px, beyond @14px — verified
-     against 45-character double-barrel names). Real rosters essentially
-     never leave the first two tiers. */
-  .award-card .award-name-cell .poster-name.nm-xlong{ font-size:17px !important; line-height:1.15 !important; }
+     (FF: ≤20 chars @30px, 21-29 @20px, 30-41 @16px, beyond @14px —
+     verified against 45-character double-barrel names with the boundary-
+     length fixture). Real rosters essentially never leave the first
+     two tiers, so almost every name prints at the full 30px. */
+  .award-card .award-name-cell .poster-name.nm-xlong{ font-size:16px !important; line-height:1.15 !important; }
   .award-card .award-name-cell .poster-name.nm-xxl{ font-size:14px !important; line-height:1.18 !important; }
-  .award-card-improved .improved-name.nm-xlong{ font-size:13px !important; }
+  .award-card-improved .improved-name.nm-xlong{ font-size:14px !important; }
   /* ================= PRINT FLATTEN — kill ALL transparency ==============
      Every rgba() color, gradient-with-alpha, opacity and blur on the poster
      becomes a transparency group / soft mask in the printed PDF. Printer
