@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="assets/styles.css?v=26"/>
+<link rel="stylesheet" href="assets/styles.css?v=27"/>
 <style>
   /* ---- Time Trial page-specific styles ---- */
 
@@ -122,6 +122,27 @@
   .tt-secbtn:hover{border-color:var(--accent);color:var(--accent)}
   .tt-secbtn:active{transform:scale(.98)}
   .tt-secbtn:focus-visible{outline:none;box-shadow:0 0 0 3px var(--ring)}
+  /* No tap-delay / double-tap-zoom on the poolside timing controls. */
+  .tt-bigbtn,.tt-secbtn,.tt-undo{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+  /* Skip is a quiet, rare action — kept visually subordinate so a thumb lands on
+     Start, and it needs a 2nd tap (see .armed) to actually mark a DNS. */
+  .tt-skip{background:transparent;border-color:var(--border);color:var(--text-muted);font-weight:600}
+  .tt-skip:hover{border-color:var(--border-strong);color:var(--text)}
+  .tt-skip.armed{background:var(--red);border-color:var(--red);color:#fff;font-weight:800;
+    box-shadow:0 0 0 4px rgba(239,68,68,.18)}
+  .tt-skip.armed:hover{background:var(--red-light);border-color:var(--red-light);color:#fff}
+  /* "Save & next" is inert for a beat right after Stop (anti double-tap). */
+  .tt-save.is-cooldown{opacity:.5;cursor:default;pointer-events:none;box-shadow:none}
+  /* One-tap undo back to the previous swimmer — calm, full-width above the
+     primary buttons so it never competes for the main thumb target. */
+  .tt-undo{flex:1 1 100%;order:-1;display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    margin:0 auto 2px;padding:9px 16px;min-height:42px;border-radius:999px;border:1px solid var(--border);
+    background:var(--bg-alt);color:var(--text-muted);font-family:inherit;font-weight:600;font-size:13px;
+    cursor:pointer;max-width:100%;transition:border-color .18s cubic-bezier(.16,1,.3,1),color .18s cubic-bezier(.16,1,.3,1)}
+  .tt-undo:hover{border-color:var(--accent);color:var(--text)}
+  .tt-undo:focus-visible{outline:none;box-shadow:0 0 0 3px var(--ring)}
+  .tt-undo svg{width:15px;height:15px;flex:none}
+  .tt-undo span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
   /* Done list (timed swimmers) — captured swims echo the green capture state */
   .tt-done{margin-top:24px;margin-bottom:8px;display:flex;flex-direction:column;gap:8px}
@@ -237,6 +258,11 @@
   @media(max-width:560px){
     .tt-controls{flex-direction:column}
     .tt-bigbtn,.tt-secbtn{width:100%;min-width:0}
+    /* In the column cluster, keep undo a normal-height full-width pill (its
+       desktop flex:1 1 100% would otherwise grow it along the vertical axis). */
+    .tt-undo{flex:0 0 auto;width:100%;margin-bottom:6px}
+    /* A clear gap so the rare "Skip" never sits flush against Start. */
+    .tt-skip{margin-top:2px}
     .tt-picker{grid-template-columns:1fr}
     .tt-clock-hint{display:none}
 
@@ -245,8 +271,9 @@
       padding:14px 16px calc(14px + env(safe-area-inset-bottom));
       background:var(--surface-glass);backdrop-filter:saturate(160%) blur(14px);
       -webkit-backdrop-filter:saturate(160%) blur(14px);border-top:1px solid var(--border)}
-    /* Reserve room so the last #ttDone row clears the floating cluster (~96px) */
-    #timeStep .card{padding-bottom:calc(28px + 96px + env(safe-area-inset-bottom))}
+    /* Reserve room so the last #ttDone row clears the floating cluster. Taller
+       now that the cluster can stack Undo + Start + Skip (~165px). */
+    #timeStep .card{padding-bottom:calc(28px + 165px + env(safe-area-inset-bottom))}
 
     /* Step 3 review — render each row as a stacked card (swimmer + event up top, big time input below) */
     #reviewStep table thead{position:absolute;left:-9999px}
@@ -551,6 +578,15 @@
 
   // ---------- Stopwatch ----------
   let swElapsedMs = 0, swStartTs = 0, swRunning = false, rafId = null, swCaptured = false;
+  // Mistake guards for poolside / one-handed use:
+  //  - skipArmed: "Skip (DNS)" needs a 2nd tap to confirm, so a stray tap can't
+  //    silently mark a swimmer as a no-swim.
+  //  - saveCooldown: "Save & next" is briefly inert right after Stop, so a
+  //    reflexive double-tap on the button that just morphed from Stop can't
+  //    advance to the next swimmer before the coach has even read the time.
+  let skipArmed = false, skipArmTimer = null, saveCooldown = false, saveCooldownTimer = null;
+  function disarmSkip(){ skipArmed = false; if(skipArmTimer){ clearTimeout(skipArmTimer); skipArmTimer = null; } }
+  function clearSaveCooldown(){ saveCooldown = false; if(saveCooldownTimer){ clearTimeout(saveCooldownTimer); saveCooldownTimer = null; } }
   function fmtClock(ms){
     const cs = Math.max(0, Math.round(ms/10));   // centiseconds
     const h = cs % 100;
@@ -566,7 +602,12 @@
   function setClockState(s){ const c=$('ttClock'), w=$('ttClockWrap'); c.classList.remove('running','captured'); if(w) w.classList.remove('running','captured'); if(s){ c.classList.add(s); if(w) w.classList.add(s); } }
   function swReset(){ swRunning=false; swElapsedMs=0; swCaptured=false; if(rafId) cancelAnimationFrame(rafId); rafId=null; $('ttClock').textContent='0:00.00'; setClockState(''); }
   function swStart(){ if(swRunning||swCaptured) return; swRunning=true; swStartTs=performance.now(); setClockState('running'); tick(); renderControls(); }
-  function swStop(){ if(!swRunning) return; swElapsedMs += performance.now()-swStartTs; swRunning=false; swCaptured=true; if(rafId) cancelAnimationFrame(rafId); rafId=null; setClockState('captured'); $('ttClock').textContent=fmtClock(swElapsedMs); renderControls(); }
+  function swStop(){ if(!swRunning) return; swElapsedMs += performance.now()-swStartTs; swRunning=false; swCaptured=true; if(rafId) cancelAnimationFrame(rafId); rafId=null; setClockState('captured'); $('ttClock').textContent=fmtClock(swElapsedMs);
+    // Briefly block Save & next so a fast second tap (where Stop just was) can't
+    // skip past the just-recorded time. Clears itself and re-renders.
+    saveCooldown = true; if(saveCooldownTimer) clearTimeout(saveCooldownTimer);
+    saveCooldownTimer = setTimeout(()=>{ saveCooldown = false; saveCooldownTimer = null; if(swCaptured) renderControls(); }, 550);
+    renderControls(); }
 
   // ---------- Init / auth ----------
   HHST.onAuthChanged(async user => {
@@ -706,6 +747,7 @@
 
   function loadCurrent(){
     swReset();
+    disarmSkip(); clearSaveCooldown();   // fresh swimmer — clear any armed/cooldown guard
     if(curIdx >= lineup.length){ buildReview(); gotoStep(3); return; }
     const l = lineup[curIdx];
     $('ttProgress').textContent = `Swimmer ${curIdx+1} of ${lineup.length}`;
@@ -724,26 +766,46 @@
   }
   function strokeShort(s){ return ({Freestyle:'Free',Backstroke:'Back',Breaststroke:'Breast',Butterfly:'Fly',IM:'IM'})[s]||s; }
 
+  const undoIco = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9"/><path d="M3 4v8h8"/></svg>';
   function renderControls(){
     const c = $('ttControls');
-    if(!swCaptured && !swRunning){
-      c.innerHTML = `<button class="tt-bigbtn tt-start" id="cStart">Start</button>
-        <button class="tt-secbtn" id="cSkip">Skip (DNS)</button>`;
-      $('cStart').onclick = swStart;
-      $('cSkip').onclick = skipCurrent;
-    } else if(swRunning){
-      c.innerHTML = `<button class="tt-bigbtn tt-stop" id="cStop">Stop</button>`;
+    // A one-tap "Undo last" so an accidental save/skip is instantly recoverable
+    // (steps back to the previous swimmer to re-time them) — shown once there's
+    // a recorded swimmer behind the current one.
+    const prev = curIdx > 0 ? lineup[curIdx-1] : null;
+    const undoBtn = prev
+      ? `<button class="tt-undo" id="cUndo" type="button">${undoIco}<span>Undo last · ${escapeHtml(prev.name)}</span></button>`
+      : '';
+    if(!swCaptured && !swRunning){            // ready to time
+      c.innerHTML = undoBtn +
+        `<button class="tt-bigbtn tt-start" id="cStart" type="button">Start</button>
+         <button class="tt-secbtn tt-skip${skipArmed?' armed':''}" id="cSkip" type="button">${skipArmed ? 'Tap again to mark DNS' : 'Skip — didn\'t swim'}</button>`;
+      $('cStart').onclick = ()=>{ disarmSkip(); swStart(); };
+      // Two-tap confirm: first tap arms (and times out), second tap commits the DNS.
+      $('cSkip').onclick = ()=>{
+        if(!skipArmed){
+          skipArmed = true; renderControls();
+          skipArmTimer = setTimeout(()=>{ skipArmed = false; if(!swRunning && !swCaptured) renderControls(); }, 3000);
+          return;
+        }
+        disarmSkip(); skipCurrent();
+      };
+    } else if(swRunning){                     // timing
+      c.innerHTML = `<button class="tt-bigbtn tt-stop" id="cStop" type="button">Stop</button>`;
       $('cStop').onclick = swStop;
-    } else { // captured
-      c.innerHTML = `<button class="tt-bigbtn tt-save" id="cSave">Save &amp; next →</button>
-        <button class="tt-secbtn" id="cRedo">Redo</button>`;
+    } else {                                  // captured
+      c.innerHTML = undoBtn +
+        `<button class="tt-bigbtn tt-save${saveCooldown?' is-cooldown':''}" id="cSave" type="button"${saveCooldown?' disabled':''}>Save &amp; next →</button>
+         <button class="tt-secbtn" id="cRedo" type="button">Redo</button>`;
       $('cSave').onclick = saveCurrent;
-      $('cRedo').onclick = ()=>{ swReset(); renderControls(); };
+      $('cRedo').onclick = ()=>{ clearSaveCooldown(); swReset(); renderControls(); };
     }
+    const u = $('cUndo');
+    if(u) u.onclick = ()=>{ disarmSkip(); clearSaveCooldown(); curIdx = Math.max(0, curIdx-1); swReset(); loadCurrent(); };
   }
 
   function saveCurrent(){
-    if(!swCaptured) return;
+    if(!swCaptured || saveCooldown) return;
     const l = lineup[curIdx];
     times[l.key] = { seconds: swElapsedMs/1000, status:'done' };
     curIdx++;
