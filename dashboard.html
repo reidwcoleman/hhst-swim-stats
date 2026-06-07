@@ -994,21 +994,33 @@
     const host = document.getElementById('seasonProg');
     if(!card || !host) return;
     const seasonsNewestFirst = HHST.getAllSeasons([sw]) || [];
-    const byEvent = {};
+    // Group strictly by STROKE + DISTANCE so season-over-season only ever
+    // compares the exact same race. When a swimmer ages up and moves from the
+    // 25 to the 50 (or any distance change), the two seasons land in different
+    // groups and are NOT shown as "progress" — comparing a 25 to a 50 would be
+    // meaningless. Swims whose distance can't be determined are skipped, since
+    // we then can't guarantee it's the same race year to year.
+    const byKey = {};
     (sw.results||[]).forEach(r=>{
       if(!r || !isFinite(r.seconds) || !r.season) return;
-      const ev = r.event;
-      byEvent[ev] = byEvent[ev] || {};
-      const cur = byEvent[ev][r.season];
-      if(!cur || r.seconds < cur.sec) byEvent[ev][r.season] = { sec:r.seconds, time:r.time };
+      const stroke = HHST.extractStroke(r.stroke) || HHST.extractStroke(r.event) || '';
+      const rawDist = (r.distance != null ? String(r.distance) : '').trim() || HHST.extractDistance(r.event) || '';
+      const dist = (rawDist.match(/\d+/) || [''])[0];   // canonical numeric distance
+      if(!stroke || !dist) return;                       // unknown race → can't compare safely
+      const key = stroke + '|' + dist;
+      const slot = byKey[key] || (byKey[key] = { stroke, dist, bySeason:{}, labelBySeason:{} });
+      const cur = slot.bySeason[r.season];
+      if(!cur || r.seconds < cur.sec) slot.bySeason[r.season] = { sec:r.seconds, time:r.time };
+      slot.labelBySeason[r.season] = r.event || (dist + ' ' + stroke);
     });
     const rows = [];
-    Object.entries(byEvent).forEach(([ev, bySeason])=>{
-      const present = seasonsNewestFirst.filter(s=>bySeason[s]);
+    Object.values(byKey).forEach(slot=>{
+      const present = seasonsNewestFirst.filter(s=>slot.bySeason[s]);
       if(present.length < 2) return;
-      const steps = present.slice().reverse().map(s=>({ season:s, sec:bySeason[s].sec, time:bySeason[s].time }));
+      const steps = present.slice().reverse().map(s=>({ season:s, sec:slot.bySeason[s].sec, time:slot.bySeason[s].time }));
       const delta = steps[0].sec - steps[steps.length-1].sec; // oldest − newest (>0 = faster now)
-      rows.push({ event: ev, stroke: HHST.extractStroke(ev), steps, delta });
+      const label = slot.labelBySeason[present[0]] || (slot.dist + ' ' + slot.stroke);
+      rows.push({ event: label, stroke: slot.stroke, steps, delta });
     });
     if(!rows.length){ card.style.display = 'none'; return; }
     rows.sort((a,b)=>HHST.compareEventLabel(a.event, b.event));
