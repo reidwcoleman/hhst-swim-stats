@@ -1003,6 +1003,7 @@
     const byKey = {};
     (sw.results||[]).forEach(r=>{
       if(!r || !isFinite(r.seconds) || !r.season) return;
+      if(r.timeTrial || HHST.isPracticeMeet(r.meet)) return; // real meets only — no practice / time-trial swims
       const stroke = HHST.extractStroke(r.stroke) || HHST.extractStroke(r.event) || '';
       const rawDist = (r.distance != null ? String(r.distance) : '').trim() || HHST.extractDistance(r.event) || '';
       const dist = (rawDist.match(/\d+/) || [''])[0];   // canonical numeric distance

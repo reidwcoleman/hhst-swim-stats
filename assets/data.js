@@ -2644,7 +2644,7 @@
     mapHeader, normHeaderKey,
     fixNameOrder, isValidEmail, ageFromDob,
     normalizeEventLabel,
-    leaderboardsByEvent, mostImprovedAtMeet, meetsInSeason, sortAgeGroups,
+    leaderboardsByEvent, mostImprovedAtMeet, meetsInSeason, isPracticeMeet, sortAgeGroups,
     groupByBracket,
     parseGender, parseGenderFromAgeGroup, genderLabel, competitionGroup,
     swimmerSeasonInfo, mostRecentSeasonOf,
