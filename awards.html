@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="assets/styles.css?v=26"/>
+<link rel="stylesheet" href="assets/styles.css?v=27"/>
 <style>
   /* Hide everything until auth check completes — admins only. */
   body:not(.auth-ready) > *{visibility:hidden}
@@ -707,9 +707,11 @@
             <div class="award-title-rule" aria-hidden="true"></div>
           </div>
         </div>
-        <div class="award-group">${escapeHtml(bracketLabel(bracket))}</div>
-        <div class="award-event">${escapeHtml(eventLabel)}</div>
-        ${targetMeetLabel ? `<div class="award-event award-event-meet">${targetMeetLabel}</div>` : ''}
+        <div class="award-headline">
+          <span class="award-group">${escapeHtml(bracketLabel(bracket))}</span>
+          <span class="award-event">${escapeHtml(eventLabel)}</span>
+          ${targetMeetLabel ? `<span class="award-event award-event-meet">${targetMeetLabel}</span>` : ''}
+        </div>
         ${inner}
         <div class="award-footer">
           <span class="award-team">Hurricanes Swim Team</span>
@@ -766,7 +768,7 @@
       return `<tr>
         <td class="award-rank-cell">${rankCell}</td>
         <td class="award-name-cell">${escapeHtml(displayName(e))}</td>
-        <td class="award-time-cell">${escapeHtml(e.time)}</td>
+        <td class="award-time-cell">${escapeHtml(prettyTime(e.time))}</td>
       </tr>`;
     }).join('');
     const filler = Array.from({length: Math.max(0, 5 - entries.length)}, (_,i) => `
@@ -938,8 +940,10 @@
             <div class="award-title-rule award-title-rule-green" aria-hidden="true"></div>
           </div>
         </div>
-        <div class="award-group">${escapeHtml(bracketLabel(bracket))}</div>
-        <div class="award-event award-event-improved">${escapeHtml(meet)}${date ? ' · ' + escapeHtml(fmtMeetDate(date)) : ''}</div>
+        <div class="award-headline">
+          <span class="award-group">${escapeHtml(bracketLabel(bracket))}</span>
+          <span class="award-event award-event-improved">${escapeHtml(meet)}${date ? ' · ' + escapeHtml(fmtMeetDate(date)) : ''}</span>
+        </div>
         ${inner}
         <div class="award-footer">
           <span class="award-team">Hurricanes Swim Team</span>

@@ -3430,20 +3430,20 @@ a.lb-entry-name:hover{color:var(--accent)!important;text-decoration:underline;te
      and the name size is tuned so a typical "First Last" fits without ellipsis
      (only a genuinely huge name clips, inside its fixed cell). */
   .award-card .award-table{ table-layout:fixed !important; }
-  .award-card .award-table td{ padding:13px 6px !important; }
-  .award-rank-cell{ width:48px !important; }
-  .award-rank{ width:40px !important; height:40px !important; font-size:20px !important; }
-  .award-medal{ width:42px !important; height:42px !important; font-size:21px !important; }
+  .award-card .award-table td{ padding:13px 5px !important; }
+  .award-rank-cell{ width:44px !important; }
+  .award-rank{ width:38px !important; height:38px !important; font-size:19px !important; }
+  .award-medal{ width:40px !important; height:40px !important; font-size:20px !important; }
   .award-card .award-name-cell{
-    font-size:29px !important;
+    font-size:27px !important;
     line-height:1.15 !important;
     max-width:none !important;
     white-space:nowrap !important;
     overflow:hidden !important;
     text-overflow:ellipsis !important;
   }
-  .award-card .award-time-cell{ font-size:30px !important; width:1.35in !important; }
-  .award-card .improved-drop{ font-size:29px !important; }
+  .award-card .award-time-cell{ font-size:27px !important; width:1.05in !important; }
+  .award-card .improved-drop{ font-size:26px !important; }
   .improved-events-sub{ font-size:13px !important; margin-top:3px !important; }
   .award-col-empty-msg{ font-size:18px !important; }
   .award-footer{ font-size:14px !important; padding-top:14px !important; }
