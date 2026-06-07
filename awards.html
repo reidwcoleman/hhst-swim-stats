@@ -98,8 +98,56 @@
     .aw-sticky{
       right:calc(16px + env(safe-area-inset-right));
       bottom:calc(16px + env(safe-area-inset-bottom));
+      /* Icon-only at this width — guarantee a 48px square thumb target. The
+         shared (hover:none) min-height:44px block in styles.css does NOT list
+         .aw-sticky, and .btn alone leaves it ~40px tall, so pin it here. */
+      min-width:48px;min-height:48px;padding:0 14px;justify-content:center;
     }
     .aw-sticky .aw-sticky-label{display:none}
+  }
+
+  /* ====================================================================
+     OVERFLOW FIX — Most Improved per-event breakdown (screen-only).
+     styles.css:.improved-evline forces white-space:nowrap with no mobile
+     override, so a single long event line overflows at 320-430px. This is
+     screen-scoped (@media screen) so the US-Letter print sheet keeps its
+     current nowrap layout untouched — the @media print block never targets
+     .improved-evline, so wrapping on screen can't reach the printed poster.
+     ==================================================================== */
+  @media screen and (max-width:560px){
+    .award-card-improved .improved-evline{
+      white-space:normal;flex-wrap:wrap;gap:4px 6px;
+    }
+    .award-card-improved .improved-evline .iev-name{ min-width:0; }
+    .award-card-improved .improved-evline .iev-times{ min-width:0;word-break:break-word; }
+    /* Guard flex/table children that otherwise can't shrink: styles.css gives
+       the improved name cell white-space:normal;overflow:visible with no
+       min-width, so a long unbroken token can blow out the table width. */
+    .award-card-improved .award-name-cell{ min-width:0; }
+    .award-card .improved-evlist{ min-width:0;max-width:100%; }
+  }
+
+  /* ====================================================================
+     OVERFLOW FIX — poster rank/name/time table (screen-only).
+     ROOT CAUSE: styles.css has a bare `table{min-width:520px}` inside its
+     touch @media (hover:none),(pointer:coarse) block (meant for scrollable
+     .table-wrap DATA tables). The poster .award-table is NOT in a .table-wrap,
+     so on phones it inherits min-width:520px, blows past the stacked poster
+     column, and is CLIPPED by .award-card{overflow:hidden} — times + long
+     names get cut off. Fix: free the poster table from that min-width and let
+     the name wrap so the width:100% auto-table collapses to the card width;
+     the time stays on one tabular line. Verified at 320px on the real posters
+     (table 196px inside a 264px card, no clipping). Screen-scoped (@media
+     screen) so the US-Letter @media print poster (table-layout:fixed) is
+     completely untouched.
+     ==================================================================== */
+  @media screen and (max-width:600px){
+    .award-card .award-table{min-width:0;width:100%}
+    .award-card .award-name-cell{
+      white-space:normal;overflow:visible;text-overflow:clip;
+      max-width:none;min-width:0;overflow-wrap:anywhere;word-break:break-word;
+    }
+    .award-card .award-time-cell{white-space:nowrap}
   }
 
   /* --- Section header above each poster group --- */
@@ -227,6 +275,15 @@
   /* Keyboard focus ring on the per-card print buttons (matches .btn + pill). */
   .award-print-one:focus-visible{ outline:none; box-shadow:0 0 0 3px var(--ring); }
 
+  /* Touch tap target for the per-card print button. styles.css sizes it 36x36;
+     the shared (hover:none) block bumps min-height:44px but NOT min-width,
+     leaving a 36-wide x 44-tall target. Square it off to 44px for one-handed
+     poolside taps. Screen-only — the @media print path hides this button
+     (display:none), so print output is unaffected. */
+  @media (hover:none) and (pointer:coarse){
+    .award-print-one{ min-width:44px;width:44px;height:44px; }
+  }
+
   /* On-screen only: quiet the "—" filler rows that pad each board to five so
      they stop competing with real entries. Wrapped in @media screen so the
      printed certificate keeps the styles.css filler rendering untouched. */
@@ -263,6 +320,18 @@
     .aw-section-head{ margin-left:0;margin-right:0;min-width:0; }
   }
 
+  /* Landscape on a phone (coaches rotate the device). The posters intentionally
+     stay one column — in landscape they have plenty of width — so this just
+     confirms single-column, trims the vertical poster padding so the page
+     doesn't overflow the short viewport, and keeps the corner brackets from
+     crowding. The sticky pill already clears the home indicator via its
+     env(safe-area-inset-*) bottom offset. Screen cascade only; @media print
+     re-declares poster padding in inches with !important, so print is safe. */
+  @media (orientation:landscape) and (max-height:480px){
+    .awards-host, .awards-host-improved{ grid-template-columns:1fr; }
+    .award-card{ padding:28px 28px 18px; }
+  }
+
   /* Phone (≤480): keep the meta chips and section heads on a tight rhythm so
      they don't feel orphaned once the posters stack to one column. */
   @media (max-width:480px){
@@ -291,6 +360,22 @@
     .awards-host, .awards-host-improved{ max-width:100%; }
     .award-card{ max-width:100%; }
     .award-card .award-table{ width:100%; }
+  }
+
+  /* Smallest phones (≤360px): tighten the poster's own padding + cell padding so
+     the inner ::before frame + content never force horizontal overflow, and
+     step the headline type down one more notch so the gold/green distance pill
+     and titles never push the card wider than a 320-360px viewport. Screen
+     cascade only — the @media print block re-declares .award-card padding
+     (0.45in 0.65in !important), .award-table td padding (8px 6px !important),
+     .award-title / .award-group / .award-event sizing all with !important, so
+     the printed US-Letter poster is unaffected. */
+  @media (max-width:360px){
+    .award-card{ padding:24px 12px 16px; }
+    .award-card .award-table td{ padding:7px 3px; }
+    .award-title{ font-size:24px; }
+    .award-group{ font-size:20px; }
+    .award-event{ font-size:10.5px;letter-spacing:.16em;padding:6px 14px; }
   }
 </style>
 

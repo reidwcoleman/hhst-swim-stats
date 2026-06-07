@@ -87,35 +87,44 @@
 
   /* Timing stage */
   .tt-stage{text-align:center;padding:8px 0 4px}
-  .tt-progress{font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted)}
-  .tt-current{font-family:'Fraunces',serif;font-weight:800;font-size:clamp(28px,6vw,46px);letter-spacing:-.02em;
+  /* #ttProgress reads as a live "NOW TIMING" status label */
+  .tt-progress{font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+  .tt-current{font-family:'Fraunces',serif;font-weight:800;font-size:clamp(26px,6vw,42px);letter-spacing:-.02em;
     color:var(--text);margin:6px 0 2px;line-height:1.05}
   .tt-current-sub{font-size:15px;color:var(--text-muted);margin-bottom:18px}
-  .tt-clock{font-family:'Inter',sans-serif;font-variant-numeric:tabular-nums;font-weight:800;
-    font-size:clamp(56px,16vw,128px);line-height:1;letter-spacing:-.02em;color:var(--text);
+  /* The hero clock — dominant, tabular, with three distinct color states (idle/running/captured) */
+  .tt-clock{font-family:'Inter',sans-serif;font-variant-numeric:tabular-nums;font-feature-settings:'tnum' 1;font-weight:800;
+    font-size:clamp(64px,18vw,148px);line-height:1;letter-spacing:-.02em;color:var(--text-muted);
     margin:6px 0 4px;transition:color .18s cubic-bezier(.16,1,.3,1)}
   .tt-clock.running{color:var(--accent)}
+  @media (prefers-reduced-motion:no-preference){
+    .tt-clock.running{text-shadow:0 1px 0 rgba(96,165,250,.35)}
+  }
   .tt-clock-hint{font-size:13px;color:var(--text-muted);margin-bottom:20px;line-height:1.7}
   .tt-controls{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:8px}
-  .tt-bigbtn{padding:18px 34px;border-radius:var(--radius);border:none;font-family:inherit;font-weight:800;font-size:18px;
-    cursor:pointer;transition:transform .18s cubic-bezier(.16,1,.3,1),box-shadow .18s cubic-bezier(.16,1,.3,1),background .18s cubic-bezier(.16,1,.3,1);min-width:170px}
-  .tt-bigbtn:active{transform:scale(.98)}
+  /* Primary timing button (cStart/cStop/cSave) — huge, thumb-reachable, built on the .btn system */
+  .tt-bigbtn{min-height:64px;padding:18px 34px;border-radius:var(--radius);border:none;font-family:inherit;font-weight:800;font-size:18px;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+    transition:transform .18s cubic-bezier(.16,1,.3,1),box-shadow .18s cubic-bezier(.16,1,.3,1),background .18s cubic-bezier(.16,1,.3,1);min-width:170px}
+  .tt-bigbtn:active{transform:translateY(0) scale(.98);box-shadow:none}
   .tt-bigbtn:focus-visible{outline:none;box-shadow:0 0 0 3px var(--ring)}
-  .tt-start{background:var(--green);color:#fff}
+  .tt-start{background:var(--green);color:#fff;box-shadow:var(--shadow-md)}
   .tt-start:hover{background:var(--green-light)}
-  .tt-stop{background:var(--red);color:#fff}
+  .tt-stop{background:var(--red);color:#fff;box-shadow:var(--shadow-md)}
   .tt-stop:hover{background:var(--red-light)}
-  .tt-save{background:var(--accent);color:var(--accent-contrast)}
+  .tt-save{background:var(--accent);color:var(--accent-contrast);box-shadow:var(--shadow-md)}
   .tt-save:hover{background:var(--accent-hover)}
-  .tt-secbtn{padding:18px 22px;border-radius:var(--radius);border:1px solid var(--border-strong);background:var(--surface);
+  /* Secondary timing controls (cSkip/cRedo, finishBtn, backToTimeBtn) — comfortably tappable, visually subordinate */
+  .tt-secbtn{min-height:52px;padding:16px 22px;border-radius:var(--radius);border:1px solid var(--border-strong);background:var(--surface);
     color:var(--text);font-family:inherit;font-weight:700;font-size:15px;cursor:pointer;min-width:120px;
+    display:inline-flex;align-items:center;justify-content:center;
     transition:transform .18s cubic-bezier(.16,1,.3,1),border-color .18s cubic-bezier(.16,1,.3,1),color .18s cubic-bezier(.16,1,.3,1),box-shadow .18s cubic-bezier(.16,1,.3,1)}
   .tt-secbtn:hover{border-color:var(--accent);color:var(--accent)}
   .tt-secbtn:active{transform:scale(.98)}
   .tt-secbtn:focus-visible{outline:none;box-shadow:0 0 0 3px var(--ring)}
 
   /* Done list (timed swimmers) — captured swims echo the green capture state */
-  .tt-done{margin-top:24px;display:flex;flex-direction:column;gap:8px}
+  .tt-done{margin-top:24px;margin-bottom:8px;display:flex;flex-direction:column;gap:8px}
   .tt-done-head{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);
     margin:0 0 2px 2px}
   .tt-done-row{display:grid;grid-template-columns:26px 1fr auto auto;gap:12px;align-items:center;padding:10px 14px;
@@ -157,23 +166,25 @@
   .tt-pbar-label .ev{color:var(--accent)}
 
   /* Big lane number for the current swimmer */
-  .tt-bignum{width:50px;height:50px;border-radius:var(--radius);background:var(--accent);color:var(--accent-contrast);
-    font-weight:800;font-size:23px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:12px;
+  .tt-bignum{width:54px;height:54px;border-radius:var(--radius);background:var(--accent);color:var(--accent-contrast);
+    font-weight:800;font-size:24px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:12px;
     font-variant-numeric:tabular-nums;box-shadow:var(--shadow-md)}
 
   /* Clock panel with state-based framing */
-  .tt-clockwrap{display:flex;flex-direction:column;align-items:center;gap:6px;padding:24px 18px 16px;border-radius:var(--radius-md);
-    background:var(--bg-alt);border:1px solid var(--border);margin:6px auto 4px;max-width:540px;
+  .tt-clockwrap{display:flex;flex-direction:column;align-items:center;gap:6px;padding:24px 18px 16px;border-radius:var(--radius-lg);
+    background:var(--bg-alt);border:1px solid var(--border);margin:6px auto 4px;max-width:560px;
     transition:border-color .22s cubic-bezier(.16,1,.3,1),box-shadow .22s cubic-bezier(.16,1,.3,1),background .22s cubic-bezier(.16,1,.3,1)}
-  .tt-clockwrap.running{border-color:var(--accent);box-shadow:0 0 0 4px var(--ring)}
-  .tt-clockwrap.captured{border-color:rgba(16,185,129,.5);box-shadow:0 0 0 4px rgba(16,185,129,.10)}
+  .tt-clockwrap.running{border-color:var(--accent);box-shadow:0 0 0 5px var(--ring),0 0 36px -10px var(--accent)}
+  .tt-clockwrap.captured{border-color:rgba(16,185,129,.5);box-shadow:0 0 0 5px rgba(16,185,129,.16),0 0 30px -12px rgba(16,185,129,.4)}
   .tt-clock.captured{color:var(--green)}
   [data-theme="light"] .tt-clock.captured{color:#047857}
 
-  /* Next-up preview */
-  .tt-nextup{margin-top:18px;font-size:13px;font-weight:600;letter-spacing:.02em;color:var(--text-muted)}
+  /* Next-up preview — a discrete chip-like element */
+  .tt-nextup{margin-top:16px;padding:10px 14px;border:1px dashed var(--border-strong);border-radius:var(--radius-md);
+    background:var(--bg-alt);display:inline-block;font-size:13px;font-weight:600;letter-spacing:.02em;color:var(--text-muted)}
   .tt-nextup strong{color:var(--text);font-weight:700}
   .tt-nextup.last{color:var(--text-subtle);font-weight:600}
+  .tt-nextup:empty{display:none}
 
   /* Review summary strip */
   .tt-summary{display:flex;gap:18px 26px;flex-wrap:wrap;padding:18px 20px;border-radius:var(--radius-md);background:var(--bg-alt);
@@ -215,9 +226,11 @@
     padding-bottom:calc(64px + env(safe-area-inset-bottom));
   }
 
-  /* Touch devices: enforce comfortable tap targets */
+  /* Touch devices: enforce comfortable tap targets (primary timing buttons exceed this on their own) */
   @media (hover:none) and (pointer:coarse){
-    .tt-iconbtn,.tt-choice,.tt-step-pill,.tt-time-input{min-width:44px;min-height:44px}
+    .tt-iconbtn,.tt-choice,.tt-step-pill{min-width:44px;min-height:44px}
+    .tt-time-input,.tt-search input,.tt-field input,.tt-field select{min-height:44px}
+    .tt-secbtn{min-height:52px}
   }
 
   /* Mobile: full-width tactile controls, single-column picker */
@@ -226,8 +239,40 @@
     .tt-bigbtn,.tt-secbtn{width:100%;min-width:0}
     .tt-picker{grid-template-columns:1fr}
     .tt-clock-hint{display:none}
-    /* Bottom action clusters clear the home indicator */
-    .tt-controls,.tt-review-actions{padding-bottom:env(safe-area-inset-bottom)}
+
+    /* Sticky bottom timing cluster — spans the card edge-to-edge, sits in the safe area */
+    #ttControls{position:sticky;bottom:0;z-index:20;margin:16px -16px 0;
+      padding:14px 16px calc(14px + env(safe-area-inset-bottom));
+      background:var(--surface-glass);backdrop-filter:saturate(160%) blur(14px);
+      -webkit-backdrop-filter:saturate(160%) blur(14px);border-top:1px solid var(--border)}
+    /* Reserve room so the last #ttDone row clears the floating cluster (~96px) */
+    #timeStep .card{padding-bottom:calc(28px + 96px + env(safe-area-inset-bottom))}
+
+    /* Step 3 review — render each row as a stacked card (swimmer + event up top, big time input below) */
+    #reviewStep table thead{position:absolute;left:-9999px}
+    #reviewStep table,#reviewStep tbody{display:block;width:100%}
+    #reviewStep .tt-review-row{display:block;border:1px solid var(--border);border-radius:var(--radius-md);
+      background:var(--surface);margin-bottom:12px;padding:14px}
+    #reviewStep .tt-review-row td{display:block;border:none;padding:0}
+    /* Fold #/Swimmer/Event into one header line; the time-input cell goes full-width below */
+    #reviewStep .tt-review-row td:nth-child(1){display:inline;font-weight:800;color:var(--accent);margin-right:8px}
+    #reviewStep .tt-review-row td:nth-child(1)::after{content:"·";color:var(--text-subtle);margin-left:8px}
+    #reviewStep .tt-review-row td:nth-child(2){display:inline;font-weight:700;color:var(--text);font-size:16px}
+    #reviewStep .tt-review-row td:nth-child(3){display:block;color:var(--text-muted);font-size:12px;font-weight:700;
+      letter-spacing:.05em;text-transform:uppercase;margin:4px 0 10px}
+    #reviewStep .tt-review-row td:nth-child(4) .tt-time-input{width:100%;min-width:0;box-sizing:border-box}
+
+    /* Sticky "Save all" cluster — Save on top (thumb-nearest), Back below */
+    .tt-review-actions{position:sticky;bottom:0;z-index:20;flex-direction:column-reverse;
+      margin:16px -16px 0;padding:14px 16px calc(14px + env(safe-area-inset-bottom));
+      background:var(--surface-glass);backdrop-filter:saturate(160%) blur(14px);
+      -webkit-backdrop-filter:saturate(160%) blur(14px);border-top:1px solid var(--border)}
+    .tt-review-actions #saveAllBtn{flex:0 0 auto;min-width:0;min-height:60px}
+    .tt-review-actions #backToTimeBtn{min-width:0}
+
+    /* Setup: keep "Start timing" reachable while scrolling the roster */
+    #setupStep .card{padding-bottom:calc(28px + env(safe-area-inset-bottom))}
+    #startBtn{position:sticky;bottom:0;z-index:15;margin-top:18px;min-height:60px}
   }
 
   /* Phone-specific layout fixes (<=480px) */
@@ -240,20 +285,26 @@
     /* Config: single column already via auto-fit; ensure full-width fields */
     .tt-grid{grid-template-columns:1fr;gap:16px}
 
-    /* Stroke / distance choice buttons stretch nicely, custom dist full width */
-    .tt-choice{flex:1 1 auto;text-align:center;padding:11px 12px}
+    /* Stroke / distance choice buttons stretch nicely, custom dist full width — bigger one-handed taps */
+    .tt-choice{flex:1 1 auto;text-align:center;padding:12px 12px;min-height:48px;font-size:15px}
     #cfgDistCustom{flex:1 1 100%;width:100% !important}
 
-    /* Clock panel: trim padding so it fits narrow screens */
+    /* Clock panel: trim padding so it fits narrow screens, clock still dominates */
     .tt-clockwrap{padding:18px 12px 14px;margin-left:0;margin-right:0}
+    .tt-clock{font-size:clamp(48px,16vw,80px)}
     .tt-current{font-size:clamp(22px,7vw,34px)}
+    .tt-bignum{width:48px;height:48px;font-size:22px}
+
+    /* Primary timing button: even bigger text for poolside glance + tap */
+    .tt-bigbtn{font-size:20px}
 
     /* Done rows: keep tight, allow name to truncate */
     .tt-done-row{grid-template-columns:24px 1fr auto auto;gap:8px;padding:9px 11px}
     .tt-done-row .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
-    /* Lineup/roster rows: smaller controls, no overflow */
+    /* Lineup/roster rows: smaller controls, no overflow; bump icon buttons for easy hits */
     .tt-row{padding:9px 10px;gap:8px}
+    .tt-iconbtn{width:40px;height:40px}
 
     /* Review summary: wrap to a 2-up grid, drop dividers, smaller gap */
     .tt-summary{display:grid;grid-template-columns:1fr 1fr;gap:14px 18px;padding:14px 16px}
@@ -261,14 +312,36 @@
     .tt-summary .s-item::before{display:none}
     .tt-summary .s-val{font-size:18px}
 
-    /* Review time input: don't force a wide fixed width */
-    .tt-time-input{width:100%;min-width:0;box-sizing:border-box}
+    /* Review time input: full-width, big and tappable (>=16px keeps iOS from zooming) */
+    .tt-time-input{width:100%;min-width:0;box-sizing:border-box;min-height:56px;font-size:18px}
 
     /* Info note: a touch less padding */
     .tt-note{padding:13px 14px;font-size:14px}
 
     /* Hero copy a little tighter */
     .tt-hero p{font-size:15px}
+  }
+
+  /* Landscape stopwatch — coaches rotate the phone; the clock gets BIGGER (sized off vh).
+     Clock fills the wide left column (spans every row); identity + controls stack on the right. */
+  @media (orientation:landscape) and (max-height:480px){
+    #timeStep .card{padding:16px;padding-bottom:16px}
+    .tt-stage{display:grid;grid-template-columns:1.15fr .85fr;column-gap:20px;row-gap:6px;
+      grid-auto-rows:min-content;align-content:center;text-align:left}
+    /* Clock pinned to the left column across all stage rows */
+    #ttClockWrap{max-width:none;grid-column:1;grid-row:1 / -1;margin:0;align-self:center}
+    .tt-clock{font-size:clamp(72px,22vh,140px)}
+    .tt-clock-hint{display:none}
+    /* Right column: lane, swimmer, sub, controls, next-up — explicit column keeps order tidy */
+    #ttLaneNum,#ttCurrent,#ttCurrentSub,#ttControls,#ttNextUp{grid-column:2;justify-self:start;text-align:left}
+    .tt-bignum{margin-bottom:6px}
+    .tt-current{font-size:clamp(20px,4.5vh,30px)}
+    .tt-current-sub{margin-bottom:8px}
+    #ttControls{position:static;margin:8px 0 0;padding:0;width:100%;background:none;border:none;
+      backdrop-filter:none;-webkit-backdrop-filter:none}
+    #ttNextUp{margin-top:10px}
+    /* Done list flows below the stage; cap its height so the stage stays visible */
+    #ttDone{max-height:30vh;overflow-y:auto}
   }
 
   /* Extra-small phones (<=360px) */
@@ -283,8 +356,9 @@
   @media (prefers-reduced-motion:reduce){
     .tt-spinner{animation-duration:.001ms!important;animation-iteration-count:1!important}
     #setupStep,#timeStep,#reviewStep{animation:none!important}
-    .tt-choice,.tt-bigbtn,.tt-secbtn,.tt-step-pill,.tt-iconbtn,.tt-row,.tt-done-row,.tt-clockwrap,.tt-clock{transition-duration:.001ms!important}
-    .tt-choice:hover,.tt-bigbtn:active,.tt-secbtn:active{transform:none!important}
+    .tt-choice,.tt-bigbtn,.tt-secbtn,.tt-step-pill,.tt-iconbtn,.tt-row,.tt-done-row,.tt-clockwrap,.tt-clock,
+    .tt-field input,.tt-field select,.tt-search input,.tt-time-input,.tt-pbar-fill{transition-duration:.001ms!important}
+    .tt-choice:hover,.tt-bigbtn:active,.tt-secbtn:active,.tt-choice:active{transform:none!important}
   }
 </style>
 

@@ -2596,6 +2596,49 @@ details[open].collapsible-card > summary{
   }
 }
 
+/* =============================================================
+   SHARED CROSS-PAGE PRIMITIVES
+   Two genuinely cross-page utilities promoted from per-component
+   inline CSS. Everything else (button skins, setup pills, review
+   cards, .aw-sticky, mobile .award-card) stays page-scoped.
+   These are plain screen rules (no !important) so the @media print
+   block further down still wins for poster output.
+   ============================================================= */
+
+/* Tabular figures — canonical helper so digit columns (live clock,
+   captured times, progress counts, award times, the stopwatch) stay
+   rock-steady instead of repeating the declaration per component.
+   Page-scoped time elements may still set the property directly. */
+.tnum{font-variant-numeric:tabular-nums}
+
+/* Landscape timing stage — when a coach rotates the phone to a short,
+   wide viewport, let the running clock dominate the width. A page opts
+   in by adding .tt-landscape-stage to the timing-stage wrapper; the
+   live clock inside reads --tt-clock-size. Shared so any future timing
+   surface gets the same behaviour instead of re-implementing it.
+   Reuses existing tokens only (--tt-clock-size is a local sizing var,
+   not a new design token). Reduced-motion is already handled globally. */
+@media (orientation:landscape) and (max-height:480px){
+  .tt-landscape-stage{
+    /* Enlarged clock vs portrait — clamp scaled up so digits read across
+       the room. Consumers apply this to the clock via font-size. */
+    --tt-clock-size:clamp(64px,16vw,128px);
+    display:grid;
+    grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);
+    align-items:center;
+    gap:clamp(12px,3vw,28px);
+    /* Trim vertical chrome so the two-column stage fits a short viewport. */
+    padding:8px max(12px,env(safe-area-inset-right)) 8px max(12px,env(safe-area-inset-left));
+  }
+  /* now-timing card sits in the first column, the big clock in the second. */
+  .tt-landscape-stage > .tt-clock,
+  .tt-landscape-stage .tt-clock{
+    font-size:var(--tt-clock-size);
+    line-height:1;
+    font-variant-numeric:tabular-nums;
+  }
+}
+
 /* Generic table cells: allow word-break for non-roster tables that might
    have long content. The polished .roster-table sets its own white-space
    rules and wins via more-specific selectors. */
