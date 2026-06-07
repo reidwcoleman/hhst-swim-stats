@@ -122,9 +122,12 @@
     const out = [['first','last','gender','event','distance','time','place','date','meet']];
     let meetName = '', meetDate = '';
     const swimmers = {};        // swimmerCode -> { first, last, gender }
-    let cur = null;             // { code, distance, stroke, final, fallback }
+    let cur = null;             // { code, distance, stroke, final, fallback, dq }
+    // Prefer a real swim (final, then prelim/swim-off) over a DQ — a swimmer
+    // who has any clock time for an entry isn't counted as a DQ. The DQ row is
+    // only emitted when the entry has NO valid time at all.
     const flush = () => {
-      if(cur){ const row = cur.final || cur.fallback; if(row) out.push(row); cur = null; }
+      if(cur){ const row = cur.final || cur.fallback || cur.dq; if(row) out.push(row); cur = null; }
     };
     for(const line of lines){
       const rec = line.slice(0, 2);
@@ -136,17 +139,24 @@
         swimmers[fw(line, 4, 5)] = { gender: fw(line, 3, 1), last: fw(line, 9, 20), first: fw(line, 29, 20) };
       } else if(rec === 'E1'){
         flush();
-        cur = { code: fw(line, 4, 5), distance: fw(line, 16, 6), stroke: HYTEK_STROKE[fw(line, 22, 1)] || '', final: null, fallback: null };
-      } else if(rec === 'E2' && cur){
+        cur = { code: fw(line, 4, 5), distance: fw(line, 16, 6), stroke: HYTEK_STROKE[fw(line, 22, 1)] || '', final: null, fallback: null, dq: null };
+      } else if(rec === 'E2' && cur && cur.distance && cur.stroke){
         const type = fw(line, 3, 1);                 // F = final, P = prelim, S = swim-off
         const rawTime = fw(line, 4, 8);
-        if(timeToSeconds(rawTime) > 0 && cur.distance && cur.stroke){   // skip NT/DQ/0.00
-          const sw = swimmers[cur.code] || {};
-          const row = [ sw.first || '', sw.last || '', sw.gender || '',
-            `${cur.distance} ${cur.stroke}`, cur.distance, rawTime, fw(line, 30, 4),
-            mdyToDate(fw(line, 88, 8)) || meetDate, meetName ];
+        const sw = swimmers[cur.code] || {};
+        const mk = (t, place) => [ sw.first || '', sw.last || '', sw.gender || '',
+          `${cur.distance} ${cur.stroke}`, cur.distance, t, place,
+          mdyToDate(fw(line, 88, 8)) || meetDate, meetName ];
+        if(timeToSeconds(rawTime) > 0){
+          const row = mk(rawTime, fw(line, 30, 4));
           if(type === 'F') cur.final = row;
           else if(!cur.fallback) cur.fallback = row;
+        } else if(!cur.dq){
+          // A result line (E2) with no clock time = the swimmer raced but got
+          // no official time — a DQ. Keep it as a DQ race (a real swim on any
+          // other E2 for this entry still wins) so every racer is counted. A
+          // pure scratch/no-show has no E2 line, so it's still excluded.
+          cur.dq = mk('DQ', '');
         }
       }
     }
@@ -278,6 +288,19 @@
   }
   function isValidEmail(s){
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((s||'').trim());
+  }
+  // A meet "time" cell that isn't a clock time is a status code. Some of those
+  // codes mean the swimmer RACED but earned no official time — a DQ
+  // (disqualified) or DNF (did not finish). Those are real races and the
+  // swimmer must still be counted. Everything else that isn't a time (NS / DNS
+  // = no-show, SCR = scratch, NT = no time / seed placeholder, DEC/DFS =
+  // declared / declared false start, blank) means the swimmer did NOT race, so
+  // it stays skipped. Returns true only for the "raced, no time" codes.
+  function isRacedStatus(t){
+    const s = (t == null ? '' : t.toString()).toUpperCase();
+    if(/\bDISQ/.test(s) || /\bDSQ\b/.test(s) || /\bD\.?Q\b/.test(s) || /\bDQ/.test(s)) return true;
+    if(/\bDNF\b/.test(s)) return true;
+    return false;
   }
   // Normalize any "M/F/Male/Female/Boy/Girl/Man/Woman" to canonical "M" or "F".
   // Returns '' when the input doesn't clearly identify a gender.
@@ -459,6 +482,7 @@
     const updates = {}; // key -> swimmer object
     const errors = [];
     let added = 0;
+    let updated = 0; // existing races whose time/place/date changed on a re-upload
     const meetNames = new Set();
     const profileUpdated = new Set(); // swimmers whose profile (non-result) fields changed
     const newSwimmerKeys = new Set(); // swimmers first created by THIS upload (roster mode)
@@ -769,73 +793,110 @@
           : normalizeEventLabel(rec);
         const timeStr = fmtTime(rec.time);
         const seconds = timeToSeconds(timeStr);
-        // Skip rows whose "time" cell isn't a real time. Meet exports put status
-        // codes (NS, DNS, DQ, NT, SCR, DFS, …) in the time column for swims that
-        // posted no time; without this they become phantom races (NaN seconds, a
-        // junk event label) that clutter the swimmer's meet-history table.
-        if(!isFinite(seconds)) continue;
+        // A "time" cell that isn't a real time is a status code. DQ / DNF means
+        // the swimmer RACED but earned no official time — keep it as a logged
+        // race (stored WITHOUT a `seconds` field, so `isFinite(r.seconds)` is
+        // false everywhere and it's invisible to every time-based board:
+        // leaderboards, Fastest Five, PRs, Most Improved). This is what makes
+        // every racer get counted. The other non-time codes (NS / DNS = no-show,
+        // SCR = scratch, NT = seed placeholder, DFS, blank) are NOT races, so
+        // they're still skipped — otherwise they'd be phantom races (NaN
+        // seconds, a junk event label) cluttering the meet-history table.
+        const racedNoTime = !isFinite(seconds) && isRacedStatus(rec.time);
+        if(!isFinite(seconds) && !racedNoTime) continue;
         const result = {
           event: eventLabel,
           distance,
           stroke,
-          time: timeStr,
-          seconds,
+          time: racedNoTime ? 'DQ' : timeStr,
           meet: meetName || rec.meet || 'Unknown Meet',
           date: meetDate || rec.date || '',
-          place: rec.place || '',
+          place: racedNoTime ? '' : (rec.place || ''),
           split: rec.split || '',
           season: rowSeason,
           uploadId: uploadId || ''
         };
+        // A DQ carries no comparable time, so it never gets a `seconds` value.
+        if(racedNoTime) result.dq = true;
+        else result.seconds = seconds;
         if(timeTrial) result.timeTrial = true;
-        // Skip an EXACT duplicate race (same meet + season + event + time).
-        // Re-uploading the same meet file then becomes idempotent instead of
-        // stacking a 2nd/3rd/4th identical time onto every swimmer. Genuinely
-        // different times (e.g. a prelim and a final) differ in `time`, so
-        // they're still kept.
-        const isExactDup = sw.results.some(r =>
+        // De-dupe on swimmer + meet + event + season (NOT time). Re-uploading the
+        // season's times then UPDATES the existing race in place (newest upload
+        // wins — good for corrections) instead of stacking a duplicate, while a
+        // genuinely new (meet, event) for this swimmer is appended. The timeTrial
+        // flag is part of the key so a meet time never overwrites a practice
+        // time-trial of the same event (their `meet` differs anyway — this is
+        // belt-and-suspenders). This is what lets a coach drop the current
+        // season's file over and over as meets are added without duplicating.
+        const dupIdx = sw.results.findIndex(r =>
           r && r.meet === result.meet && (r.season || '') === (result.season || '')
-          && r.event === result.event && r.time === result.time);
-        if(isExactDup) continue;
-        sw.results.push(result);
-        added++;
-        // Record the meet for the registry/summary — but don't let a meetless
-        // legacy row register the synthetic 'Unknown Meet' placeholder (matches
-        // the pre-named-meet behavior).
-        if(meetName || rec.meet) meetNames.add(result.meet);
-        // Stage a mirror write to hhst_meet_times. Doc id = swimmer + event +
-        // season + uploadId. Including the uploadId means each file owns its own
-        // mirror docs, so two meet files that both carry the same swimmer+event+
-        // season don't clobber one shared doc — and deleteUpload's
-        // where('uploadId','==',…) wipe stays exactly 1:1 with this file's rows.
-        const mirrorBase = rowSeason
-          ? `${meetTimeDocId(key, eventLabel)}__${slugify(rowSeason)}`
-          : meetTimeDocId(key, eventLabel);
-        const mirrorId = uploadId ? `${mirrorBase}__${slugify(uploadId)}` : mirrorBase;
-        // Mirror uses THIS row's season attributes (age group / gender) so a
-        // time from 2024 carries the swimmer's 2024 age group, not their
-        // current one.
-        const mi = swimmerSeasonInfo(sw, rowSeason);
-        meetTimeWrites.push({
-          id: mirrorId,
-          data: {
-            swimmerKey: key,
-            swimmerName: name,
-            event: eventLabel,
-            distance,
-            stroke,
-            time: timeStr,
-            seconds: result.seconds,
-            meet: result.meet,
-            date: result.date,
-            place: result.place,
-            ageGroup: mi.bracket || getAgeGroup(mi.age),
-            gender: mi.gender || '',
-            competitionGroup: competitionGroup(sw, rowSeason),
-            season: rowSeason,
-            uploadId: uploadId || ''
+          && r.event === result.event && (!!r.timeTrial === !!result.timeTrial));
+        if(dupIdx >= 0){
+          const prev = sw.results[dupIdx] || {};
+          // A real swum time always beats "no time": if this row is a DQ but the
+          // existing race already has a clock time for the same event, keep the
+          // real time (don't let row order downgrade a swimmer's result to a DQ).
+          if(result.dq && isFinite(prev.seconds)){
+            // nothing to change — the existing real time stands
+          } else {
+            // Only count an UPDATE when something actually changed, so re-uploading
+            // an unchanged file is a true no-op (added:0, updated:0).
+            const changed = (prev.time !== result.time)
+              || ((prev.place || '') !== (result.place || ''))
+              || ((prev.date || '') !== (result.date || ''))
+              || (prev.seconds !== result.seconds)
+              || (!!prev.dq !== !!result.dq);
+            sw.results[dupIdx] = result; // newest upload wins (re-stamps time/place/date/uploadId)
+            if(changed) updated++;
           }
-        });
+        } else {
+          sw.results.push(result);
+          added++;
+        }
+        // Record the meet for the registry/summary (new OR updated rows) — but
+        // don't register the synthetic 'Unknown Meet' placeholder (matches the
+        // pre-named-meet behavior).
+        if(meetName || rec.meet) meetNames.add(result.meet);
+        // The hhst_meet_times mirror backs the ranked leaderboards, so it only
+        // holds swims with a real time. A DQ race lives on the swimmer's
+        // profile + races-logged count (via sw.results) but is skipped here.
+        if(!racedNoTime){
+          // Stage a mirror write to hhst_meet_times. Doc id = swimmer + event +
+          // MEET + season (deterministic, NO uploadId): re-uploading a meet's
+          // times OVERWRITES the same mirror doc instead of piling up a new doc
+          // per upload, while two different meets' same event stay distinct
+          // (meet is in the id). The uploadId still rides along as a FIELD below,
+          // so deleteUpload's where('uploadId','==',…) wipe still finds this
+          // file's docs (the field tracks the latest writer = the owning upload).
+          const mirrorMeet = slugify(result.meet || 'unknown-meet');
+          const mirrorId = rowSeason
+            ? `${meetTimeDocId(key, eventLabel)}__${mirrorMeet}__${slugify(rowSeason)}`
+            : `${meetTimeDocId(key, eventLabel)}__${mirrorMeet}`;
+          // Mirror uses THIS row's season attributes (age group / gender) so a
+          // time from 2024 carries the swimmer's 2024 age group, not their
+          // current one.
+          const mi = swimmerSeasonInfo(sw, rowSeason);
+          meetTimeWrites.push({
+            id: mirrorId,
+            data: {
+              swimmerKey: key,
+              swimmerName: name,
+              event: eventLabel,
+              distance,
+              stroke,
+              time: timeStr,
+              seconds: result.seconds,
+              meet: result.meet,
+              date: result.date,
+              place: result.place,
+              ageGroup: mi.bracket || getAgeGroup(mi.age),
+              gender: mi.gender || '',
+              competitionGroup: competitionGroup(sw, rowSeason),
+              season: rowSeason,
+              uploadId: uploadId || ''
+            }
+          });
+        }
       }
     }
 
@@ -922,6 +983,7 @@
           meetName: meetName || '',
           meetDate: meetDate || '',
           addedResults: added,
+          updatedResults: updated,
           swimmerCount: writtenKeys.size,
           newSwimmerKeys: Array.from(newSwimmerKeys),
           touchedSwimmerKeys: Array.from(writtenKeys),
@@ -938,6 +1000,7 @@
 
     return {
       added,
+      updated,
       swimmers: writtenKeys.size,
       newSwimmers: newSwimmerKeys.size,
       profileUpdates: profileUpdated.size,

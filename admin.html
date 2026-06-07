@@ -705,6 +705,7 @@
           <div class="step-body">
             <h3>Open the meet → Results → Reports</h3>
             <p>On the meet page, click <strong>Results</strong>, then <strong>Reports</strong>. Choose <strong>Individual Results</strong> or <strong>Athlete Results</strong> (one row per swimmer per event).</p>
+            <p style="margin-top:8px"><strong>Don't use the "Top Times" export for a meet.</strong> A Top Times report only lists each swimmer's <em>best legal time per event</em>, so it silently drops every <strong>DQ</strong> swim (a disqualified swimmer earned no "time") and every relay leg — which is exactly why a meet can come in a few races (and a swimmer or two) short. The <strong>Individual Results</strong> report, or the raw results file straight from Meet Maestro (<code>.hy3</code> / <code>.sd3</code> / <code>.zip</code>), includes every swim — so use one of those to capture <em>everyone who raced</em>.</p>
           </div>
         </li>
         <li>
@@ -739,6 +740,7 @@
           <li>Keep swimmer names consistent across meets so results stack on one swimmer card.</li>
           <li>Times can be <code>SS.HH</code> (<code>28.42</code>) or <code>M:SS.HH</code> (<code>1:02.18</code>). Both formats work.</li>
           <li>Re-uploading the same file is safe — matching rows merge, new ones append.</li>
+          <li><strong>DQ swims are counted as races.</strong> A disqualified swim shows on the swimmer's card as <code>DQ</code> and counts toward "races logged" (so every racer is captured), but it has no time, so it never appears on a leaderboard, Fastest Five, or a personal-best — exactly where a DQ belongs. No-shows and scratches are still skipped (they didn't race). This only works if your file actually <em>contains</em> the DQ swims — see the "Top Times" warning above.</li>
         </ul>
       </div>
       </div>
@@ -795,13 +797,13 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
         </span>
         <div>
           <h2>Add a Meet</h2>
-          <p class="lead">Name the meet, pick its season, and drop the results file. Works with a CSV/Excel export <em>or</em> the results file straight from <strong>SwimTopia</strong> (<code>.hy3</code>, <code>.sd3</code>, or the <code>.zip</code> bundle). The name you type — like <em>“Highcroft at Riverstone”</em> — is what shows in each swimmer's stats. One file = one meet.</p>
+          <p class="lead">Pick the season and drop the results file. Works with a CSV/Excel export <em>or</em> the results file straight from <strong>SwimTopia</strong> (<code>.hy3</code>, <code>.sd3</code>, or the <code>.zip</code> bundle). <strong>Two ways to use it:</strong> type a meet name to label one meet's file, <em>or</em> leave the name blank to drop a whole-season export — each row's own meet column is used. Either way you can re-upload the same file as more meets are added: matching times update in place, new ones are added — never duplicated.</p>
         </div>
       </div>
 
       <div class="meet-form-grid">
         <div class="field axp-field-flush">
-          <label for="meetNameInput" class="axp-label">Meet name <span class="req">*</span></label>
+          <label for="meetNameInput" class="axp-label">Meet name <span class="opt">(leave blank for a whole-season file)</span></label>
           <input type="text" id="meetNameInput" list="meetNameOptions" placeholder="e.g. Highcroft at Riverstone" autocomplete="off" class="axp-input"/>
           <datalist id="meetNameOptions"></datalist>
         </div>
@@ -816,7 +818,7 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
         </div>
       </div>
       <p class="field-hint axp-hint axp-hint-block">
-        If the file lists each swimmer's age group (like the Top Times export), anyone new is added to this season's roster automatically as their times import — no separate roster upload needed. A times-only file (just names + times) still only matches swimmers already on the roster. A meet date entered here applies to the whole meet; leave it blank to use the file's own dates.
+        If the file lists each swimmer's age group (like the Top Times export), anyone new is added to this season's roster automatically as their times import — no separate roster upload needed. A times-only file (just names + times) still only matches swimmers already on the roster. <strong>Type a meet name</strong> to force one meet for the whole file (it overrides the file's own meet column); <strong>leave it blank</strong> and each row keeps its own meet — ideal for a whole-season export you re-upload as the season grows. A meet date entered here applies to the whole meet; leave it blank to use the file's own dates.
       </p>
 
       <section class="st-guide">
@@ -1396,16 +1398,9 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
       }
 
       const mode = label === 'roster' ? 'roster' : 'results';
-      // A named meet is exactly one file. Drag-and-drop bypasses the input's
-      // single-file limit, so reject a multi-file meet drop up front (rather
-      // than silently importing an arbitrary one) — each meet needs its own
-      // name, so they must be uploaded one at a time.
-      if(mode === 'results' && supported.length > 1){
-        setStatus('err', `Drop one file per meet — you dropped ${supported.length}. Each meet gets its own name, so upload them one at a time.`);
-        const inp = document.getElementById('csvFile');
-        if(inp) inp.value = '';
-        return;
-      }
+      // (The named-meet "one file per meet" guard now lives below, after we know
+      //  whether a meet name was typed — a blank name = whole-season file, which
+      //  legitimately may span multiple files / multiple meets.)
       // Both roster and times uploads are now season-scoped: roster tags
       // each swimmer with the season they were on the team for, then
       // times-mode only matches against that season's roster.
@@ -1426,8 +1421,11 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
         if(inp) inp.value = '';
         return;
       }
-      // Meet uploads are named: the coach types the meet name (and optional
-      // date), which is applied to every race in the file. Require the name.
+      // Meet uploads have TWO modes:
+      //  • Named meet  — the coach types a name, applied to every race in the file
+      //    (one meet per file → a multi-file drop is rejected).
+      //  • Whole-season file — the name is left blank; each row keeps its OWN meet
+      //    column, so one growing file can hold many meets and be re-uploaded.
       let meetName = '', meetDate = '';
       if(mode === 'results'){
         const nameInput = document.getElementById('meetNameInput');
@@ -1435,22 +1433,22 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
         meetName = (nameInput && nameInput.value || '').trim();
         meetDate = (dateInput && dateInput.value || '').trim();
         // SwimTopia .hy3/.sd3 files carry the meet's own name + date — if the
-        // coach left those blank, read them from the file and fill the fields in
-        // so they don't have to retype what the file already knows.
+        // coach left the name blank for a SINGLE file, read it from the file and
+        // fill the fields in so they don't retype what the file already knows.
+        // (Skipped for a multi-file drop, which is the season-file path.)
         if(!meetName && supported.length === 1){
           try {
             const info = await peekMeetInfo(supported[0]);
             if(info.meet){ meetName = info.meet; if(nameInput) nameInput.value = info.meet; }
             if(info.date && !meetDate){ meetDate = info.date; if(dateInput) dateInput.value = info.date; }
-          } catch(_){ /* fall through to the "name this meet" prompt below */ }
+          } catch(_){ /* not a SwimTopia file (or unreadable) — fall through */ }
         }
-        if(!meetName){
-          setStatus('err', 'Name this meet first (e.g. "Highcroft at Riverstone") above the drop zone, then upload again. That name is what shows in each swimmer\'s stats.');
-          if(nameInput){
-            nameInput.focus();
-            nameInput.style.borderColor = 'var(--red, #ef4444)';
-            setTimeout(() => { nameInput.style.borderColor = ''; }, 1800);
-          }
+        // A typed name = one meet per file: reject a multi-file drop so several
+        // meets don't collapse under the one name. A BLANK name is the valid
+        // whole-season path (each row keeps its meet; a file with no meet column
+        // is failed individually in the loop below).
+        if(meetName && supported.length > 1){
+          setStatus('err', `You named a meet ("${meetName}"), so drop just that meet's file — you dropped ${supported.length}. To upload several meets at once, clear the meet name and use a whole-season export (each row keeps its own meet).`);
           const inp = document.getElementById('csvFile');
           if(inp) inp.value = '';
           return;
@@ -1460,6 +1458,7 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
       try { localStorage.setItem('hhst.lastSeason', uploadSeason); } catch(_){}
       const totals = {
         added: 0,
+        updated: 0,
         racesPerFile: [],
         swimmerKeysTouched: new Set(),
         profileUpdates: 0,
@@ -1476,6 +1475,15 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
         setStatus('ok', `Reading ${f.name} (${i+1}/${supported.length})…`);
         try {
           const rows = await readFileToRows(f, mode);
+          // Whole-season mode (blank meet name) relies on each row's own meet
+          // column. If this file has none, every race would collapse into
+          // "Unknown Meet" — fail it with a clear fix instead of importing junk.
+          if(mode === 'results' && !meetName){
+            const hdr = (rows && rows[0]) ? rows[0].map(h => HHST.mapHeader(h)) : [];
+            if(!hdr.includes('meet')){
+              throw new Error('No meet column found — type a meet name above, or add a "meet"/"swim_meet" column so each row knows its meet.');
+            }
+          }
           const sheetTag = f.__chosenSheet ? ` (sheet "${f.__chosenSheet}")` : '';
           setStatus('ok', `Importing ${f.name}${sheetTag} — ${rows.length} rows (${i+1}/${supported.length})…`);
           // One uploadId per dropped file so it can be removed on its own later
@@ -1484,6 +1492,7 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
           const uploadId = `${HHST.slugify(uploadSeason)}__${mode}__${Date.now()}__${i}__${HHST.slugify(f.name)}`;
           const result = await HHST.ingestRows(rows, { mode, season: uploadSeason, uploadId, fileName: f.name, meetName, meetDate });
           totals.added         += result.added || 0;
+          totals.updated       += result.updated || 0;
           totals.profileUpdates += result.profileUpdates || 0;
           totals.newSwimmers   += result.newSwimmers || 0;
           totals.meets         += result.meets || 0;
