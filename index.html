@@ -306,24 +306,155 @@
     .gf-promo-cta{order:3}
   }
 
-  /* ---- Team milestones ticker: slim rotating strip under the pulse bar. ---- */
-  .tp-ticker{
-    max-width:760px;margin:10px auto 0;padding:9px 18px;
-    display:flex;align-items:center;justify-content:center;gap:10px;
-    border:1px solid var(--border);border-radius:999px;background:var(--surface);
+  /* ===== Team milestones ticker — now lives IN the hero, right under the
+     subtitle, as a glassy strip that matches the dark-water aesthetic. ===== */
+  .hero-inner > .tp-ticker{
+    max-width:620px;margin:22px auto 0;padding:10px 18px;
+    display:flex;align-items:center;justify-content:center;gap:11px;
+    border:1px solid rgba(255,255,255,.16);border-radius:999px;
+    background:rgba(255,255,255,.07);
+    -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.08);
+    animation-delay:.34s; /* slot into the hero stagger between sub and card */
   }
   .tp-ticker-chip{
     flex:none;font-size:10.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
-    color:#c98f0e;background:rgba(201,143,14,.14);border:1px solid rgba(201,143,14,.3);
+    color:#081626;background:linear-gradient(135deg,#efc75e,#e2ac2d);
     padding:3px 10px;border-radius:999px;
+    box-shadow:0 0 14px rgba(226,172,45,.35);
   }
   .tp-ticker-text{
-    font-size:13.5px;font-weight:600;color:var(--text);
-    transition:opacity .45s ease;min-width:0;
+    font-size:13.5px;font-weight:600;color:#eaf3ff;min-width:0;
+    transition:opacity .45s ease;
   }
   .tp-ticker-text.is-fading{opacity:0}
   @media (max-width:560px){
-    .tp-ticker{flex-direction:column;gap:6px;border-radius:16px;text-align:center}
+    .hero-inner > .tp-ticker{flex-direction:column;gap:7px;border-radius:18px;text-align:center;padding:11px 16px}
+  }
+
+  /* ===== Hero bubbles 2.0 — two parallax depth layers of continuously
+     rising, swaying air bubbles. The old static bobbers (.drop, shared
+     styles.css) are retired on this page. ===== */
+  .drops .drop{display:none}
+  .idx-bub-layer{position:absolute;inset:0;will-change:transform}
+  .idx-bub{
+    position:absolute;bottom:-48px;left:var(--x);
+    width:var(--size);height:var(--size);
+    opacity:0;
+    animation:idx-rise var(--dur) linear infinite;
+    animation-delay:var(--delay); /* negative delays = mid-flight on load */
+  }
+  .idx-bub i{
+    position:relative;display:block;width:100%;height:100%;border-radius:50%;
+    background:radial-gradient(circle at 32% 28%,
+      rgba(255,255,255,.6),rgba(255,255,255,.07) 30%,
+      rgba(186,230,253,.04) 55%,rgba(186,230,253,.16) 78%,rgba(127,227,239,.22));
+    border:1px solid rgba(214,240,255,.28);
+    box-shadow:inset -2px -3px 6px rgba(13,42,82,.28),0 0 10px rgba(127,227,239,.10);
+    filter:blur(var(--blur,0px));
+    animation:idx-sway var(--swayDur,3.4s) ease-in-out infinite alternate;
+  }
+  .idx-bub i::after{
+    content:'';position:absolute;left:22%;top:15%;width:26%;height:17%;
+    border-radius:50%;background:rgba(255,255,255,.75);
+    transform:rotate(-28deg);filter:blur(.5px);
+  }
+  @keyframes idx-rise{
+    0%{transform:translateY(0);opacity:0}
+    6%{opacity:var(--o,.55)}
+    88%{opacity:var(--o,.55)}
+    100%{transform:translateY(-110vh);opacity:0}
+  }
+  @keyframes idx-sway{
+    from{transform:translateX(calc(var(--sway,12px) * -1)) scale(.95)}
+    to{transform:translateX(var(--sway,12px)) scale(1.05)}
+  }
+  /* Click "fizz": a handful of quick bubbles from the click point. */
+  .idx-pop-bub{
+    position:absolute;width:var(--size);height:var(--size);border-radius:50%;
+    border:1.5px solid rgba(214,240,255,.65);
+    background:radial-gradient(circle at 32% 28%,rgba(255,255,255,.5),rgba(255,255,255,.05) 40%,transparent);
+    pointer-events:none;
+    animation:idx-pop-rise var(--dur,.8s) cubic-bezier(.2,.6,.3,1) forwards;
+  }
+  @keyframes idx-pop-rise{
+    from{transform:translate(0,0) scale(.4);opacity:.95}
+    to{transform:translate(var(--dx,0),var(--dy,-90px)) scale(1);opacity:0}
+  }
+
+  /* ===== Lookup card: swim-lane progress meter =====
+     A little swimmer dot advances down a lane as each of the three fields
+     validates; at 3-of-3 it reaches the backstroke flags and the card says
+     "Ready to dive!". Pure delight — the hints below still carry the info. */
+  .idx-lane{
+    position:relative;height:38px;margin:16px 0 18px;
+    border-radius:999px;overflow:hidden;
+    background:linear-gradient(180deg,rgba(36,112,206,.09),rgba(127,227,239,.05));
+    border:1px solid var(--border);
+    transition:border-color .3s ease,box-shadow .3s ease;
+  }
+  .idx-lane::before{ /* lane rope */
+    content:'';position:absolute;left:14px;right:158px;top:50%;height:2px;margin-top:-1px;
+    background:repeating-linear-gradient(90deg,rgba(95,169,236,.38) 0 10px,transparent 10px 19px);
+    border-radius:2px;
+  }
+  .idx-lane-swim{
+    position:absolute;top:50%;left:calc(12px + (100% - 200px) * var(--p,0));
+    transform:translateY(-50%);
+    display:flex;align-items:center;gap:5px;
+    transition:left .65s cubic-bezier(.22,1.35,.36,1);
+  }
+  .idx-lane-trail{
+    width:20px;height:2px;border-radius:2px;
+    background:linear-gradient(90deg,transparent,rgba(95,169,236,.8));
+    opacity:0;transition:opacity .25s ease;
+  }
+  .idx-lane-dot{
+    width:14px;height:14px;border-radius:50%;flex:none;
+    background:radial-gradient(circle at 32% 30%,#bfe7ff,#2470ce);
+    box-shadow:0 0 0 3px rgba(95,169,236,.22),0 2px 6px rgba(13,42,82,.3);
+    animation:idx-lane-bob 1.7s ease-in-out infinite;
+  }
+  @keyframes idx-lane-bob{0%,100%{transform:translateY(-1.5px)}50%{transform:translateY(1.5px)}}
+  .idx-lane.is-swimming .idx-lane-dot{animation-duration:.45s}
+  .idx-lane.is-swimming .idx-lane-trail{opacity:1}
+  .idx-lane-flags{position:absolute;right:124px;top:5px;width:26px;height:13px;color:var(--accent);opacity:.75}
+  .idx-lane-label{
+    position:absolute;right:13px;top:50%;transform:translateY(-50%);
+    font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--text-subtle);font-variant-numeric:tabular-nums;
+    transition:color .3s ease;
+  }
+  .idx-lane.is-ready{
+    border-color:rgba(226,172,45,.5);
+    box-shadow:0 0 0 3px rgba(226,172,45,.12),inset 0 0 18px rgba(226,172,45,.06);
+  }
+  .idx-lane.is-ready .idx-lane-label{color:#c98f0e}
+  .idx-lane.is-ready .idx-lane-dot{
+    background:radial-gradient(circle at 32% 30%,#fde68a,#e2ac2d);
+    box-shadow:0 0 0 3px rgba(226,172,45,.3),0 0 12px rgba(226,172,45,.55);
+    animation:idx-lane-pop .55s cubic-bezier(.22,1.6,.36,1);
+  }
+  @keyframes idx-lane-pop{0%{transform:scale(1)}45%{transform:scale(1.5)}100%{transform:scale(1)}}
+  .idx-lane.is-ready .idx-lane-flags{color:#e2ac2d;opacity:1;animation:idx-flag-wave .8s ease-in-out 2}
+  @keyframes idx-flag-wave{0%,100%{transform:rotate(0)}50%{transform:rotate(-7deg)}}
+  /* All three matched → the submit button breathes until they dive in. */
+  .idx-form.idx-ready .btn.lg.block{animation:idx-btn-glow 1.8s ease-in-out infinite}
+  @keyframes idx-btn-glow{
+    0%,100%{box-shadow:0 0 0 0 rgba(95,169,236,.45)}
+    55%{box-shadow:0 0 0 9px rgba(95,169,236,0)}
+  }
+  /* Bad lookup → the card shakes (reuses the shared shake keyframes). */
+  .lookup-card.idx-shake{animation:shake .4s}
+  @media (max-width:480px){
+    .idx-lane{height:34px;margin:14px 0 16px}
+    .idx-lane::before{right:142px}
+    .idx-lane-swim{left:calc(10px + (100% - 178px) * var(--p,0))}
+    .idx-lane-flags{right:110px;top:4px}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .idx-lane-swim{transition:none}
+    .idx-form.idx-ready .btn.lg.block{animation:none}
   }
 </style>
 
@@ -393,9 +524,30 @@
       in seconds. Enter your swimmer's details below to open their dashboard.
     </p>
 
+    <!-- TEAM MILESTONES — rotating one-liners computed from the live season
+         data ("47 PRs at Saturday's meet"). Hidden until filled. -->
+    <div class="tp-ticker" id="tpTicker" style="display:none" role="status" aria-live="off">
+      <span class="tp-ticker-chip">Milestones</span>
+      <span class="tp-ticker-text" id="tpTickerText"></span>
+    </div>
+
     <div class="lookup-card idx-lift">
       <h2>Find your swimmer</h2>
       <p class="sub">All three fields must match what we have on file. Names can be in either "First Last" or "Last, First" order.</p>
+
+      <!-- Swim-lane progress: the dot swims toward the flags as each field
+           checks out. Decorative — the per-field hints carry the real info. -->
+      <div class="idx-lane" id="idxLane" aria-hidden="true" style="--p:0">
+        <div class="idx-lane-swim">
+          <span class="idx-lane-trail"></span>
+          <span class="idx-lane-dot"></span>
+        </div>
+        <svg class="idx-lane-flags" viewBox="0 0 26 13" fill="currentColor" aria-hidden="true">
+          <path d="M0 1.2 L26 1.2" stroke="currentColor" stroke-width="1.6" fill="none"/>
+          <path d="M3 2 l4 0 -2 6 z"/><path d="M11 2 l4 0 -2 6 z"/><path d="M19 2 l4 0 -2 6 z"/>
+        </svg>
+        <span class="idx-lane-label" id="idxLaneLabel">0 of 3</span>
+      </div>
 
       <form id="lookupForm" class="idx-form" autocomplete="off">
         <div class="field">
@@ -498,12 +650,6 @@
       </div>
     </div>
   </div>
-  <!-- TEAM MILESTONES — rotating one-liners computed from the same data as
-       the pulse above ("47 PRs at Saturday's meet"). Hidden until filled. -->
-  <div class="tp-ticker" id="tpTicker" style="display:none" role="status" aria-live="off">
-    <span class="tp-ticker-chip">Milestones</span>
-    <span class="tp-ticker-text" id="tpTickerText"></span>
-  </div>
 </div>
 
 <section id="how">
@@ -570,21 +716,83 @@
   HHST.initTheme();
   document.getElementById('themeToggle').addEventListener('click', HHST.toggleTheme);
 
-  // Hero droplets
+  // Hero bubbles — two parallax depth layers of continuously rising, swaying
+  // air bubbles, a gentle pointer drift, and a click "fizz" on empty water.
   (function(){
     const host = document.getElementById('drops');
     if(!host) return;
-    for(let i=0;i<14;i++){
-      const d = document.createElement('div');
-      d.className = 'drop';
-      const size = 6 + Math.random()*22;
-      d.style.width = size+'px'; d.style.height = size+'px';
-      d.style.left = (Math.random()*100)+'%';
-      d.style.top = (Math.random()*100)+'%';
-      d.style.animationDelay = (Math.random()*7)+'s';
-      d.style.animationDuration = (5 + Math.random()*5)+'s';
-      d.style.opacity = (0.25 + Math.random()*0.4).toFixed(2);
-      host.appendChild(d);
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const small  = window.matchMedia('(max-width: 640px)').matches;
+    const far  = document.createElement('div');
+    const near = document.createElement('div');
+    far.className  = 'idx-bub-layer idx-bub-far';
+    near.className = 'idx-bub-layer idx-bub-near';
+    host.append(far, near);
+    function spawn(layer, n, o){
+      for(let i = 0; i < n; i++){
+        const b = document.createElement('span');
+        b.className = 'idx-bub';
+        b.style.setProperty('--size', (o.min + Math.random()*(o.max - o.min)).toFixed(1) + 'px');
+        b.style.setProperty('--x', (Math.random()*100).toFixed(2) + '%');
+        b.style.setProperty('--dur', (o.durMin + Math.random()*(o.durMax - o.durMin)).toFixed(2) + 's');
+        // Negative delay = already mid-flight on load, so the water never
+        // starts empty.
+        b.style.setProperty('--delay', (-Math.random()*o.durMax).toFixed(2) + 's');
+        b.style.setProperty('--sway', (4 + Math.random()*o.sway).toFixed(1) + 'px');
+        b.style.setProperty('--swayDur', (2.2 + Math.random()*2.8).toFixed(2) + 's');
+        b.style.setProperty('--o', (o.oMin + Math.random()*o.oRange).toFixed(2));
+        b.style.setProperty('--blur', o.blur ? (Math.random()*1.6).toFixed(2) + 'px' : '0px');
+        b.appendChild(document.createElement('i'));
+        layer.appendChild(b);
+      }
+    }
+    // Far layer: small, hazy, slow (background depth). Near: bigger, crisper, quicker.
+    spawn(far,  small ? 10 : 18, { min:5,  max:13, durMin:14, durMax:26, sway:14, oMin:.16, oRange:.24, blur:true });
+    spawn(near, small ? 7  : 12, { min:12, max:30, durMin:9,  durMax:16, sway:26, oMin:.32, oRange:.34, blur:false });
+
+    if(reduce) return; // rising/sway are neutralised globally — skip the extras too
+
+    const hero = document.querySelector('.hero');
+
+    // Pointer drift: the bubble layers lean gently with the cursor, near layer
+    // more than far, so the water reads as 3-D. Desktop pointers only.
+    if(hero && window.matchMedia('(pointer: fine)').matches){
+      let tx = 0, ty = 0, cx = 0, cy = 0, raf = 0;
+      function step(){
+        raf = 0;
+        cx += (tx - cx) * .06; cy += (ty - cy) * .06;
+        far.style.transform  = `translate(${(-cx*10).toFixed(1)}px, ${(-cy*6).toFixed(1)}px)`;
+        near.style.transform = `translate(${(-cx*24).toFixed(1)}px, ${(-cy*14).toFixed(1)}px)`;
+        if(Math.abs(tx - cx) + Math.abs(ty - cy) > .002) raf = requestAnimationFrame(step);
+      }
+      hero.addEventListener('pointermove', e => {
+        const r = hero.getBoundingClientRect();
+        tx = (e.clientX - r.left)/r.width - .5;
+        ty = (e.clientY - r.top)/r.height - .5;
+        if(!raf) raf = requestAnimationFrame(step);
+      }, { passive:true });
+    }
+
+    // Click fizz: quick bubbles from the click point — only on open water,
+    // never on the form, links, or buttons.
+    if(hero){
+      hero.addEventListener('click', e => {
+        if(e.target.closest('a,button,input,label,select,textarea,.lookup-card')) return;
+        const r = host.getBoundingClientRect();
+        for(let i = 0; i < 8; i++){
+          const p = document.createElement('span');
+          p.className = 'idx-pop-bub';
+          const size = 4 + Math.random()*10;
+          p.style.setProperty('--size', size.toFixed(1) + 'px');
+          p.style.left = (e.clientX - r.left - size/2) + 'px';
+          p.style.top  = (e.clientY - r.top  - size/2) + 'px';
+          p.style.setProperty('--dx', ((Math.random() - .5)*90).toFixed(0) + 'px');
+          p.style.setProperty('--dy', (-(50 + Math.random()*110)).toFixed(0) + 'px');
+          p.style.setProperty('--dur', (.7 + Math.random()*.6).toFixed(2) + 's');
+          p.addEventListener('animationend', () => p.remove());
+          host.appendChild(p);
+        }
+      });
     }
   })();
 
@@ -593,12 +801,22 @@
   const errEl = document.getElementById('errMsg');
   const submitBtn = document.getElementById('submitBtn');
   const btnLabel = submitBtn.querySelector('.btn-label');
+  const laneEl = document.getElementById('idxLane');
+  const lookupCard = document.querySelector('.lookup-card');
+  // Bad lookup → shake the card (restart-safe: clear, reflow, re-add).
+  function shakeCard(){
+    if(!lookupCard) return;
+    lookupCard.classList.remove('idx-shake');
+    void lookupCard.offsetWidth;
+    lookupCard.classList.add('idx-shake');
+  }
   form.addEventListener('submit', async e => {
     e.preventDefault();
     errEl.classList.remove('show');
     submitBtn.disabled = true;
     submitBtn.classList.add('is-loading');
     btnLabel.textContent = 'Looking up…';
+    if(laneEl) laneEl.classList.add('is-swimming'); // the lane dot sprints while we search
     try {
       const name = document.getElementById('swName').value;
       const email = document.getElementById('swEmail').value;
@@ -607,6 +825,7 @@
       if(!result.ok){
         errEl.textContent = result.reason;
         errEl.classList.add('show');
+        shakeCard();
         return;
       }
       sessionStorage.setItem('hhst.swim.viewKey', result.swimmer.key);
@@ -615,10 +834,12 @@
       console.error(err);
       errEl.textContent = 'Could not reach the database. Check your connection and try again.';
       errEl.classList.add('show');
+      shakeCard();
     } finally {
       submitBtn.disabled = false;
       submitBtn.classList.remove('is-loading');
       btnLabel.textContent = 'Open Dashboard';
+      if(laneEl) laneEl.classList.remove('is-swimming');
     }
   });
 
@@ -638,20 +859,40 @@
       swEmail:  v => emailRe.test(v.trim()),
       swParent: v => looksLikeName(v),
     };
+    // Swim-lane progress: count valid fields, advance the dot, flip the lane
+    // (and submit button) into the "ready" state at 3 of 3.
+    const lane = document.getElementById('idxLane');
+    const laneLabel = document.getElementById('idxLaneLabel');
+    const formEl = document.getElementById('lookupForm');
+    function updateLane(){
+      if(!lane) return;
+      const n = [nameEl, emailEl, parentEl].filter(el => {
+        const f = el.closest('.field');
+        return f && f.classList.contains('idx-valid');
+      }).length;
+      lane.style.setProperty('--p', (n/3).toFixed(3));
+      const ready = n === 3;
+      lane.classList.toggle('is-ready', ready);
+      if(formEl) formEl.classList.toggle('idx-ready', ready);
+      if(laneLabel) laneLabel.textContent = ready ? 'Ready to dive!' : `${n} of 3`;
+    }
     function grade(el){
       const field = el.closest('.field');
       const v = el.value;
-      if(!v.trim()){ field.classList.remove('idx-valid','idx-invalid'); return; }
+      if(!v.trim()){ field.classList.remove('idx-valid','idx-invalid'); updateLane(); return; }
       const ok = checks[el.id](v);
       field.classList.toggle('idx-valid', ok);
       // Only flag as invalid once the user has moved on (on blur), so we don't
       // nag mid-typing.
       field.classList.toggle('idx-invalid', !ok && el.dataset.touched === '1');
+      updateLane();
     }
     [nameEl, emailEl, parentEl].forEach(el => {
       el.addEventListener('input', () => grade(el));
       el.addEventListener('blur', () => { el.dataset.touched = '1'; grade(el); });
     });
+    // Grade once on load so browser autofill advances the lane immediately.
+    [nameEl, emailEl, parentEl].forEach(el => { if(el.value) grade(el); });
   })();
 
   // Live team pulse — scoped to the CURRENT season so the homepage reflects
