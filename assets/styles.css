@@ -3639,6 +3639,20 @@ a.lb-entry-name:hover{color:var(--accent)!important;text-decoration:underline;te
     -webkit-text-fill-color:#047857 !important;
     color:#047857 !important;
   }
+  /* Event-pill sheen: a transparent→white→transparent alpha gradient that
+     becomes a soft mask in the PDF (one rasterized strip per pill, ×3 pills
+     per poster). Invisible on the white print pill — drop it. */
+  .award-event::before{ display:none !important; }
+  /* The #1 medal glow rings are declared `box-shadow: ... !important` at
+     higher specificity than the `.award-card *` flatten above, so they were
+     the LAST transparency surviving into print — each blurred rgba glow
+     rasterized as a ~250px image+mask pair per medal. Restate at matching
+     specificity (later in cascade → wins) so medals print as flat discs. */
+  .award-card .award-table tr:first-child .award-medal,
+  .award-card-improved .award-table tr:first-child .award-medal{
+    box-shadow:none !important;
+    text-shadow:none !important;
+  }
 }
 
 /* ============================================================
