@@ -105,6 +105,48 @@
   /* reserve room so the check never overlaps typed text */
   .idx-form .idx-input-wrap input{padding-right:42px}
 
+  /* ===== Lookup card: privacy reassurance line under the submit ===== */
+  .idx-privacy{
+    display:flex;align-items:center;justify-content:center;gap:7px;
+    margin:14px 0 0;font-size:12.5px;line-height:1.45;color:var(--text-subtle);
+    text-align:center;
+  }
+  .idx-privacy svg{width:14px;height:14px;flex:none}
+
+  /* ===== "Good to know" note on the dark hero (DQ explainer) =====
+     Sits between the lookup card and the trust badges; uses the hero's own
+     translucent glass aesthetic (like .kicker / .hero-trust) so it reads as a
+     calm aside, not an alert. The DQ chip matches the dashboard's DQ pill. */
+  .idx-note{
+    display:flex;align-items:flex-start;gap:13px;
+    max-width:620px;margin:24px auto 0;
+    padding:15px 18px;border-radius:var(--radius);
+    text-align:left;
+    background:rgba(255,255,255,.055);
+    border:1px solid rgba(255,255,255,.13);
+    -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+  }
+  .idx-note p{margin:0;font-size:13.5px;line-height:1.6;color:var(--hero-muted)}
+  .idx-note strong{color:#fff;font-weight:600}
+  .idx-note-chip{
+    flex:none;margin-top:1px;display:inline-flex;align-items:center;
+    padding:3px 9px;border-radius:999px;
+    font-size:11px;font-weight:700;letter-spacing:.07em;font-family:'Inter',sans-serif;
+    background:rgba(248,113,113,.18);color:#fca5a5;border:1px solid rgba(248,113,113,.34);
+  }
+  /* Slot into the hero's staggered entrance, just after the lookup card. */
+  .hero-inner > .idx-note{
+    opacity:0;transform:translateY(18px);
+    animation:heroIn .9s cubic-bezier(.16,1,.3,1) .48s forwards;
+  }
+  @media (prefers-reduced-motion: reduce){
+    .hero-inner > .idx-note{opacity:1;transform:none;animation:none}
+  }
+  @media (max-width:480px){
+    .idx-note{padding:13px 14px;gap:11px;margin-top:20px}
+    .idx-note p{font-size:13px}
+  }
+
   /* ===== Team pulse: count-up gets tabular alignment + pop ===== */
   .tp-value.idx-pop{animation:idx-pop .5s cubic-bezier(.16,1,.3,1)}
   @keyframes idx-pop{
@@ -264,7 +306,16 @@
           <svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
           <span class="btn-spinner" aria-hidden="true"></span>
         </button>
+        <p class="idx-privacy">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          Private to your family — a swimmer only opens when all three fields match.
+        </p>
       </form>
+    </div>
+
+    <div class="idx-note" role="note">
+      <span class="idx-note-chip" aria-hidden="true">DQ</span>
+      <p><strong>Swimmer got disqualified at a meet?</strong> A DQ means no legal time was recorded, so that swim won't show a time or count toward a personal best or leaderboard — but it still appears in your swimmer's meet history as a race they swam.</p>
     </div>
 
     <div class="hero-trust">
