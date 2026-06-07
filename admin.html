@@ -131,9 +131,40 @@
     padding:1px 6px;font-size:12.5px;color:var(--text)}
   .st-shot{margin:2px 18px 18px;border:1px solid var(--border);border-radius:var(--radius-md);
     overflow:hidden;background:#fff}
+  .st-shot-link{display:block;position:relative;line-height:0;text-decoration:none;
+    -webkit-tap-highlight-color:transparent}
+  .st-shot-link:focus-visible{outline:none;box-shadow:inset 0 0 0 3px var(--ring)}
   .st-shot img{display:block;width:100%;height:auto}
+  /* "View full size" pill — appears on hover (mouse) and is always shown on
+     touch devices, where the shrunk screenshot text is too small to read. */
+  .st-shot-zoom{position:absolute;right:10px;bottom:10px;display:inline-flex;align-items:center;gap:6px;
+    padding:6px 11px;border-radius:999px;font-size:12px;font-weight:600;line-height:1;color:#fff;
+    background:rgba(11,29,58,.82);border:1px solid rgba(255,255,255,.20);
+    opacity:0;transform:translateY(4px);transition:opacity .18s cubic-bezier(.16,1,.3,1),transform .18s cubic-bezier(.16,1,.3,1)}
+  .st-shot-zoom svg{width:14px;height:14px;flex:none}
+  .st-shot-link:hover .st-shot-zoom,.st-shot-link:focus-visible .st-shot-zoom{opacity:1;transform:none}
+  @media (hover:none){ .st-shot-zoom{opacity:1;transform:none} }
   .st-shot figcaption{padding:9px 14px;font-size:12.5px;color:var(--text-muted);
     background:var(--surface);border-top:1px solid var(--border)}
+  .st-shot-tap{display:none}                /* desktop: hover pill is enough */
+  @media (hover:none){ .st-shot-tap{display:inline;color:var(--text-subtle)} }
+  /* Phones: tighten the guide's padding, step badges and screenshot margins so
+     it reads cleanly without forcing horizontal scroll. */
+  @media (max-width:480px){
+    .st-guide{margin-bottom:16px}
+    .st-guide-summary{padding:13px 14px;font-size:14.5px;gap:9px}
+    .st-steps{padding:14px 14px 16px;gap:12px}
+    .st-steps li{padding-left:34px;font-size:13px}
+    .st-steps li::before{width:22px;height:22px;font-size:12px}
+    .st-shot{margin:0 14px 14px}
+    .st-shot figcaption{padding:8px 12px;font-size:12px;line-height:1.5}
+    .st-shot-zoom{right:8px;bottom:8px;padding:5px 9px;font-size:11.5px}
+  }
+  @media (max-width:380px){
+    .st-guide-summary{font-size:14px}
+    .st-steps li{padding-left:32px}
+    .st-steps li::before{width:21px;height:21px;font-size:11.5px}
+  }
 
   /* ---- One shared recipe for the section text inputs (season/meet
          pickers). Replaces four identical 6-property inline blocks; 16px
@@ -381,7 +412,7 @@
     .drop-zone svg,.drop-zone:hover svg,.drop-zone.drag svg,
     #uploadsBody .upload-file-row,#uploadsBody .icon-trash,
     .roster-table tbody tr,.maintenance-btn,.maintenance-btn:hover,
-    .chip,.chip-x,.axp-input{
+    .chip,.chip-x,.axp-input,.st-shot-zoom{
       transition:none!important;transform:none!important;
     }
   }
@@ -839,8 +870,14 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
           <li><strong>Upload that CSV below</strong> (or just drop your <code>.hy3</code>/<code>.sd3</code> results file instead).</li>
         </ol>
         <figure class="st-shot">
-          <img src="assets/swimtopia-report-settings.png" alt="SwimTopia Top Times report settings: Custom date range with start and end dates around the meet, Display set to Custom Top 100 times, Course Y - Short Course Yards 25yd with Include converted times checked, Events from the Home Meet template, Match events using athlete age and competition category, and Include with Exhibition swims checked but Lead-off relay legs and Unofficial meets unchecked." loading="lazy" decoding="async"/>
-          <figcaption>Your SwimTopia <strong>Reports → Top Times</strong> screen should match this, then click <strong>Download (csv)</strong>.</figcaption>
+          <a class="st-shot-link" href="assets/swimtopia-report-settings.png" target="_blank" rel="noopener" aria-label="Open the SwimTopia settings screenshot at full size">
+            <img src="assets/swimtopia-report-settings.png" alt="SwimTopia Top Times report settings: Custom date range with start and end dates around the meet, Display set to Custom Top 100 times, Course Y - Short Course Yards 25yd with Include converted times checked, Events from the Home Meet template, Match events using athlete age and competition category, and Include with Exhibition swims checked but Lead-off relay legs and Unofficial meets unchecked." loading="lazy" decoding="async"/>
+            <span class="st-shot-zoom" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3M11 8v6M8 11h6"/></svg>
+              View full size
+            </span>
+          </a>
+          <figcaption>Your SwimTopia <strong>Reports → Top Times</strong> screen should match this, then click <strong>Download (csv)</strong>. <span class="st-shot-tap">Tap the image to zoom in.</span></figcaption>
         </figure>
       </section>
 
