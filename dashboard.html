@@ -365,6 +365,10 @@
           <tbody></tbody>
         </table>
       </div>
+      <p class="dq-note" id="dqNote" style="display:none">
+        <span class="dq-pill" aria-hidden="true">DQ</span>
+        <span><strong>Disqualified.</strong> A DQ swim doesn't show a time — a disqualification means no legal time was recorded — so it counts as a race here but never appears on personal bests, the season leaderboards, or Fastest Five.</span>
+      </p>
     </div>
   </div>
 </main>
@@ -805,10 +809,14 @@
         }
       });
 
+      const dqNote = document.getElementById('dqNote');
       if(rows.length === 0){
         tbody.innerHTML = `<tr><td colspan="6"><div class="empty">${allRaces.length === 0 ? 'No race results uploaded yet.' : 'No races match these filters.'}</div></td></tr>`;
+        if(dqNote) dqNote.style.display = 'none';
         return;
       }
+      // Only explain the DQ pill when there's actually a DQ in the rows shown.
+      if(dqNote) dqNote.style.display = rows.some(r => r.dq) ? 'flex' : 'none';
       tbody.innerHTML = rows.map(r => {
         const isPR = prByEvent[r.event] && prByEvent[r.event].sec === r.seconds && prByEvent[r.event].date === r.date && prByEvent[r.event].meet === r.meet;
         const place = parseInt(r.place,10);

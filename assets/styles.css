@@ -1249,6 +1249,15 @@ table tr:hover td{background:rgba(96,165,250,.05)}
 }
 [data-theme="light"] .dq-pill{color:#b91c1c}
 tr.row-dq td{background:rgba(239,68,68,.04)}
+/* Footnote that explains the DQ pill — only shown when a DQ race is in view. */
+.dq-note{
+  display:flex;align-items:flex-start;gap:10px;
+  margin:14px 0 0;padding:12px 14px;border-radius:var(--radius-md,12px);
+  background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.18);
+  font-size:13px;line-height:1.5;color:var(--text-muted);
+}
+.dq-note .dq-pill{flex:none;margin-top:1px}
+.dq-note strong{color:var(--text)}
 
 /* Leaderboard hero subtitle — used by both old + new styles */
 .leaderboard-hero-content{max-width:920px}
