@@ -653,6 +653,58 @@
       }
     }
 
+    // ---- Fold into the original file's "Uploaded files" entry ----
+    // When this file's rows land on a meet an EARLIER upload already owns —
+    // the same meet name re-uploaded, or a renamed file the content detection
+    // above recognized — those rows are stamped with the ORIGINAL file's
+    // uploadId, and this file's contribution is added onto that original
+    // registry entry instead of creating a second row in the panel. One meet
+    // = one file entry: re-drops and fuller exports merge into the original,
+    // and deleting that one entry takes the whole merged meet back out.
+    const meetOwner = {};   // final meet name -> owning (original) uploadId
+    const ownerDocs = {};   // owning uploadId -> its registry doc data
+    if(mode === 'results' && !timeTrial && uploadId){
+      const wantMeets = new Set();
+      for(const rec of records){
+        if(!(rec.event && rec.time)) continue;
+        const m = meetName || rec.meet || 'Unknown Meet';
+        wantMeets.add(meetAlias[m] || m);
+      }
+      wantMeets.delete('Unknown Meet'); // the placeholder is never "owned"
+      for(const m of wantMeets){
+        try {
+          const snap = await FB.db.collection('hhst_uploads')
+            .where('meetNames', 'array-contains', m).get();
+          // Earliest matching upload (same season, results, not a time trial)
+          // is the original owner.
+          let best = null, bestMs = Infinity;
+          snap.forEach(d => {
+            if(d.id === uploadId) return;
+            const u = d.data() || {};
+            if(u.mode === 'roster' || u.timeTrial) return;
+            if((u.season || '') !== season) return;
+            const t = u.uploadedAt;
+            const ms = (t && typeof t.toMillis === 'function') ? t.toMillis()
+                     : (t && typeof t.seconds === 'number') ? t.seconds * 1000 : 0;
+            if(ms < bestMs){ bestMs = ms; best = { id: d.id, data: u }; }
+          });
+          if(best){ meetOwner[m] = best.id; ownerDocs[best.id] = best.data; }
+        } catch(e){
+          // Lookup is best-effort — worst case this file just gets its own row.
+        }
+      }
+      // Let the admin page name the file each recognized meet merged into.
+      for(const mm of mergedMeets){
+        const oid = meetOwner[mm.to];
+        if(oid && ownerDocs[oid]) mm.intoFile = ownerDocs[oid].fileName || '';
+      }
+    }
+    // Per-uploadId contribution ledger (results rows only). contrib[uploadId]
+    // is this file's OWN share; contrib[<owner id>] is what it folded into an
+    // original file. Drives the registry bookkeeping below.
+    const contrib = {};
+    const contribFor = id => contrib[id] = contrib[id] || { added:0, updated:0, keys:new Set(), meets:new Set() };
+
     const skippedSwimmers = new Set();
     const writtenKeys = new Set();
     const meetTimeWrites = [];
@@ -894,19 +946,25 @@
         if(!isFinite(seconds) && !racedNoTime) continue;
         // Same-meet detection (above) may have recognized this file's meet as
         // an existing one under a different name — relabel so the rows merge.
+        // And when an earlier upload already owns the (final) meet, stamp the
+        // row with THAT file's uploadId so the meet stays one deletable unit.
         const rawMeet = meetName || rec.meet || 'Unknown Meet';
+        const finalMeet = meetAlias[rawMeet] || rawMeet;
+        const rowUploadId = meetOwner[finalMeet] || uploadId;
         const result = {
           event: eventLabel,
           distance,
           stroke,
           time: racedNoTime ? 'DQ' : timeStr,
-          meet: meetAlias[rawMeet] || rawMeet,
+          meet: finalMeet,
           date: meetDate || rec.date || '',
           place: racedNoTime ? '' : (rec.place || ''),
           split: rec.split || '',
           season: rowSeason,
-          uploadId: uploadId || ''
+          uploadId: rowUploadId || ''
         };
+        const rowContrib = (mode === 'results' && uploadId) ? contribFor(rowUploadId) : null;
+        if(rowContrib) rowContrib.keys.add(key);
         // A DQ carries no comparable time, so it never gets a `seconds` value.
         if(racedNoTime) result.dq = true;
         else result.seconds = seconds;
@@ -938,16 +996,20 @@
               || (prev.seconds !== result.seconds)
               || (!!prev.dq !== !!result.dq);
             sw.results[dupIdx] = result; // newest upload wins (re-stamps time/place/date/uploadId)
-            if(changed) updated++;
+            if(changed){ updated++; if(rowContrib) rowContrib.updated++; }
           }
         } else {
           sw.results.push(result);
           added++;
+          if(rowContrib) rowContrib.added++;
         }
         // Record the meet for the registry/summary (new OR updated rows) — but
         // don't register the synthetic 'Unknown Meet' placeholder (matches the
         // pre-named-meet behavior).
-        if(meetName || rec.meet) meetNames.add(result.meet);
+        if(meetName || rec.meet){
+          meetNames.add(result.meet);
+          if(rowContrib) rowContrib.meets.add(result.meet);
+        }
         // The hhst_meet_times mirror backs the ranked leaderboards, so it only
         // holds swims with a real time. A DQ race lives on the swimmer's
         // profile + races-logged count (via sw.results) but is skipped here.
@@ -984,7 +1046,7 @@
               gender: mi.gender || '',
               competitionGroup: competitionGroup(sw, rowSeason),
               season: rowSeason,
-              uploadId: uploadId || ''
+              uploadId: rowUploadId || ''
             }
           });
         }
@@ -1063,8 +1125,46 @@
     // "Uploaded files" list and can be removed on its own later. Skipped when
     // no uploadId was supplied (legacy/manual ingest) so we don't create
     // un-deletable phantom rows.
-    if(uploadId){
+    // Fold this file's owned-meet contributions onto the ORIGINAL files'
+    // registry rows (counts grow, swimmer keys union, and the new filename is
+    // recorded) — the panel keeps showing one entry per meet.
+    const mergedIntoFiles = [];
+    for(const ownerId of Object.keys(ownerDocs)){
+      const c = contrib[ownerId];
+      if(!c) continue; // owner matched but no row actually landed on its meet
+      const prev = ownerDocs[ownerId] || {};
+      const prevKeys = Array.isArray(prev.touchedSwimmerKeys) ? prev.touchedSwimmerKeys : [];
+      const allKeys = Array.from(new Set([...prevKeys, ...c.keys]));
+      const mergedNames = Array.isArray(prev.mergedFileNames) ? prev.mergedFileNames.slice() : [];
+      if(fileName && fileName !== prev.fileName && !mergedNames.includes(fileName)) mergedNames.push(fileName);
       try {
+        await FB.db.collection('hhst_uploads').doc(ownerId).set({
+          addedResults: (prev.addedResults || 0) + c.added,
+          updatedResults: (prev.updatedResults || 0) + c.updated,
+          swimmerCount: allKeys.length,
+          touchedSwimmerKeys: allKeys,
+          mergedFileNames: mergedNames,
+          lastMergedAt: FB.FieldValue.serverTimestamp()
+        }, { merge: true });
+        mergedIntoFiles.push(prev.fileName || ownerId);
+      } catch(e){
+        errors.push(`Merged times into "${prev.fileName || ownerId}" but could not update its uploaded-files entry: ${e && e.message || e}`);
+      }
+    }
+
+    if(uploadId){
+      // When EVERYTHING this file brought folded into original files, don't
+      // create a row of its own — the panel shows just the original entry.
+      const own = contrib[uploadId];
+      const foldedSomething = mergedIntoFiles.length > 0;
+      const skipOwnRow = mode === 'results' && foldedSomething
+        && !(own && (own.added || own.updated || own.keys.size));
+      if(!skipOwnRow) try {
+        // In results mode the ledger has this file's OWN share (folded rows are
+        // counted on the original's row instead); roster mode keeps the totals.
+        const ownAdded   = (mode === 'results') ? (own ? own.added : 0) : added;
+        const ownUpdated = (mode === 'results') ? (own ? own.updated : 0) : updated;
+        const ownMeets   = (mode === 'results' && foldedSomething && own) ? Array.from(own.meets) : Array.from(meetNames);
         await FB.db.collection('hhst_uploads').doc(uploadId).set({
           uploadId,
           fileName: fileName || '',
@@ -1073,12 +1173,12 @@
           timeTrial,
           meetName: meetName || '',
           meetDate: meetDate || '',
-          addedResults: added,
-          updatedResults: updated,
+          addedResults: ownAdded,
+          updatedResults: ownUpdated,
           swimmerCount: writtenKeys.size,
           newSwimmerKeys: Array.from(newSwimmerKeys),
           touchedSwimmerKeys: Array.from(writtenKeys),
-          meetNames: Array.from(meetNames),
+          meetNames: ownMeets,
           mergedMeets,
           uploadedAt: FB.FieldValue.serverTimestamp()
         }, { merge: true });
@@ -1099,6 +1199,7 @@
       skippedSwimmers: Array.from(skippedSwimmers),
       meets: meetNames.size,
       mergedMeets,
+      mergedIntoFiles,
       uploadId: uploadId || '',
       errors
     };

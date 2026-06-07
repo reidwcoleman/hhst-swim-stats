@@ -1149,7 +1149,7 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
   </div>
 </div>
 
-<script src="assets/data.js?v=33"></script>
+<script src="assets/data.js?v=34"></script>
 <script>
   HHST.initTheme();
 
@@ -1521,6 +1521,7 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
         errors: [],
         skippedSwimmers: new Set(),
         mergedMeets: [],
+        mergedIntoFiles: new Set(),
         filesOk: 0,
         filesFailed: []
       };
@@ -1555,6 +1556,7 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
           (result.errors || []).forEach(e => totals.errors.push(`${f.name}: ${e}`));
           (result.skippedSwimmers || []).forEach(n => totals.skippedSwimmers.add(n));
           (result.mergedMeets || []).forEach(m => totals.mergedMeets.push(m));
+          (result.mergedIntoFiles || []).forEach(n => totals.mergedIntoFiles.add(n));
           // result.swimmers is # touched per-file — for an overall figure we
           // re-read after all files have run, since the same swimmer may
           // appear in several uploads.
@@ -1617,6 +1619,12 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
         // already on file (under a different name), so they merged into it.
         for(const m of totals.mergedMeets){
           body += ` Recognized "${m.from}" as the same meet as "${m.to}" (${m.matched} matching swims) — merged into "${m.to}", duplicates skipped.`;
+        }
+        // Registry fold: the file's times were added onto the ORIGINAL file's
+        // entry in Uploaded Files (no second row), so one meet = one file.
+        if(totals.mergedIntoFiles.size){
+          const names = Array.from(totals.mergedIntoFiles).map(n => `"${n}"`).join(', ');
+          body += ` In Uploaded Files this merged into the original file ${names} — its entry now covers both.`;
         }
         if(prunedNames.length){
           body += ` Removed ${prunedNames.length} orphan swimmer${prunedNames.length===1?'':'s'} (no roster, no times on file).`;
@@ -2343,10 +2351,16 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
       : (meetDateStr ? `${meetDateStr} · ` : '') +
         `${u.addedResults||0} race${(u.addedResults||0)===1?'':'s'}` +
         ((u.swimmerCount||0) ? ` · ${u.swimmerCount} swimmer${u.swimmerCount===1?'':'s'}` : '');
-    // Secondary line: the source filename + when it was uploaded.
+    // Secondary line: the source filename + when it was uploaded. Files that
+    // were recognized as the same meet and folded into this entry are listed
+    // too, so the coach can see everything this one row covers (and removes).
+    const mergedNames = (!isRoster && Array.isArray(u.mergedFileNames)) ? u.mergedFileNames.filter(Boolean) : [];
+    const fromPart = u.fileName
+      ? `from ${escapeHtml(u.fileName)}${mergedNames.length ? ` + ${mergedNames.map(escapeHtml).join(' + ')} (merged)` : ''}`
+      : '';
     const sub = isRoster
       ? (when || '')
-      : [u.fileName ? `from ${escapeHtml(u.fileName)}` : '', when].filter(Boolean).join(' · ');
+      : [fromPart, when].filter(Boolean).join(' · ');
     return `
       <div class="upload-file-row" style="display:flex;align-items:center;gap:12px;padding:12px 16px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--surface)">
         <span style="color:var(--text-muted);display:flex">${icon}</span>
