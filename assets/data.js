@@ -2675,12 +2675,33 @@
     const recentMeets = Object.values(meetMap).sort((a,b)=> b.date - a.date);
     const recentMeet  = recentMeets[0] || null;
 
-    // Favorite (most-raced) event + cumulative season improvement (first → best
-    // per event). totalTimeDropSec stays season-cumulative — it backs the
-    // cross-season "All Seasons" comparison and the admin "time dropped by
-    // season" card, which should NOT shrink to a two-meet window.
+    // Favorite (most-raced) event + cumulative improvement.
     const favorite = bestTimes.slice().sort((a,b)=> b.count - a.count)[0] || null;
-    const totalTimeDropSec = bestTimes.reduce((sum,b)=> sum + Math.max(0, b.improvement), 0);
+
+    // Time dropped = how much the swimmer's PB per event improved THIS season,
+    // measured against the PB they CARRIED INTO the season (their best real
+    // time from any older season; legacy untagged rows count as older). The
+    // old within-season-only math (first swim → best swim) read 0 until the
+    // second real meet of a season — a kid who crushed last year's best at the
+    // season opener showed "—" for Total Time Dropped. With no prior-season
+    // baseline (their first season in the event), the within-season first
+    // swim is still the baseline, exactly as before. season:'' (all-time
+    // view) has no "prior" by definition, so it is unchanged too.
+    const priorBest = {};
+    if(season){
+      (sw.results||[]).forEach(r => {
+        if(!r || !isFinite(r.seconds)) return;
+        if(!includeTimeTrials && (r.timeTrial || isPracticeMeet(r.meet))) return;
+        const rs = (r.season || '').toString();
+        if(rs === season) return;
+        if(rs && compareSeasonsDesc(rs, season) <= 0) return; // same/newer — not prior
+        if(priorBest[r.event] === undefined || r.seconds < priorBest[r.event]) priorBest[r.event] = r.seconds;
+      });
+    }
+    const totalTimeDropSec = bestTimes.reduce((sum, b) => {
+      const baseline = (priorBest[b.event] !== undefined) ? priorBest[b.event] : b.firstSeconds;
+      return sum + (isFinite(baseline) ? Math.max(0, baseline - b.seconds) : 0);
+    }, 0);
 
     // ---- Most Improved: PRs at the swimmer's MOST RECENT meet --------------
     // recentMeetDropSec = total seconds this swimmer beat their own previous
@@ -2758,24 +2779,44 @@
     const ag = resolveBracket(myInfo);
     const myGender = myInfo.gender || '';
     const inSeason = r => !season || (r && r.season === season);
+    // Times are CAREER BESTS (every real swim on record, any season) — early
+    // in a season the season-best IS just the latest meet's time, which made
+    // ranks look like a "who swam fastest last Saturday" board. PRs are what
+    // families expect a rank to mean. Scope stays season-shaped everywhere
+    // else: the EVENTS listed are the ones swum this season, the bracket and
+    // gender resolve for this season, and only swimmers on this season's
+    // roster are in the comparison set (legacy swimmers with no seasons array
+    // still match).
+    const careerBest = results => {
+      const best = {};
+      (results||[]).forEach(r => {
+        if(!r || !isFinite(r.seconds) || r.timeTrial || isPracticeMeet(r.meet)) return;
+        if(best[r.event] === undefined || r.seconds < best[r.event]) best[r.event] = r.seconds;
+      });
+      return best;
+    };
+    const onRoster = other => {
+      if(!season) return true;
+      const ss = Array.isArray(other.seasons) ? other.seasons : [];
+      return !ss.length || ss.includes(season);
+    };
+    const myBest = careerBest(sw.results);
     const myEvents = {};
     (sw.results||[]).forEach(r => {
-      if(!isFinite(r.seconds) || !inSeason(r) || r.timeTrial || isPracticeMeet(r.meet)) return;
-      if(!(r.event in myEvents) || r.seconds < myEvents[r.event]) myEvents[r.event] = r.seconds;
+      if(!r || !isFinite(r.seconds) || !inSeason(r) || r.timeTrial || isPracticeMeet(r.meet)) return;
+      if(myBest[r.event] !== undefined) myEvents[r.event] = myBest[r.event];
     });
     const ranks = {};
     Object.entries(myEvents).forEach(([event, mySec]) => {
       const competitors = [];
       Object.values(allSwimmers).forEach(other => {
+        if(!onRoster(other)) return;
         const oInfo = swimmerSeasonInfo(other, season);
         if(resolveBracket(oInfo) !== ag) return;
         // Same-gender heat only — skip the other gender when we know ours.
         if(myGender && oInfo.gender && oInfo.gender !== myGender) return;
-        let best = Infinity;
-        (other.results||[]).forEach(r => {
-          if(r.event === event && isFinite(r.seconds) && inSeason(r) && !r.timeTrial && !isPracticeMeet(r.meet) && r.seconds < best) best = r.seconds;
-        });
-        if(isFinite(best)) competitors.push({ key: other.key, sec: best });
+        const best = careerBest(other.results)[event];
+        if(best !== undefined) competitors.push({ key: other.key, sec: best });
       });
       competitors.sort((a,b)=> a.sec - b.sec);
       const idx = competitors.findIndex(c => c.key === sw.key);
