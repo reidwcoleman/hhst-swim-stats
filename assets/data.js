@@ -1358,9 +1358,12 @@
   }
   // ---- PR drops at one meet, vs the swimmer's own previous best ----------
   // For each stroke+distance the swimmer raced at `meetName`, compare their
-  // best swim AT that meet to their previous best across ALL earlier real
-  // meets — any season, because a PR is a PR even when the old best is last
-  // year's. Time trials and practice sessions never count on either side.
+  // best swim AT that meet to their previous best at earlier real meets. When
+  // opts.season is set (the normal case), the baseline is scoped to THAT season
+  // only — last season's times never count, so an in-season improvement reads
+  // as a real drop even if the swimmer was faster a year ago. Omit the season
+  // (e.g. the Time Trial dashboard) to span the full passed-in history.
+  // Time trials and practice sessions never count on either side.
   // Only positive drops (true PRs) are returned, biggest first.
   // This is THE shared definition behind every "Most Improved" surface, and
   // it is deliberately independent of which meets the swimmer attended:
@@ -1369,9 +1372,11 @@
   // missed one meet, then PR'd in every event at the next).
   function prDropsAtMeet(sw, meetName, opts){
     const includeTimeTrials = !!(opts && opts.includeTimeTrials);
+    const season = (opts && opts.season) || '';
     const rows = (sw.results || []).filter(r =>
       r && isFinite(r.seconds) &&
-      (includeTimeTrials || (!r.timeTrial && !isPracticeMeet(r.meet))));
+      (includeTimeTrials || (!r.timeTrial && !isPracticeMeet(r.meet))) &&
+      (!season || (r.season || '') === season));
     const strokeOf = r => (r.stroke || extractStroke(r.event) || '').trim();
     const distOf   = r => ((r.distance != null ? String(r.distance) : '').trim() || extractDistance(r.event) || '');
     // Latest date seen at the target meet — only swims at or before it can be
@@ -1474,11 +1479,11 @@
       ? seasonMeets.find(m => m.meet === opts.meet) || { meet: opts.meet, ts: -Infinity, dateStr: opts.date || '' }
       : seasonMeets[seasonMeets.length - 1];
 
-    // 2) Per-swimmer drops: each swimmer's best at the target meet vs their
-    //    own previous best across ALL earlier real meets (any season) — see
-    //    prDropsAtMeet. No baseline meet is required, so the board works for
-    //    a season's very first meet and NEVER hides a swimmer who skipped the
-    //    previous meet: a PR is judged against their own best, not attendance.
+    // 2) Per-swimmer drops: each swimmer's best at the target meet vs their own
+    //    previous best at earlier real meets IN THIS SEASON (prDropsAtMeet is
+    //    scoped to `season`, so last year's times never count). No baseline meet
+    //    is required, so the board works for a season's very first meet and NEVER
+    //    hides a swimmer who skipped the previous meet.
     const drops = [];
     swimmers.forEach(sw => {
       // People filter: only rank swimmers on this season's roster (legacy
@@ -1487,7 +1492,7 @@
         const sws = Array.isArray(sw.seasons) ? sw.seasons : [];
         if(sws.length && !sws.includes(season)) return;
       }
-      const { drops: eventsDropped, total } = prDropsAtMeet(sw, target.meet);
+      const { drops: eventsDropped, total } = prDropsAtMeet(sw, target.meet, { season });
       if(!(total > 0)) return;
       const info = swimmerSeasonInfo(sw, season);
       const bracket = resolveBracket(info);
@@ -2892,39 +2897,26 @@
     // Favorite (most-raced) event + cumulative improvement.
     const favorite = bestTimes.slice().sort((a,b)=> b.count - a.count)[0] || null;
 
-    // Time dropped = how much the swimmer's PB per event improved THIS season,
-    // measured against the PB they CARRIED INTO the season (their best real
-    // time from any older season; legacy untagged rows count as older). The
-    // old within-season-only math (first swim → best swim) read 0 until the
-    // second real meet of a season — a kid who crushed last year's best at the
-    // season opener showed "—" for Total Time Dropped. With no prior-season
-    // baseline (their first season in the event), the within-season first
-    // swim is still the baseline, exactly as before. season:'' (all-time
-    // view) has no "prior" by definition, so it is unchanged too.
-    const priorBest = {};
-    if(season){
-      (sw.results||[]).forEach(r => {
-        if(!r || !isFinite(r.seconds)) return;
-        if(!includeTimeTrials && (r.timeTrial || isPracticeMeet(r.meet))) return;
-        const rs = (r.season || '').toString();
-        if(rs === season) return;
-        if(rs && compareSeasonsDesc(rs, season) <= 0) return; // same/newer — not prior
-        if(priorBest[r.event] === undefined || r.seconds < priorBest[r.event]) priorBest[r.event] = r.seconds;
-      });
-    }
+    // Time dropped = how much the swimmer's PB per event improved WITHIN THIS
+    // SEASON — first real swim of the season → best real swim of the season.
+    // Last season never factors in: a swimmer who was faster last year still
+    // shows their honest in-season improvement (and a single-meet season shows
+    // 0 until they've raced an event twice). `firstSeconds` is already the
+    // first swim inside the season-filtered set, so the baseline is purely the
+    // current season's opener. (season:'' all-time view spans everything.)
     const totalTimeDropSec = bestTimes.reduce((sum, b) => {
-      const baseline = (priorBest[b.event] !== undefined) ? priorBest[b.event] : b.firstSeconds;
+      const baseline = b.firstSeconds;
       return sum + (isFinite(baseline) ? Math.max(0, baseline - b.seconds) : 0);
     }, 0);
 
     // ---- Most Improved: PRs at the swimmer's MOST RECENT meet --------------
     // recentMeetDropSec = total seconds this swimmer beat their own previous
     // bests by at their latest real meet; mostImproved = the single biggest of
-    // those PR drops. Baselines come from their best across ALL earlier real
-    // meets (any season, full history — NOT just "the previous meet"), so a
-    // swimmer who skipped a meet still gets full credit when they PR. Time
-    // trials and practice sessions never count on either side; the Time Trial
-    // dashboard opts back in via includeTimeTrials.
+    // those PR drops. Baselines come from their best at earlier real meets IN
+    // THIS SEASON only (passed through to prDropsAtMeet below), so last season's
+    // faster time never suppresses an in-season PR. A swimmer who skipped a meet
+    // still gets full credit. Time trials and practice sessions never count on
+    // either side; the Time Trial dashboard opts back in via includeTimeTrials.
     let recentMeetDropSec = 0;
     let mostImproved = null;
     {
@@ -2940,10 +2932,11 @@
       const order = Object.keys(meetTs).sort((a,b) =>
         meetTs[b] !== meetTs[a] ? meetTs[b] - meetTs[a] : (a < b ? 1 : a > b ? -1 : 0));
       if(order.length){
-        // …but baselines read the swimmer's FULL history (sw.results), so last
-        // season's best is still the bar to beat.
+        // Baselines are scoped to THIS season (see prDropsAtMeet's season opt),
+        // so the "drop" is measured against an earlier swim this season, never
+        // last year's time.
         const targetMeet = order[0];
-        const { drops, total } = prDropsAtMeet(sw, targetMeet, { includeTimeTrials });
+        const { drops, total } = prDropsAtMeet(sw, targetMeet, { includeTimeTrials, season });
         recentMeetDropSec = total;
         if(drops.length){
           const top = drops[0];
