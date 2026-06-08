@@ -1233,6 +1233,11 @@
     // meet (the Fastest Five posters use this to show the most recent meet's
     // results, not a swimmer's season-best). Unset → best time of the season.
     const meet = (opts && opts.meet) || '';
+    // Practice meets are normally excluded (they aren't real competition). But
+    // early in a season — before two real meets are on record — the caller can
+    // opt them IN so the board isn't empty/thin when all a swimmer has is a
+    // practice swim. Time trials stay excluded regardless.
+    const includePractice = !!(opts && opts.includePracticeMeets);
     const byGroup = {};
     for(const sw of swimmers){
       // Use the swimmer's age/bracket FOR THE SELECTED SEASON (so a kid who
@@ -1250,7 +1255,7 @@
       if(!group || group === 'Unknown') continue;
       const matching = (sw.results||[]).filter(r => {
         if(r.timeTrial) return false; // time trials excluded from Fastest Five / leaderboards
-        if(isPracticeMeet(r.meet)) return false; // practice sessions aren't PRs either
+        if(!includePractice && isPracticeMeet(r.meet)) return false; // practice sessions excluded once 2 real meets exist
         if(season && r.season !== season) return false;
         if(meet && r.meet !== meet) return false;
         if(eventMatcher.stroke && r.stroke !== eventMatcher.stroke) return false;

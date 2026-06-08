@@ -176,6 +176,16 @@
     content:"";width:6px;height:6px;border-radius:999px;
     background:var(--accent);flex-shrink:0;
   }
+  /* "practice times counting" grace-period note beside the section eyebrow */
+  .aw-practice-note{
+    display:inline-flex;align-items:center;gap:6px;white-space:nowrap;
+    font-size:11.5px;font-weight:600;color:var(--amber-600,#b67d10);
+    background:rgba(201,143,14,.10);border:1px solid rgba(201,143,14,.28);
+    padding:4px 11px;border-radius:999px;
+  }
+  .aw-practice-note[hidden]{ display:none; }
+  .aw-practice-note svg{ width:13px;height:13px;flex-shrink:0; }
+  [data-theme="dark"] .aw-practice-note{ color:#efc75e; }
   #improvedSectionHead{ margin-top:16px; }
 
   /* Section rhythm between the Fastest Five posters and the Most Improved
@@ -479,6 +489,10 @@
   <div class="aw-section-head no-print" id="fastestSectionHead" style="display:none">
     <span class="aw-section-eyebrow">Fastest Five posters</span>
     <span class="aw-section-rule" aria-hidden="true"></span>
+    <span class="aw-practice-note" id="fastestPracticeNote" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+      <span id="fastestPracticeNoteText"></span>
+    </span>
   </div>
   <section id="awardsHost" class="awards-host"></section>
 
@@ -518,7 +532,7 @@
   Highcroft Hurricanes Swim Team · <a href="leaderboards.html">Season Stats</a> · <a href="meet-recap.html">Meet Recap</a> · <a href="admin.html">Admin</a>
 </footer>
 
-<script src="assets/data.js?v=39"></script>
+<script src="assets/data.js?v=40"></script>
 <script>
   HHST.initTheme();
   document.getElementById('themeToggle').addEventListener('click', HHST.toggleTheme);
@@ -630,6 +644,21 @@
   }
   function setFastestCount(n){ setBadgeCount('fastestCountBadge','fastestCountVal','fastestCountLabel', n); }
   function setImprovedCount(n){ setBadgeCount('improvedCountBadge','improvedCountVal','improvedCountLabel', n); }
+  // Surface the practice-meet grace period so a coach knows why a practice time
+  // can sit on the board this early — and that it'll drop off at the 2nd real meet.
+  function setFastestPracticeNote(on, realMeetCount){
+    const note = document.getElementById('fastestPracticeNote');
+    const text = document.getElementById('fastestPracticeNoteText');
+    if(!note || !text) return;
+    if(on){
+      text.textContent = realMeetCount === 0
+        ? 'Practice times included until the first 2 real meets'
+        : 'Practice times still counting — drop off at the 2nd real meet';
+      note.hidden = false;
+    } else {
+      note.hidden = true;
+    }
+  }
 
   // Keeps the sticky "Print all" pill in sync with the live poster count and
   // only reveals it once there's at least one poster to print.
@@ -658,13 +687,21 @@
     // meet they were swum at. A PR set at the most recent meet naturally shows
     // up here; an older but still-faster time also holds its place.
 
+    // Practice-meet grace period: until the season has TWO real meets on record,
+    // practice swims count toward the board so it isn't empty at season start
+    // (when the only times on file are from a practice meet). Once a second real
+    // meet lands, practice swims drop off and real competition stands alone.
+    const realMeetCount = HHST.meetsInSeason(allSwimmers, season).length;
+    const includePractice = realMeetCount < 2;
+    setFastestPracticeNote(includePractice, realMeetCount);
+
     const cards = brackets.map(bracket => {
       const dist = DIST_FOR_BRACKET[bracket];
       // leaderboardsByEvent splits Boys/Girls automatically when gender is on file.
       // Scoped to the most recent season that has times (so older seasons' times
       // don't carry over) but NOT to a single meet — leaving opts.meet unset
       // makes it rank each swimmer's best time of the season (their PR).
-      const boards = HHST.leaderboardsByEvent(allSwimmers, { stroke: 'Freestyle', distance: dist }, { limit: 5, season });
+      const boards = HHST.leaderboardsByEvent(allSwimmers, { stroke: 'Freestyle', distance: dist }, { limit: 5, season, includePracticeMeets: includePractice });
 
       // Only entries that actually belong to THIS bracket — strip the gender prefix.
       const boysKey  = `Boys ${bracket}`;
