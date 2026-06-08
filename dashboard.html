@@ -12,6 +12,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
 <link rel="stylesheet" href="assets/styles.css?v=27"/>
+<link rel="stylesheet" href="assets/training.css?v=1"/>
 <style>
   /* ---- Page-scoped polish for the swimmer dashboard ----
      Aligns this page's inline-style risks to the shared design tokens
@@ -105,6 +106,7 @@
     </a>
     <ul class="nav-links">
       <li><a href="index.html">New Search</a></li>
+      <li><a href="get-faster.html">Get Faster</a></li>
       <li><a href="admin.html" class="btn">Admin</a></li>
       <li>
         <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
@@ -290,6 +292,25 @@
       <div class="best-times-rich" id="bestTimes"></div>
     </div>
 
+    <!-- PERSONALIZED TRAINING PLAN — data-driven "how to get faster" tips -->
+    <div class="chart-card tr-plan-card" id="trainPlanCard">
+      <div class="tr-plan-head">
+        <div>
+          <span class="tr-plan-kicker">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>
+            Get Faster
+          </span>
+          <h3>Your Path to Faster Times</h3>
+          <p class="lead" id="trainPlanLead">Personalized practice tips built from this swimmer's own race times — exactly what to work on next to drop time.</p>
+        </div>
+        <a class="tr-guide-link" href="get-faster.html">
+          Full stroke guide
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </a>
+      </div>
+      <div id="trainPlanBody"></div>
+    </div>
+
     <!-- SEASON-OVER-SEASON PROGRESS -->
     <div class="chart-card" id="seasonProgCard" style="display:none">
       <h3>Season-over-Season Progress</h3>
@@ -378,6 +399,7 @@
 </footer>
 
 <script src="assets/data.js?v=28"></script>
+<script src="assets/training.js?v=1"></script>
 <script>
   HHST.initTheme();
   document.getElementById('themeToggle').addEventListener('click', HHST.toggleTheme);
@@ -598,6 +620,9 @@
     // Season-over-season progress + record-breaker timeline (deep stats)
     renderSeasonProgress(sw);
     renderRecordBreakers(stats);
+
+    // Personalized "how to get faster" plan, built from this swimmer's times
+    renderTrainingPlan(stats);
 
     // Stroke chart
     renderStrokeChart(stats.strokeCounts);
@@ -1057,6 +1082,185 @@
         ${deltaHtml}
       </div>`;
     }).join('');
+  }
+
+  // ===== Personalized "Path to Faster Times" — turns the swimmer's own best
+  // times into a concrete, prioritized practice plan. All the coaching content
+  // (benchmark goal times per age group + per-stroke drills, dryland & cues)
+  // lives in assets/training.js (HHST_TRAIN) so it's shared with the public
+  // Get Faster guide. Re-runs on every season change like the rest of the
+  // dashboard, so the plan always matches the season being viewed.
+  function renderTrainingPlan(stats){
+    const card = document.getElementById('trainPlanCard');
+    const body = document.getElementById('trainPlanBody');
+    const lead = document.getElementById('trainPlanLead');
+    if(!card || !body) return;
+    if(!window.HHST_TRAIN){ card.style.display = 'none'; return; }
+    card.style.display = '';
+    const plan = HHST_TRAIN.tipsForSwimmer(stats, { bracket: stats.ageGroup });
+
+    const I = {
+      check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>',
+      drill:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/><path d="M2 17c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/><path d="M2 7c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/></svg>',
+      dry:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7v10M18 7v10M4 9h2M18 9h2M9 12h6M9 9v6M15 9v6"/></svg>',
+      arrow:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
+      star:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/></svg>'
+    };
+    const ag = (stats.ageGroup && stats.ageGroup !== 'Unknown') ? stats.ageGroup : '';
+    const first = (swimmer.name || 'Your swimmer').split(' ')[0];
+
+    const allStrong = plan.hasData && !plan.focus.length && plan.strengths.length;
+    if(lead){
+      if(allStrong){
+        lead.textContent = `${first} is swimming strong times across the board${ag ? ` for the ${ag} age group` : ''} — here's how to keep them sharp and chase the next level.`;
+      } else {
+        lead.textContent = ag
+          ? `Personalized tips built from ${first}'s own race times and goal times for the ${ag} age group — exactly what to practice next to drop time.`
+          : `Personalized tips built from ${first}'s own race times — exactly what to practice next to drop time.`;
+      }
+    }
+
+    if(!plan.hasData){
+      body.innerHTML = `<div class="empty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>
+        <p style="margin:0 0 6px">Once your swimmer has a recorded race time, a practice plan built around their events will appear here.</p>
+        <p style="margin:0"><a href="get-faster.html">Browse the full Get Faster guide →</a></p>
+      </div>`;
+      return;
+    }
+
+    const statusChip = (st) => {
+      if(st === 'developing') return `<span class="tr-chip is-developing">Biggest opportunity</span>`;
+      if(st === 'onTrack')    return `<span class="tr-chip is-ontrack">Closing in</span>`;
+      if(st === 'strong')     return `<span class="tr-chip is-strong">${I.star} Strong time</span>`;
+      return `<span class="tr-chip is-general">Keep building</span>`;
+    };
+
+    function topMsg(t){
+      if(t.status === 'developing'){
+        return `This event has the most room to grow. From <b>${escapeHtml(t.time)}</b>, a strong ${ag || 'age-group'} time is about <b>${escapeHtml(t.benchTime || t.goalTime)}</b>. Chip away with the ${escapeHtml(t.stroke)} drills below.`;
+      }
+      if(t.status === 'onTrack'){
+        return `${escapeHtml(first)} is closing in on a strong time here. From <b>${escapeHtml(t.time)}</b>, the ${ag || 'age-group'} goal is about <b>${escapeHtml(t.benchTime || t.goalTime)}</b> — these drills get you there.`;
+      }
+      return `Keep building this one. The next barrier to break is <b>${escapeHtml(t.goalTime)}</b> — here's exactly how to chase it.`;
+    }
+
+    function focusCard(t){
+      const gap = (t.goalSec != null && isFinite(t.seconds)) ? Math.max(0, t.seconds - t.goalSec) : null;
+      let pct = 0;
+      if(t.goalSec != null && t.seconds > 0) pct = Math.max(6, Math.min(100, Math.round(t.goalSec / t.seconds * 100)));
+      const gapLabel = gap != null
+        ? (gap < 0.05 ? 'Right on the line!' : `<b>${gap.toFixed(2)}s</b> to your goal`)
+        : '';
+      const drills = `<div class="tr-cards" style="--c:${t.color}">` + t.drills.map(d => `
+        <div class="tr-card">
+          ${d.focus ? `<span class="tr-card-tag">${escapeHtml(d.focus)}</span>` : ''}
+          <div class="tr-card-name">${escapeHtml(d.name)}</div>
+          <div class="tr-card-body">${escapeHtml(d.how)}</div>
+        </div>`).join('') + `</div>`;
+      const dry = `<div class="tr-cards" style="--c:${t.color}">` + t.dryland.map(d => `
+        <div class="tr-card">
+          <div class="tr-card-name">${escapeHtml(d.name)}</div>
+          <div class="tr-card-body">${escapeHtml(d.how)}</div>
+          ${d.reps ? `<span class="tr-card-reps">${escapeHtml(d.reps)}</span>` : ''}
+        </div>`).join('') + `</div>`;
+      const cues = `<ul class="tr-cues" style="--c:${t.color}">` +
+        t.cues.map(c => `<li>${I.check}<span>${escapeHtml(c)}</span></li>`).join('') + `</ul>`;
+      return `<div class="tr-focus" style="--c:${t.color}">
+        <div class="tr-focus-head">
+          <div class="tr-focus-dot" style="--c:${t.color}">${t.emoji}</div>
+          <div class="tr-focus-title">${escapeHtml(t.event)}</div>
+          ${statusChip(t.status)}
+          <div class="tr-focus-times">
+            <span class="tr-now">${escapeHtml(t.time)}</span>
+            <span class="tr-arrow">${I.arrow}</span>
+            <span class="tr-goal">${escapeHtml(t.goalTime)}</span>
+            <span class="tr-goal-cap">${escapeHtml(t.goalKind)}</span>
+          </div>
+        </div>
+        <div class="tr-focus-body">
+          <div class="tr-gap">
+            <div class="tr-gap-meta"><span>Now ${escapeHtml(t.time)}</span><span>${gapLabel}</span><span>Goal ${escapeHtml(t.goalTime)}</span></div>
+            <div class="tr-gap-track"><div class="tr-gap-fill" data-w="${pct}" style="width:0%"></div></div>
+          </div>
+          <div class="tr-focus-cols">
+            <div class="tr-col">
+              <div class="tr-mini-head">${I.drill} Drills to swim</div>
+              ${drills}
+            </div>
+            <div class="tr-col">
+              <div class="tr-mini-head">${I.dry} Dryland at home</div>
+              ${dry}
+            </div>
+          </div>
+          <div class="tr-mini-head" style="margin-top:16px">${I.check} Technique checkpoints</div>
+          ${cues}
+        </div>
+      </div>`;
+    }
+
+    let html = '';
+    const tf = plan.topFocus;
+    if(tf){
+      html += `<div class="tr-top" style="--c:${tf.color}">
+        <div class="tr-top-emoji" style="--c:${tf.color}">${tf.emoji}</div>
+        <div class="tr-top-main">
+          <div class="tr-top-label">Start here · your biggest opportunity</div>
+          <div class="tr-top-event">${escapeHtml(tf.event)}</div>
+          <div class="tr-top-sub">${topMsg(tf)}</div>
+        </div>
+        <div class="tr-top-times">
+          <div class="tr-time-block"><div class="tr-time-val">${escapeHtml(tf.time)}</div><div class="tr-time-cap">Now</div></div>
+          <div class="tr-time-arrow">${I.arrow}</div>
+          <div class="tr-time-block"><div class="tr-time-val is-goal">${escapeHtml(tf.goalTime)}</div><div class="tr-time-cap">${escapeHtml(tf.goalKind)}</div></div>
+        </div>
+      </div>`;
+    } else if(allStrong){
+      // Every event on record is already at or under its age-group goal — make
+      // the section feel like a celebration rather than an empty plan.
+      html += `<div class="tr-top" style="--c:#34d399">
+        <div class="tr-top-emoji" style="--c:#34d399">🏆</div>
+        <div class="tr-top-main">
+          <div class="tr-top-label">Strong across the board</div>
+          <div class="tr-top-event">Every event is at its goal</div>
+          <div class="tr-top-sub">${escapeHtml(first)} is hitting strong ${ag || 'age-group'} times in every event on record. Keep them sharp, then chase the next barrier in each — the full guide has a drill for every stroke.</div>
+        </div>
+      </div>`;
+    }
+
+    const DETAIL = 4;
+    const focusDetailed = plan.focus.slice(0, DETAIL);
+    if(focusDetailed.length){
+      html += `<div class="tr-focus-list">` + focusDetailed.map(focusCard).join('') + `</div>`;
+    }
+
+    const rest = plan.focus.slice(DETAIL);
+    if(rest.length){
+      html += `<div class="tr-plan-foot">Also on your list: ` +
+        rest.map(t => `<strong>${escapeHtml(t.event)}</strong> (${escapeHtml(t.time)} → ${escapeHtml(t.goalTime)})`).join(' · ') +
+        `</div>`;
+    }
+
+    if(plan.strengths.length){
+      html += `<div class="tr-strengths">
+        <div class="tr-strengths-head">${I.star} Already strong — keep these sharp</div>
+        <div class="tr-strength-chips">` +
+        plan.strengths.map(t => `<div class="tr-strength" style="--c:${t.color}">
+            <span class="tr-strength-dot"></span>
+            <b>${escapeHtml(t.event)}</b><span>${escapeHtml(t.time)}</span>
+          </div>`).join('') +
+        `</div></div>`;
+    }
+
+    html += `<div class="tr-plan-foot">Want the complete playbook — every drill for every stroke, plus starts, turns, and a weekly plan? <a href="get-faster.html">Open the full Get Faster guide →</a></div>`;
+
+    body.innerHTML = html;
+
+    // Animate the gap bars from 0 to their target width.
+    requestAnimationFrame(() => {
+      body.querySelectorAll('.tr-gap-fill').forEach(el => { el.style.width = (el.dataset.w || '0') + '%'; });
+    });
   }
 
   // ===== Record Breakers: every PR-setting swim (within the active season

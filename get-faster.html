@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<meta name="theme-color" content="#0b1d3a"/>
+<title>Get Faster — Stroke Tips & Training Guide · Highcroft Hurricanes</title>
+<meta name="description" content="A complete, free guide to swimming faster: technique cues, common-mistake fixes, drills, and at-home dryland for every stroke — freestyle, backstroke, breaststroke, butterfly, and IM — plus starts, turns, and a weekly practice plan."/>
+
+<!-- Set the saved theme before first paint to avoid a flash -->
+<script>(function(){try{var t=localStorage.getItem('hhst.theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="assets/styles.css?v=27"/>
+<link rel="stylesheet" href="assets/training.css?v=1"/>
+<style>
+  /* A warm, energetic hero for the guide (page-scoped, gf- prefixed). */
+  .gf-hero h1{max-width:16ch;margin-left:auto;margin-right:auto}
+  .gf-hero .hero-sub{max-width:62ch;margin-left:auto;margin-right:auto}
+</style>
+</head>
+<body>
+
+<header>
+  <nav>
+    <a class="brand" href="index.html">
+      <span class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2 12c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/>
+          <path d="M2 17c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/>
+          <path d="M2 7c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/>
+        </svg>
+      </span>
+      Highcroft <em>Hurricanes</em>
+    </a>
+    <ul class="nav-links">
+      <li><a href="index.html">Swimmer Lookup</a></li>
+      <li><a href="get-faster.html" class="active">Get Faster</a></li>
+      <li>
+        <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+          <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+          <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+      </li>
+    </ul>
+    <a href="admin.html" class="btn nav-cta">Admin</a>
+  </nav>
+</header>
+
+<section class="hero gf-hero">
+  <div class="hero-inner">
+    <div class="kicker"><span class="pulse"></span> Free Training Guide · Every Stroke</div>
+    <h1>Want to <em>get faster?</em> Here’s exactly how.</h1>
+    <p class="hero-sub">
+      Real coaching for every stroke — the technique cues, the mistakes that slow kids down,
+      the drills to fix them, and <strong>at-home dryland you can do without a pool</strong>.
+      Whether you’re 6 or 18, this is your playbook for dropping time.
+    </p>
+    <div class="gf-hero-badges">
+      <span class="gf-hero-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Free for everyone</span>
+      <span class="gf-hero-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/></svg> All 5 strokes</span>
+      <span class="gf-hero-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5h11v11h-11z"/><path d="M3 10V5a2 2 0 0 1 2-2h5M21 14v5a2 2 0 0 1-2 2h-5"/></svg> Practice anywhere</span>
+    </div>
+  </div>
+</section>
+
+<!-- Sticky stroke tab bar -->
+<div class="gf-tabs-wrap">
+  <div class="tabs gf-tabs" id="gfTabs" role="tablist"></div>
+</div>
+
+<main class="admin-shell" id="gfPanels"><!-- panels injected here --></main>
+
+<footer>
+  Highcroft Hurricanes Swim Team · Built for the families on deck.<br>
+  <a href="index.html">Swimmer Lookup</a> · <a href="get-faster.html">Get Faster</a> · <a href="admin.html">Coach / Admin Login</a>
+</footer>
+
+<script src="assets/training.js?v=1"></script>
+<script>
+  // ---- theme toggle (self-contained; matches the rest of the site) ----
+  document.getElementById('themeToggle').addEventListener('click', function(){
+    var cur = document.documentElement.getAttribute('data-theme');
+    var next = cur === 'light' ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', next);
+    try{ localStorage.setItem('hhst.theme', next); }catch(e){}
+  });
+
+  var T = window.HHST_TRAIN;
+  function esc(s){ return (s==null?'':s).toString().replace(/[&<>"']/g, function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+
+  // ---- inline icon set ----
+  var ICON = {
+    check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>',
+    drill: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/><path d="M2 17c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/><path d="M2 7c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/></svg>',
+    dry:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7v10M18 7v10M4 9h2M18 9h2M9 12h6M9 9v6M15 9v6"/></svg>',
+    warn:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>',
+    bulb:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1h6c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z"/></svg>',
+    arrow: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
+    flag:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22V4M4 4h13l-2 4 2 4H4"/></svg>'
+  };
+
+  function cueList(cues, color){
+    return '<ul class="tr-cues" style="--c:'+color+'">' +
+      cues.map(function(c){ return '<li>'+ICON.check+'<span>'+esc(c)+'</span></li>'; }).join('') +
+      '</ul>';
+  }
+  function subhead(label, icon, color){
+    return '<div class="tr-subhead" style="--c:'+color+'">'+(icon||'')+'<span>'+esc(label)+'</span><span class="tr-subhead-line"></span></div>';
+  }
+  function mistakeCards(mistakes, color){
+    return '<div class="tr-cards" style="--c:'+color+'">' + mistakes.map(function(m){
+      return '<div class="tr-card tr-mistake">'+
+        '<div class="tr-card-name">'+ICON.warn+'<span>'+esc(m.name)+'</span></div>'+
+        '<div class="tr-card-body tr-card-fix"><b>Fix:</b> '+esc(m.fix)+'</div>'+
+      '</div>';
+    }).join('') + '</div>';
+  }
+  function drillCards(items, color){
+    return '<div class="tr-cards" style="--c:'+color+'">' + items.map(function(d){
+      return '<div class="tr-card">'+
+        (d.focus ? '<span class="tr-card-tag">'+esc(d.focus)+'</span>' : '')+
+        '<div class="tr-card-name">'+esc(d.name)+'</div>'+
+        '<div class="tr-card-body">'+esc(d.how)+'</div>'+
+      '</div>';
+    }).join('') + '</div>';
+  }
+  function drylandCards(items, color){
+    return '<div class="tr-cards" style="--c:'+color+'">' + items.map(function(d){
+      return '<div class="tr-card">'+
+        '<div class="tr-card-name">'+esc(d.name)+'</div>'+
+        '<div class="tr-card-body">'+esc(d.how)+'</div>'+
+        (d.reps ? '<span class="tr-card-reps">'+esc(d.reps)+'</span>' : '')+
+      '</div>';
+    }).join('') + '</div>';
+  }
+  function focusNote(text, color){
+    return '<div class="tr-focus-note" style="--c:'+color+'">'+ICON.bulb+'<p><strong>Coach’s focus:</strong> '+esc(text)+'</p></div>';
+  }
+
+  function renderStroke(s){
+    return '<div class="chart-card" style="--c:'+s.color+'">'+
+      '<div class="gf-stroke-head">'+
+        '<div class="gf-stroke-emoji" style="--c:'+s.color+'">'+s.emoji+'</div>'+
+        '<div><h2>'+esc(s.name)+'</h2><p class="gf-tagline">'+esc(s.tagline)+'</p></div>'+
+      '</div>'+
+      '<p class="gf-how">'+esc(s.how)+'</p>'+
+      subhead('Technique checkpoints', ICON.check, s.color)+ cueList(s.cues, s.color)+
+      subhead('Common mistakes & how to fix them', ICON.warn, s.color)+ mistakeCards(s.mistakes, s.color)+
+      subhead('Drills to practice', ICON.drill, s.color)+ drillCards(s.drills, s.color)+
+      subhead('Dryland — no pool needed', ICON.dry, s.color)+ drylandCards(s.dryland, s.color)+
+      focusNote(s.focus, s.color)+
+    '</div>';
+  }
+
+  function renderExtra(x){
+    return '<div class="chart-card" style="--c:'+x.color+'">'+
+      '<div class="gf-stroke-head">'+
+        '<div class="gf-stroke-emoji" style="--c:'+x.color+'">'+x.emoji+'</div>'+
+        '<div><h2>'+esc(x.name)+'</h2><p class="gf-tagline">'+esc(x.tagline)+'</p></div>'+
+      '</div>'+
+      '<p class="gf-how">'+esc(x.how)+'</p>'+
+      subhead('Keys', ICON.check, x.color)+ cueList(x.cues, x.color)+
+      subhead('How to practice it', ICON.drill, x.color)+ drillCards(x.items, x.color)+
+      focusNote(x.focus, x.color)+
+    '</div>';
+  }
+
+  function extraByKey(k){ for(var i=0;i<T.EXTRAS.length;i++){ if(T.EXTRAS[i].key===k) return T.EXTRAS[i]; } return null; }
+
+  function renderOverview(){
+    var jumps = T.STROKE_ORDER.map(function(k){
+      var s = T.STROKES[k];
+      return '<button class="gf-jump" data-go="'+k.toLowerCase()+'" style="--c:'+s.color+'">'+
+        '<span class="gf-jump-emoji" style="--c:'+s.color+'">'+s.emoji+'</span>'+
+        '<span class="gf-jump-text"><b>'+esc(s.name)+'</b><span>'+esc(s.tagline)+'</span></span>'+
+        '<span class="gf-jump-arrow">'+ICON.arrow+'</span>'+
+      '</button>';
+    }).join('');
+    var extraJumps = [
+      {go:'walls', emoji:'🚀', color:'#38bdf8', name:'Starts, Turns & Walls', sub:'The free speed most swimmers leave on the table.'},
+      {go:'dryland', emoji:'💪', color:'#a78bfa', name:'Dryland & Fitness', sub:'At-home strength, mobility, and endurance — no pool required.'},
+      {go:'weekly', emoji:'📅', color:'#10b981', name:'Weekly Practice Plan', sub:'A simple week you can follow on your own.'}
+    ].map(function(j){
+      return '<button class="gf-jump" data-go="'+j.go+'" style="--c:'+j.color+'">'+
+        '<span class="gf-jump-emoji" style="--c:'+j.color+'">'+j.emoji+'</span>'+
+        '<span class="gf-jump-text"><b>'+esc(j.name)+'</b><span>'+esc(j.sub)+'</span></span>'+
+        '<span class="gf-jump-arrow">'+ICON.arrow+'</span>'+
+      '</button>';
+    }).join('');
+    return '<div class="chart-card">'+
+      '<h2 style="font-family:Fraunces,serif;font-weight:800;font-size:clamp(24px,3.4vw,32px);letter-spacing:-.02em;margin-bottom:10px">How to use this guide</h2>'+
+      '<p class="gf-overview-lead">Getting faster comes down to four things: <strong>great technique</strong>, '+
+      '<strong>strong streamlines, starts, and turns</strong>, <strong>fitness</strong>, and <strong>steady practice</strong>. '+
+      'Pick a stroke below to see the exact cues, the mistakes to avoid, drills to do in the water, and dryland you can do at home. '+
+      'Already have a Hurricanes dashboard? Open it to get a plan built around <em>your</em> actual times.</p>'+
+      '<div class="tr-subhead" style="--c:var(--accent);margin-top:22px"><span>Jump to a stroke</span><span class="tr-subhead-line"></span></div>'+
+      '<div class="gf-jump-grid">'+jumps+'</div>'+
+      '<div class="tr-subhead" style="--c:var(--accent);margin-top:24px"><span>Beyond the strokes</span><span class="tr-subhead-line"></span></div>'+
+      '<div class="gf-jump-grid">'+extraJumps+'</div>'+
+      '<div class="gf-safety">'+ICON.warn+'<p><strong>Stay safe.</strong> Always swim with a lifeguard or adult present — never alone. '+
+      'Dryland should never hurt: warm up, move with control, and stop if something causes pain.</p></div>'+
+    '</div>';
+  }
+
+  function renderWeekly(){
+    var w = T.WEEKLY_PLAN;
+    var days = w.days.map(function(d){
+      return '<div class="gf-plan-day">'+
+        '<div class="gf-plan-daylabel">'+esc(d.day)+'</div>'+
+        '<div class="gf-plan-body"><b>'+esc(d.title)+'</b><span>'+esc(d.detail)+'</span></div>'+
+      '</div>';
+    }).join('');
+    return '<div class="chart-card" style="--c:#10b981">'+
+      '<div class="gf-stroke-head"><div class="gf-stroke-emoji" style="--c:#10b981">📅</div>'+
+        '<div><h2>Weekly Practice Plan</h2><p class="gf-tagline">Train on your own, around your team schedule.</p></div></div>'+
+      '<p class="gf-how">'+esc(w.intro)+'</p>'+
+      '<div class="gf-plan-list">'+days+'</div>'+
+      '<div class="gf-safety">'+ICON.warn+'<p><strong>'+esc(w.note)+'</strong></p></div>'+
+    '</div>';
+  }
+
+  // ---- tab + panel config ----
+  var TABS = [{ id:'overview', label:'Overview', emoji:'📋' }];
+  T.STROKE_ORDER.forEach(function(k){
+    TABS.push({ id:k.toLowerCase(), label:T.STROKES[k].name.replace(/\s*\(.*\)/,''), emoji:T.STROKES[k].emoji, stroke:k });
+  });
+  TABS.push({ id:'walls', label:'Starts & Turns', emoji:'🚀', extras:['Streamline','Starts','Turns'] });
+  TABS.push({ id:'dryland', label:'Dryland & Fitness', emoji:'💪', extras:['Dryland','Endurance'] });
+  TABS.push({ id:'weekly', label:'Weekly Plan', emoji:'📅' });
+
+  function panelHtml(tab){
+    if(tab.id === 'overview') return renderOverview();
+    if(tab.id === 'weekly')   return renderWeekly();
+    if(tab.stroke)            return renderStroke(T.STROKES[tab.stroke]);
+    if(tab.extras)            return tab.extras.map(function(k){ var x=extraByKey(k); return x?renderExtra(x):''; }).join('');
+    return '';
+  }
+
+  // ---- build the DOM ----
+  var tabsHost = document.getElementById('gfTabs');
+  var panelsHost = document.getElementById('gfPanels');
+  tabsHost.innerHTML = TABS.map(function(t,i){
+    return '<button role="tab" data-tab="'+t.id+'" class="'+(i===0?'active':'')+'">'+
+      '<span class="gf-tab-emoji">'+t.emoji+'</span>'+esc(t.label)+'</button>';
+  }).join('');
+  panelsHost.innerHTML = TABS.map(function(t,i){
+    return '<section class="gf-panel'+(i===0?' is-active':'')+'" id="panel-'+t.id+'" role="tabpanel">'+panelHtml(t)+'</section>';
+  }).join('');
+
+  function show(id, scroll){
+    var found = false;
+    TABS.forEach(function(t){
+      var on = t.id === id;
+      if(on) found = true;
+      var btn = tabsHost.querySelector('[data-tab="'+t.id+'"]');
+      var pan = document.getElementById('panel-'+t.id);
+      if(btn) btn.classList.toggle('active', on);
+      if(pan) pan.classList.toggle('is-active', on);
+    });
+    if(!found) return;
+    if(history.replaceState) history.replaceState(null,'','#'+id);
+    if(scroll){
+      var y = (document.querySelector('.gf-tabs-wrap') || {}).offsetTop || 0;
+      window.scrollTo({ top: Math.max(0, y - 4), behavior:'smooth' });
+    }
+  }
+
+  tabsHost.addEventListener('click', function(e){
+    var btn = e.target.closest('button[data-tab]');
+    if(!btn) return;
+    show(btn.getAttribute('data-tab'), false);
+  });
+  // Overview "jump" buttons
+  panelsHost.addEventListener('click', function(e){
+    var j = e.target.closest('[data-go]');
+    if(!j) return;
+    show(j.getAttribute('data-go'), true);
+  });
+  // Deep links (#freestyle, #weekly, …)
+  (function(){
+    var h = (location.hash || '').replace('#','');
+    if(h) show(h, false);
+  })();
+  window.addEventListener('hashchange', function(){
+    var h = (location.hash || '').replace('#','');
+    if(h) show(h, false);
+  });
+</script>
+<script src="assets/mobile-nav.js" defer></script>
+</body>
+</html>
