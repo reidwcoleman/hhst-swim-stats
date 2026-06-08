@@ -1137,6 +1137,19 @@
       const allKeys = Array.from(new Set([...prevKeys, ...c.keys]));
       const mergedNames = Array.isArray(prev.mergedFileNames) ? prev.mergedFileNames.slice() : [];
       if(fileName && fileName !== prev.fileName && !mergedNames.includes(fileName)) mergedNames.push(fileName);
+      // Rich per-merge audit log so the Uploaded Files panel can show EVERY
+      // re-uploaded file as its own visible line under the meet it folded into
+      // — name, when, and what it changed. serverTimestamp() can't live inside
+      // an array element (it's a field-level sentinel), so each entry carries a
+      // client ISO timestamp instead. Deduped by filename: a repeat re-upload
+      // of the same file refreshes that file's entry rather than stacking.
+      const stamp = new Date().toISOString();
+      const mergedFiles = Array.isArray(prev.mergedFiles) ? prev.mergedFiles.slice() : [];
+      if(fileName && fileName !== prev.fileName){
+        const entry = { fileName, uploadId, addedResults: c.added, updatedResults: c.updated, uploadedAt: stamp };
+        const at = mergedFiles.findIndex(m => m && m.fileName === fileName);
+        if(at >= 0) mergedFiles[at] = entry; else mergedFiles.push(entry);
+      }
       try {
         await FB.db.collection('hhst_uploads').doc(ownerId).set({
           addedResults: (prev.addedResults || 0) + c.added,
@@ -1144,6 +1157,7 @@
           swimmerCount: allKeys.length,
           touchedSwimmerKeys: allKeys,
           mergedFileNames: mergedNames,
+          mergedFiles,
           lastMergedAt: FB.FieldValue.serverTimestamp()
         }, { merge: true });
         mergedIntoFiles.push(prev.fileName || ownerId);
