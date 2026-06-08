@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Figtree:ital,wght@0,300..900;1,300..900&family=IBM+Plex+Mono:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="assets/styles.css?v=40"/>
+<link rel="stylesheet" href="assets/styles.css?v=41"/>
 
 <!-- ============================================================
      ADMIN PAGE POLISH — visual/UX refinements layered on top of
@@ -321,6 +321,35 @@
     text-overflow:ellipsis;white-space:nowrap;max-width:48%}
   .upload-merged-meta{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;opacity:.85}
   .upload-merged-meta::before{content:'·';margin-right:8px;opacity:.6}
+
+  /* ---- Time Edit History (audit trail) ---- */
+  #timeAuditBody{margin-top:16px;display:flex;flex-direction:column;gap:8px}
+  .axp-audit-row{transition:border-color .18s ease,transform .18s ease,box-shadow .18s ease}
+  .axp-audit-row:hover{border-color:var(--border-strong)!important;transform:translateX(2px);
+    box-shadow:var(--shadow-sm)}
+  .axp-audit-ico{flex:none;display:flex;align-items:center;justify-content:center;
+    width:34px;height:34px;border-radius:10px;border:1px solid var(--border)}
+  .axp-audit-ico-add{color:#0fa171;background:rgba(15,161,113,.10);border-color:rgba(15,161,113,.26)}
+  .axp-audit-ico-remove{color:#e2554c;background:rgba(226,85,76,.10);border-color:rgba(226,85,76,.26)}
+  [data-theme="dark"] .axp-audit-ico-add{color:#34c796}
+  [data-theme="dark"] .axp-audit-ico-remove{color:#f0857d}
+  .axp-chip-manual{background:rgba(58,140,227,.16);color:#3a8ce3;border-color:rgba(58,140,227,.32)}
+  .axp-chip-file{background:rgba(201,143,14,.16);color:#c98f0e;border-color:rgba(201,143,14,.32)}
+  .axp-chip-season{background:rgba(226,85,76,.14);color:#e2554c;border-color:rgba(226,85,76,.30)}
+  [data-theme="dark"] .axp-chip-season{color:#f0857d}
+  .axp-restore-btn{flex:none;display:inline-flex;align-items:center;gap:6px;padding:7px 13px;
+    font-size:12.5px;font-weight:700;border-radius:var(--radius);cursor:pointer;
+    background:rgba(15,161,113,.10);color:#0a8f63;border:1px solid rgba(15,161,113,.36);
+    transition:background .16s ease,border-color .16s ease,transform .16s ease}
+  .axp-restore-btn:hover{background:rgba(15,161,113,.18);transform:translateY(-1px)}
+  .axp-restore-btn:disabled{opacity:.5;cursor:default;transform:none}
+  .axp-restore-btn svg{flex:none}
+  [data-theme="dark"] .axp-restore-btn{color:#34c796}
+  .axp-onprofile{flex:none;font-size:11.5px;font-weight:700;letter-spacing:.04em;
+    text-transform:uppercase;color:var(--text-subtle);padding:6px 10px}
+  .axp-audit-trunc{font-size:11px;color:var(--text-subtle);margin-top:4px;font-style:italic}
+  /* The danger "Clear meets" button mirrors the maintenance red treatment */
+  #clearSeasonBtn{border-color:rgba(226,85,76,.4)}
 
   /* ---- Roster table small extras (canonical .race-count, .age-group-h,
          .age-group-count, .swimmer-name-cell all live in styles.css). ---- */
@@ -1250,6 +1279,39 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
       <div class="upload-status" id="dedupeStatus" role="status" aria-live="polite"></div>
     </div>
 
+    <!-- CLEAR ALL MEETS IN A SEASON — wipes every (non-time-trial) meet time
+         for one season; roster, time trials, and other seasons stay. Audited
+         and fully restorable from the Time Edit History card below. -->
+    <div class="card axp2-a-amber" id="clearSeasonCard">
+      <h2>Clear a season's meets</h2>
+      <p class="lead">Remove <strong>every meet time</strong> from a single season in one go — useful to start a season's results over. The roster, time trials, and all other seasons are untouched, and every removed time is saved to the <strong>Time Edit History</strong> below, so you can restore it any time.</p>
+      <div class="axp-dedupe-row">
+        <select id="clearSeasonSelect" class="lb-select admin-filter axp-dedupe-select" title="Pick the season to clear">
+          <option value="">Select a season…</option>
+        </select>
+        <button class="btn danger" id="clearSeasonBtn" type="button" disabled>Clear meets</button>
+      </div>
+      <div class="upload-status" id="clearSeasonStatus" role="status" aria-live="polite"></div>
+    </div>
+
+    <!-- TIME EDIT HISTORY — append-only audit of every manual time added and
+         every bulk removal (file delete / season clear), each restorable with
+         one click even after the source file is long gone. -->
+    <div class="card axp2-a-cyan" id="timeAuditCard">
+      <div class="axp-card-headrow axp-uploads-head">
+        <div>
+          <h2>Time Edit History</h2>
+          <p class="lead">Every time added by hand and every batch of times removed (by deleting a file or clearing a season) is logged here — even after the file is gone. Click <strong>Restore</strong> to put a removed time back on the swimmer's profile.</p>
+        </div>
+        <select id="timeAuditFilter" class="lb-select admin-filter" title="Filter the history">
+          <option value="">All activity</option>
+          <option value="add">Added by hand</option>
+          <option value="remove">Removed</option>
+        </select>
+      </div>
+      <div id="timeAuditBody" class="axp-uploads-body"></div>
+    </div>
+
     <!-- ROSTER TABLE -->
     <div class="card">
       <h2>Roster</h2>
@@ -1363,7 +1425,7 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
   </div>
 </div>
 
-<script src="assets/data.js?v=37"></script>
+<script src="assets/data.js?v=38"></script>
 <script>
   HHST.initTheme();
 
@@ -2013,6 +2075,27 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
         mtSetStatus('ok', `Saved <strong>${escapeHtml(label)}</strong> for <strong>${escapeHtml(match.name)}</strong> at ${escapeHtml(meet)}${timeTrial ? ' (time trial)' : ''}. It's on their profile now.`);
         document.getElementById('mtTime').value = '';
         await refreshAll();                          // refresh KPIs/roster + repopulate the lists
+        // Log this by-hand entry to the time-edit history (snapshot the exact
+        // row that was just stored, so a later Restore matches it precisely).
+        try {
+          const fresh = (cachedData.swimmers || {})[match.key];
+          const secs = HHST.timeToSeconds(timeRaw);
+          const row = fresh && (fresh.results || []).slice().reverse().find(r =>
+            r && r.meet === meet && r.date === date && (r.season||'') === season &&
+            Math.abs((r.seconds||0) - secs) < 0.005);
+          await HHST.recordManualTimeAudit({
+            swimmerKey: match.key, swimmerName: match.name,
+            event: (row && row.event) || `${distance} ${stroke}`,
+            stroke: (row && row.stroke) || stroke,
+            distance: (row && row.distance != null) ? String(row.distance) : String(distance),
+            time: (row && row.time) || HHST.fmtTime(timeRaw),
+            seconds: (row && isFinite(row.seconds)) ? row.seconds : secs,
+            meet: (row && row.meet) || meet, date: (row && row.date) || date,
+            season: (row && row.season) || season, timeTrial: !!timeTrial,
+            place: (row && row.place != null) ? row.place : null
+          });
+          refreshTimeAudit();
+        } catch(auditErr){ /* history logging is best-effort */ }
         document.getElementById('mtTime').focus();   // ready for the next event
       } else {
         mtSetStatus('err', `That exact time is already logged for ${escapeHtml(match.name)} at ${escapeHtml(meet)} — nothing to add.`);
@@ -2183,6 +2266,8 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
   let cachedData = { swimmers:{}, lastUpload:null };
   let cachedUploads = [];
   let deletingUpload = false; // guard: only one deleteUpload in flight at a time
+  let cachedAudit = [];       // time-edit history rows (newest first)
+  let restoringAudit = false; // guard: one restore in flight at a time
   let adminChartInstance = null; // Chart.js instance for the Team Momentum chart
   // Chart typography: match the site's body face; neutral works in both themes.
   if (window.Chart) {
@@ -2195,6 +2280,45 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
     renderRoster(document.getElementById('searchInput').value);
   });
   document.getElementById('uploadsSeasonFilter').addEventListener('change', renderUploads);
+  document.getElementById('timeAuditFilter').addEventListener('change', renderTimeAudit);
+  document.getElementById('clearSeasonSelect').addEventListener('change', e => {
+    document.getElementById('clearSeasonBtn').disabled = !e.target.value;
+  });
+  document.getElementById('clearSeasonBtn').addEventListener('click', async () => {
+    const sel = document.getElementById('clearSeasonSelect');
+    const season = sel.value;
+    if(!season) return;
+    const meetCount = (() => {
+      const meets = new Set();
+      Object.values(cachedData.swimmers || {}).forEach(sw =>
+        (sw.results || []).forEach(r => { if(r && r.season === season && !r.timeTrial && r.meet) meets.add(r.meet); }));
+      return meets.size;
+    })();
+    const raceCount = Object.values(cachedData.swimmers || {}).reduce((n, sw) =>
+      n + (sw.results || []).filter(r => r && r.season === season && !r.timeTrial).length, 0);
+    if(!raceCount){ clearSeasonSetStatus('err', `No meet times found in ${escapeHtml(season)}.`); return; }
+    if(!confirm(`Clear every meet time from "${season}"?\n\nThis removes ${raceCount} race time${raceCount===1?'':'s'} across ${meetCount} meet${meetCount===1?'':'s'}. The roster, time trials, and all other seasons stay. Every removed time is saved to the Time Edit History and can be restored.\n\nProceed?`)) return;
+    const btn = document.getElementById('clearSeasonBtn');
+    btn.disabled = true; const orig = btn.textContent; btn.textContent = 'Clearing…';
+    clearSeasonSetStatus('', 'Clearing…');
+    try {
+      const res = await HHST.clearSeasonMeetTimes(season);
+      await refreshAll();
+      clearSeasonSetStatus('ok', `Cleared ${res.removedResults} race time${res.removedResults===1?'':'s'} from ${escapeHtml(season)} across ${res.updatedSwimmers} swimmer${res.updatedSwimmers===1?'':'s'}. They're saved in the history below — restore any time.`);
+    } catch(err){
+      console.error(err);
+      clearSeasonSetStatus('err', 'Could not clear the season: ' + (err.message || err));
+    } finally {
+      btn.textContent = orig;
+      btn.disabled = !document.getElementById('clearSeasonSelect').value;
+    }
+  });
+  function clearSeasonSetStatus(kind, msg){
+    const el = document.getElementById('clearSeasonStatus');
+    if(!el) return;
+    el.className = 'upload-status ' + (kind === 'ok' ? 'ok' : kind === 'err' ? 'err' : '');
+    el.innerHTML = msg || '';
+  }
 
   // KPI + roster refresh
   async function refreshAll(){
@@ -2230,6 +2354,25 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
     renderRoster(document.getElementById('searchInput').value);
     populateManualTimeUI();
     refreshUploads();
+    populateClearSeasonUI();
+    refreshTimeAudit();
+  }
+
+  // Fill the "Clear a season's meets" picker with the seasons that actually
+  // have meet times, and enable the button only once a real season is picked.
+  function populateClearSeasonUI(){
+    const sel = document.getElementById('clearSeasonSelect');
+    const btn = document.getElementById('clearSeasonBtn');
+    if(!sel || !btn) return;
+    const withMeets = new Set();
+    Object.values(cachedData.swimmers || {}).forEach(sw =>
+      (sw.results || []).forEach(r => { if(r && r.season && !r.timeTrial) withMeets.add(r.season); }));
+    const seasons = HHST.getAllSeasons(cachedData.swimmers || {}).filter(s => withMeets.has(s));
+    const prev = sel.value;
+    sel.innerHTML = '<option value="">Select a season…</option>' +
+      seasons.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+    sel.value = (prev && seasons.includes(prev)) ? prev : '';
+    btn.disabled = !sel.value;
   }
 
   // Team Momentum chart — for each meet (oldest → newest) a stacked bar of races
@@ -2640,6 +2783,156 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
     if(!iso) return '';
     const d = new Date(iso);
     if(isNaN(d.getTime())) return '';
+    return d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'});
+  }
+
+  // ============ Time Edit History (audit trail) ============
+  async function refreshTimeAudit(){
+    try {
+      cachedAudit = await HHST.getTimeAudit();
+    } catch(err){
+      console.error('Could not load time history', err);
+      cachedAudit = [];
+    }
+    renderTimeAudit();
+  }
+
+  // Is a given audit payload currently present on its swimmer? Drives whether a
+  // removed time still needs restoring, and whether a manual add is still live.
+  function auditTimePresent(t){
+    if(!t || !t.swimmerKey) return false;
+    const sw = (cachedData.swimmers || {})[t.swimmerKey];
+    if(!sw) return false;
+    return (sw.results || []).some(r => r && r.event === t.event && r.meet === t.meet &&
+      r.date === t.date && (r.season||'') === (t.season||'') &&
+      Math.abs((r.seconds||0) - (t.seconds||0)) < 0.005);
+  }
+
+  function auditWhen(at){
+    let d = null;
+    if(at && typeof at.toDate === 'function') d = at.toDate();
+    else if(at && typeof at.seconds === 'number') d = new Date(at.seconds*1000);
+    if(!d || isNaN(d.getTime())) return '';
+    return d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}) +
+           ' · ' + d.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'});
+  }
+
+  const AUDIT_SOURCE_LABEL = {
+    'manual':'Added by hand', 'file-delete':'File deleted', 'season-clear':'Season cleared'
+  };
+
+  function renderTimeAudit(){
+    const body = document.getElementById('timeAuditBody');
+    const filterSel = document.getElementById('timeAuditFilter');
+    if(!body) return;
+    const filter = filterSel ? filterSel.value : '';
+    const rows = cachedAudit.filter(a => !filter || a.action === filter);
+
+    if(!cachedAudit.length){
+      body.innerHTML = `<div class="empty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 7 12 12 15 14"/></svg>
+        <div>No time edits yet</div>
+        <div class="axp-empty-sub">Times you add by hand, and any times removed by deleting a file or clearing a season, will appear here — each one restorable with a click.</div>
+      </div>`;
+      return;
+    }
+    if(!rows.length){
+      body.innerHTML = `<div class="empty"><div>Nothing matches this filter.</div><div class="axp-empty-sub">Switch the filter above back to “All activity”.</div></div>`;
+      return;
+    }
+    body.innerHTML = rows.map(renderAuditRow).join('');
+
+    body.querySelectorAll('button[data-restore]').forEach(b => b.addEventListener('click', async () => {
+      if(restoringAudit) return;
+      const id = b.dataset.restore;
+      const a = cachedAudit.find(x => x.id === id);
+      if(!a) return;
+      const n = a.count || (a.times ? a.times.length : 0);
+      if(!confirm(`Restore ${n} time${n===1?'':'s'} to ${n===1?'this swimmer':'their swimmers'}?\n\nTimes already on a profile are left as-is; only missing ones are added back.`)) return;
+      restoringAudit = true;
+      body.querySelectorAll('button[data-restore]').forEach(x => { x.disabled = true; });
+      b.textContent = 'Restoring…';
+      try {
+        const res = await HHST.restoreTimeEvent(id);
+        await refreshAll();              // re-reads roster + re-renders this card
+        const bits = [];
+        if(res.restored) bits.push(`restored ${res.restored}`);
+        if(res.skipped)  bits.push(`${res.skipped} already on profile`);
+        if(res.missing)  bits.push(`${res.missing} skipped (swimmer no longer on roster)`);
+        setStatus(res.restored ? 'ok' : 'err', `Restore: ${bits.join(' · ') || 'nothing to restore'}.`);
+      } catch(err){
+        console.error(err);
+        await refreshAll();
+        setStatus('err', 'Could not restore: ' + (err.message || err));
+      } finally {
+        restoringAudit = false;
+      }
+    }));
+  }
+
+  function renderAuditRow(a){
+    const isAdd = a.action === 'add';
+    const times = Array.isArray(a.times) ? a.times : [];
+    const first = times[0] || {};
+    const sourceChip = (() => {
+      const lbl = AUDIT_SOURCE_LABEL[a.source] || (isAdd ? 'Added' : 'Removed');
+      const cls = a.source === 'manual' ? 'axp-chip-manual'
+        : a.source === 'season-clear' ? 'axp-chip-season' : 'axp-chip-file';
+      return `<span class="training-chip ${cls}">${escapeHtml(lbl)}</span>`;
+    })();
+    // Title: a single time reads as the swim; a bulk removal reads as a batch.
+    const single = a.count === 1 || times.length === 1;
+    const title = single
+      ? `${escapeHtml(first.swimmerName || 'Swimmer')} — ${escapeHtml(first.event || '')} ${escapeHtml(first.time || '')}`
+      : `${a.count || times.length} times${a.label ? ' · ' + escapeHtml(a.label) : ''}`;
+    const sub = single
+      ? [first.meet, first.date ? fmtAuditDate(first.date) : '', first.season].filter(Boolean).map(escapeHtml).join(' · ')
+      : (a.season ? escapeHtml(a.season) : 'Multiple seasons');
+    const when = auditWhen(a.at);
+
+    // Restore affordance: a removed batch (or single) offers Restore when any of
+    // its times are currently missing. A manual add that's still on the profile
+    // shows a quiet "on profile" tag instead.
+    const anyMissing = times.some(t => !auditTimePresent(t));
+    const allPresent = times.length && times.every(auditTimePresent);
+    let action = '';
+    if(anyMissing){
+      const missingCount = times.filter(t => !auditTimePresent(t)).length;
+      action = `<button class="axp-restore-btn" data-restore="${escapeHtml(a.id)}" type="button" title="Restore ${missingCount} missing time${missingCount===1?'':'s'}">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><polyline points="3 3 3 8 8 8"/></svg>
+        Restore${missingCount > 1 ? ` (${missingCount})` : ''}</button>`;
+    } else if(allPresent){
+      action = `<span class="axp-onprofile" title="Already on the swimmer's profile">On profile</span>`;
+    }
+
+    const truncNote = a.truncated ? `<div class="axp-audit-trunc">Showing the first ${times.length} of ${a.count} times.</div>` : '';
+    const icon = isAdd
+      ? '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>'
+      : '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/></svg>';
+    const iconCls = isAdd ? 'axp-audit-ico-add' : 'axp-audit-ico-remove';
+
+    return `
+      <div class="upload-file-row axp-audit-row" style="display:flex;align-items:center;gap:12px;padding:12px 16px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--surface)">
+        <span class="axp-audit-ico ${iconCls}">${icon}</span>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <strong style="font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:340px" title="${escapeHtml(single ? (first.swimmerName||'') : (a.label||''))}">${title}</strong>
+            ${sourceChip}
+          </div>
+          ${sub ? `<div style="font-size:12.5px;color:var(--text-muted);margin-top:3px">${sub}</div>` : ''}
+          ${when ? `<div style="font-size:11.5px;color:var(--text-muted);margin-top:2px;opacity:.8">${escapeHtml(when)}</div>` : ''}
+          ${truncNote}
+        </div>
+        ${action}
+      </div>`;
+  }
+
+  function fmtAuditDate(raw){
+    const s = (raw || '').toString().trim();
+    const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if(!m) return s;
+    const d = new Date(+m[1], +m[2]-1, +m[3]);
+    if(isNaN(d.getTime())) return s;
     return d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'});
   }
 

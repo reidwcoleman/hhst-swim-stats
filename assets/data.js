@@ -1683,6 +1683,7 @@
     const toWrite = [];   // full-doc overwrites (so dropped seasonInfo keys actually disappear)
     const toDelete = [];  // orphan swimmer keys
     let removedResults = 0;
+    const removedTimes = []; // full payloads of every time this delete strips — for the audit/restore log
 
     swSnap.forEach(d => {
       const sw = d.data() || {};
@@ -1703,6 +1704,7 @@
         if(r && r.uploadId === uploadId){
           removedResults++;
           if(r.season) touchedSeasons.add(r.season);
+          removedTimes.push(timeAuditPayload(d.id, sw.name || d.id, r));
         } else {
           keptResults.push(r);
         }
@@ -1808,6 +1810,19 @@
     // Remove the registry row itself.
     try { await FB.db.collection('hhst_uploads').doc(uploadId).delete(); } catch(e){}
 
+    // Log every removed time to the immutable audit trail so the coach can see
+    // it (and restore it) later, even though this file is now gone. Best-effort:
+    // a failure here must never block the delete that already committed.
+    if(removedTimes.length){
+      const label = (meta && (meta.meetName || (Array.isArray(meta.meetNames) && meta.meetNames[0]) || meta.fileName)) || 'Deleted meet file';
+      try {
+        await logTimeAudit({
+          action: 'remove', source: 'file-delete',
+          label, season: (meta && meta.season) || '', times: removedTimes
+        });
+      } catch(e){ /* audit is best-effort */ }
+    }
+
     // Recompute distinct meet count from the post-delete state we ALREADY have
     // in memory (the swSnap we read up front + the toWrite/toDelete deltas) —
     // no second full-collection scan.
@@ -1830,6 +1845,191 @@
       removedSwimmers: toDelete.length,
       updatedSwimmers: toWrite.length
     };
+  }
+
+  // ============ Time-edit audit trail (hhst_time_audit) ============
+  // An append-only log of every time ADDED by hand or REMOVED in bulk, each
+  // entry carrying the FULL payload of the affected times. That copy is what
+  // lets a coach see — and one-click restore — a time even after the file that
+  // brought it in has been deleted. Capped per entry so one giant clear can't
+  // blow past Firestore's 1 MB document limit.
+  const TIME_AUDIT_CAP = 1500;
+  // Snapshot one result row into a self-contained, restorable payload.
+  function timeAuditPayload(swimmerKey, swimmerName, r){
+    return {
+      swimmerKey, swimmerName: swimmerName || swimmerKey,
+      event: (r && r.event) || '',
+      stroke: (r && r.stroke) || '',
+      distance: (r && r.distance != null) ? String(r.distance) : '',
+      time: (r && r.time) || '',
+      seconds: (r && isFinite(r.seconds)) ? r.seconds : null,
+      meet: (r && r.meet) || '',
+      date: (r && r.date) || '',
+      season: (r && r.season) || '',
+      timeTrial: !!(r && r.timeTrial),
+      place: (r && r.place != null) ? r.place : null
+    };
+  }
+  async function logTimeAudit({ action, source, label, season, times }){
+    const list = Array.isArray(times) ? times.filter(Boolean) : [];
+    if(!list.length) return null;
+    const ref = await FB.db.collection('hhst_time_audit').add({
+      action: action || 'edit',
+      source: source || '',
+      label: label || '',
+      season: season || '',
+      count: list.length,
+      truncated: list.length > TIME_AUDIT_CAP,
+      times: list.slice(0, TIME_AUDIT_CAP),
+      at: FB.FieldValue.serverTimestamp()
+    });
+    return ref.id;
+  }
+  // Public hook the admin's manual-time form calls after a successful add, so
+  // every by-hand time entry shows in the history (and can be restored if a
+  // later season-clear or file-delete removes it).
+  async function recordManualTimeAudit(payload){
+    try {
+      return await logTimeAudit({
+        action: 'add', source: 'manual',
+        label: (payload && payload.meet) || 'Manual entry',
+        season: (payload && payload.season) || '',
+        times: [payload]
+      });
+    } catch(e){ return null; }
+  }
+  // List the whole audit trail, newest first.
+  async function getTimeAudit(){
+    const snap = await FB.db.collection('hhst_time_audit').get();
+    const out = [];
+    snap.forEach(d => out.push({ id: d.id, ...d.data() }));
+    const ms = u => {
+      const t = u && u.at;
+      if(t && typeof t.toMillis === 'function') return t.toMillis();
+      if(t && typeof t.seconds === 'number') return t.seconds * 1000;
+      return 0;
+    };
+    out.sort((a,b) => ms(b) - ms(a) || (b.id||'').localeCompare(a.id||''));
+    return out;
+  }
+  // Put an audit entry's times back onto their swimmers. Idempotent: a time
+  // that's already present is skipped, so restoring twice is harmless. A time
+  // whose swimmer no longer exists is reported as "missing" (can't be placed).
+  async function restoreTimeEvent(auditId){
+    auditId = (auditId || '').toString().trim();
+    if(!auditId) return { restored:0, skipped:0, missing:0 };
+    const doc = await FB.db.collection('hhst_time_audit').doc(auditId).get();
+    if(!doc.exists) return { restored:0, skipped:0, missing:0 };
+    const data = doc.data() || {};
+    const times = Array.isArray(data.times) ? data.times : [];
+    const byKey = {};
+    times.forEach(t => { if(t && t.swimmerKey){ (byKey[t.swimmerKey] = byKey[t.swimmerKey] || []).push(t); } });
+    let restored = 0, skipped = 0, missing = 0;
+    for(const key of Object.keys(byKey)){
+      const ref = FB.db.collection('swimmers').doc(key);
+      const snap = await ref.get();
+      if(!snap.exists){ missing += byKey[key].length; continue; }
+      const sw = snap.data() || {};
+      const results = Array.isArray(sw.results) ? sw.results.slice() : [];
+      const seasons = Array.isArray(sw.seasons) ? sw.seasons.slice() : [];
+      let changed = false;
+      byKey[key].forEach(t => {
+        const present = results.some(r => r && r.event === t.event && r.meet === t.meet &&
+          r.date === t.date && (r.season||'') === (t.season||'') &&
+          Math.abs((r.seconds||0) - (t.seconds||0)) < 0.005);
+        if(present){ skipped++; return; }
+        const rebuilt = {
+          stroke: t.stroke || extractStroke(t.event || ''),
+          distance: t.distance || extractDistance(t.event || ''),
+          event: t.event || '',
+          time: t.time || (isFinite(t.seconds) ? fmtTime(t.seconds) : ''),
+          seconds: isFinite(t.seconds) ? t.seconds : NaN,
+          meet: t.meet || '', date: t.date || '', season: t.season || '',
+          timeTrial: !!t.timeTrial,
+          restoredAt: new Date().toISOString()
+        };
+        if(t.place != null) rebuilt.place = t.place;
+        results.push(rebuilt);
+        if(t.season && !seasons.includes(t.season)) seasons.push(t.season);
+        changed = true; restored++;
+      });
+      if(changed){
+        await ref.set({ results, seasons, updatedAt: FB.FieldValue.serverTimestamp() }, { merge:true });
+      }
+    }
+    try { await FB.db.collection('hhst_time_audit').doc(auditId).set({ restoredAt: FB.FieldValue.serverTimestamp() }, { merge:true }); } catch(e){}
+    return { restored, skipped, missing };
+  }
+
+  // ============ Clear all meets from one season ============
+  // Strips every NON-time-trial result tagged with `season` from every swimmer
+  // (so the roster, time trials, and every OTHER season stay put), then cleans
+  // the meet-times mirror + this season's meet-upload rows. Every removed time
+  // is copied into the audit trail first, so the whole clear is restorable.
+  async function clearSeasonMeetTimes(season){
+    season = (season || '').toString();
+    if(!season) return { season:'', removedResults:0, updatedSwimmers:0 };
+    const snap = await FB.db.collection('swimmers').get();
+    const toWrite = [];
+    const removedTimes = [];
+    let removedResults = 0;
+    snap.forEach(d => {
+      const sw = d.data() || {};
+      const results = Array.isArray(sw.results) ? sw.results : [];
+      const kept = [];
+      let changed = false;
+      results.forEach(r => {
+        // "Meets" = real, non-time-trial results in this season. Time trials
+        // live on the Time Trial dashboard and are left untouched.
+        if(r && r.season === season && !r.timeTrial){
+          removedResults++;
+          removedTimes.push(timeAuditPayload(d.id, sw.name || d.id, r));
+          changed = true;
+        } else {
+          kept.push(r);
+        }
+      });
+      if(changed){ sw.results = kept; toWrite.push({ key:d.id, results:kept }); }
+    });
+
+    // Audit BEFORE deleting so a mid-way failure still leaves a record.
+    if(removedTimes.length){
+      try {
+        await logTimeAudit({ action:'remove', source:'season-clear',
+          label:`All meets · ${season}`, season, times: removedTimes });
+      } catch(e){ /* best-effort */ }
+    }
+
+    for(let i=0;i<toWrite.length;i+=400){
+      const batch = FB.db.batch();
+      toWrite.slice(i, i+400).forEach(w => {
+        batch.set(FB.db.collection('swimmers').doc(w.key),
+          { results: w.results, updatedAt: FB.FieldValue.serverTimestamp() }, { merge:true });
+      });
+      await batch.commit();
+    }
+    // Best-effort mirror + upload-registry cleanup for this season.
+    try {
+      const mt = await FB.db.collection('hhst_meet_times').where('season','==',season).get();
+      const refs = []; mt.forEach(x => refs.push(x.ref));
+      while(refs.length){ const b = FB.db.batch(); refs.splice(0,400).forEach(r => b.delete(r)); await b.commit(); }
+    } catch(e){}
+    try {
+      const up = await FB.db.collection('hhst_uploads').where('season','==',season).get();
+      const refs = []; up.forEach(x => { const dd = x.data() || {}; if(dd.mode !== 'roster') refs.push(x.ref); });
+      while(refs.length){ const b = FB.db.batch(); refs.splice(0,400).forEach(r => b.delete(r)); await b.commit(); }
+    } catch(e){}
+    // Recompute distinct meet count from the post-clear state we already hold.
+    try {
+      const writeMap = new Map(toWrite.map(w => [w.key, w.results]));
+      const allMeets = new Set();
+      snap.forEach(d => {
+        const results = writeMap.get(d.id) || (d.data().results || []);
+        results.forEach(r => { if(r && r.meet) allMeets.add(r.meet); });
+      });
+      await FB.db.collection('meta').doc('stats').set({ meetCount: allMeets.size }, { merge:true });
+    } catch(e){}
+    return { season, removedResults, updatedSwimmers: toWrite.length };
   }
 
   // Remove truly-orphan swimmer docs — entries with no roster membership
@@ -3017,6 +3217,7 @@
     findSwimmer,
     deleteSwimmer, pruneNonRosterSwimmers, addSwimmerManual, updateSwimmer,
     getUploads, deleteUpload,
+    getTimeAudit, restoreTimeEvent, recordManualTimeAudit, clearSeasonMeetTimes,
     migrateSeasonAges, countSwimmersNeedingSeasonMigration, inferMissingDistances, renameMeet, dedupeMeetByStroke,
     clearAll, clearRoster, clearMeetTimes,
     isAdminLoggedIn, loginAdmin, logoutAdmin, onAuthChanged,

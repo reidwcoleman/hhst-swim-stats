@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Figtree:ital,wght@0,300..900;1,300..900&family=IBM+Plex+Mono:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="assets/styles.css?v=40"/>
+<link rel="stylesheet" href="assets/styles.css?v=41"/>
 <style>
   /* Hide everything until auth check completes — admins only. */
   body:not(.auth-ready) > *{visibility:hidden}
@@ -769,9 +769,20 @@
         ? `<span class="award-medal" style="background:${color}">${i+1}</span>`
         : `<span class="award-rank">${i+1}</span>`;
       const nm = displayName(e);
+      // Size the name by its LONGEST WORD, not its total length. The name
+      // column is narrow (two boards side by side), so a single long surname
+      // ("Matsushita", "Rademacher") is what overflows and gets clipped by the
+      // 2-line clamp — a 16-char name made of two short words wraps cleanly and
+      // can stay big. Tiers step a long-word name down so it always fits one
+      // line; total length is a secondary trigger for many-word names.
+      const longestWord = nm.split(/\s+/).reduce((m,w)=> Math.max(m, w.length), 0);
+      const nmTier = (longestWord >= 15 || nm.length > 32) ? ' nm-xxl'
+                   : (longestWord >= 11 || nm.length > 26) ? ' nm-xlong'
+                   : (longestWord >= 9  || nm.length > 22) ? ' nm-long'
+                   : '';
       return `<tr>
         <td class="award-rank-cell">${rankCell}</td>
-        <td class="award-name-cell"><span class="poster-name${nm.length > 41 ? ' nm-xxl' : nm.length > 29 ? ' nm-xlong' : nm.length > 20 ? ' nm-long' : ''}">${escapeHtml(nm)}</span></td>
+        <td class="award-name-cell"><span class="poster-name${nmTier}">${escapeHtml(nm)}</span></td>
         <td class="award-time-cell${prettyTime(e.time).includes(':') ? ' t-min' : ''}">${escapeHtml(prettyTime(e.time))}</td>
       </tr>`;
     }).join('');
