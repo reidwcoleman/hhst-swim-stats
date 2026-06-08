@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Figtree:ital,wght@0,300..900;1,300..900&family=IBM+Plex+Mono:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="assets/styles.css?v=41"/>
+<link rel="stylesheet" href="assets/styles.css?v=42"/>
 <style>
   /* Hide everything until auth check completes — admins only. */
   body:not(.auth-ready) > *{visibility:hidden}
@@ -871,10 +871,18 @@
           ? `<div class="improved-evmore">+ ${sortedEvents.length - PRINT_EV_LINES} more event${sortedEvents.length - PRINT_EV_LINES === 1 ? '' : 's'} in the total</div>`
           : '');
       const nm = displayName(e);
+      // Size by longest WORD (same rule as Fastest Five) so a long surname
+      // steps down a tier and fits one line instead of being clipped by the
+      // 2-line clamp; total length is a secondary trigger for many-word names.
+      const miLongestWord = nm.split(/\s+/).reduce((m,w)=> Math.max(m, w.length), 0);
+      const miTier = (miLongestWord >= 15 || nm.length > 34) ? ' nm-xxl'
+                   : (miLongestWord >= 11 || nm.length > 26) ? ' nm-xlong'
+                   : (miLongestWord >= 9  || nm.length > 20) ? ' nm-long'
+                   : '';
       return `<tr>
         <td class="award-rank-cell">${rankCell}</td>
         <td class="award-name-cell">
-          <span class="improved-name${nm.length > 38 ? ' nm-xlong' : nm.length > 26 ? ' nm-long' : ''}">${escapeHtml(nm)}</span>
+          <span class="improved-name${miTier}">${escapeHtml(nm)}</span>
           <span class="improved-events-sub">${eventCount} event${eventCount===1?'':'s'} improved</span>
           <div class="improved-evlist">${evlist}</div>
         </td>

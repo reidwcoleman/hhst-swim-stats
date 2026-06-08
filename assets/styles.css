@@ -3391,7 +3391,7 @@ a.lb-entry-name:hover{color:var(--accent)!important;text-decoration:underline;te
     height:8in !important;
     max-height:8in !important;
     min-height:8in !important;
-    padding:0.3in 0.6in !important;
+    padding:0.28in 0.38in !important;
     display:flex !important;flex-direction:column !important;
     justify-content:space-between !important;align-items:stretch !important;
     transform:none !important;
@@ -3475,11 +3475,11 @@ a.lb-entry-name:hover{color:var(--accent)!important;text-decoration:underline;te
      award. These overrides apply to both Fastest Five and Most Improved
      posters since they share the .award-* classes. */
   .award-header{ gap:16px !important; margin-bottom:0 !important; }
-  .award-logo-frame{ width:60px !important; height:60px !important; }
+  .award-logo-frame{ width:50px !important; height:50px !important; }
   .award-logo-frame .award-logo,
   .award-logo{ width:52px !important; height:52px !important; }
   .award-kicker{ font-size:13px !important; letter-spacing:.32em !important; margin-bottom:2px !important; }
-  .award-title{ font-size:34px !important; }
+  .award-title{ font-size:30px !important; }
   .award-title-rule{ width:64px !important; height:3px !important; margin-top:4px !important; }
   /* Age group + event + meet on ONE compact, centered line so the boards below
      get the room. align-self:center keeps the line hugging its text while the
@@ -3489,12 +3489,12 @@ a.lb-entry-name:hover{color:var(--accent)!important;text-decoration:underline;te
     margin:0 0 2px !important; }
   .award-headline .award-group::before,
   .award-headline .award-group::after{ display:none !important; }
-  .award-group{ font-size:26px !important; margin-bottom:0 !important; }
+  .award-group{ font-size:24px !important; margin-bottom:0 !important; }
   .award-event{ font-size:14px !important; padding:5px 15px !important; margin-bottom:0 !important; align-self:auto !important; }
   .award-event-meet{ font-size:13px !important; margin-top:0 !important; margin-bottom:0 !important; padding:4px 14px !important; align-self:auto !important; }
 
   /* Boards: roomier cells, much larger name + time text. */
-  .award-cols{ gap:0.4in !important; margin-bottom:2px !important; }
+  .award-cols{ gap:0.2in !important; margin-bottom:2px !important; }
   .award-cols-single{ max-width:7.5in !important; }
   .award-col{ padding:4px 14px 3px !important; }
   .award-col-head{ font-size:16px !important; letter-spacing:.18em !important; padding:1px 0 4px !important; margin-bottom:3px !important; }
@@ -3513,8 +3513,8 @@ a.lb-entry-name:hover{color:var(--accent)!important;text-decoration:underline;te
      worst-case board (every name 28+ characters, all ten wrapping) still
      fits the one-page sheet, verified by print-emulation measurement. */
   .award-card .award-name-cell{
-    font-size:42px !important;
-    line-height:0.99 !important;
+    font-size:46px !important;
+    line-height:0.97 !important;
     max-width:none !important;
     white-space:normal !important;
     overflow:visible !important;
@@ -3539,10 +3539,13 @@ a.lb-entry-name:hover{color:var(--accent)!important;text-decoration:underline;te
      ("37.70"), so a 1.45in column holds them at 52px while leaving the rest
      of the row width to the swimmer name (which needs room to avoid wrapping
      a long surname mid-word). */
-  .award-card .award-time-cell{ font-size:56px !important; width:1.68in !important; }
-  /* Minute-format times ("1:02.18", 7 glyphs) overflow the cell at 56px —
+  /* line-height:1 keeps the (single-line) time compact so its big font never
+     inflates the row height — the two-line name is the row's floor, so the
+     time can be huge "for free" up to the name's height. */
+  .award-card .award-time-cell{ font-size:60px !important; width:1.85in !important; line-height:1 !important; }
+  /* Minute-format times ("1:02.18", 7 glyphs) overflow the cell at 68px —
      step those down so the longest possible time still fits the column. */
-  .award-card .award-time-cell.t-min{ font-size:44px !important; }
+  .award-card .award-time-cell.t-min{ font-size:50px !important; }
   .award-card .improved-drop{ font-size:26px !important; }
   .improved-events-sub{ font-size:13px !important; margin-top:3px !important; }
   .award-col-empty-msg{ font-size:18px !important; }
@@ -3560,7 +3563,7 @@ a.lb-entry-name:hover{color:var(--accent)!important;text-decoration:underline;te
      tightened so the WORST CASE (5 swimmers × max events, long names)
      measures ~1.5in under the page edge. Verified via print-emulation
      measurement at 8+ events per swimmer across all six age groups. */
-  .award-card-improved{ padding:0.25in 0.6in !important; }
+  .award-card-improved{ padding:0.25in 0.38in !important; }
   .award-card-improved .award-header{ margin-bottom:0 !important; }
   .award-card-improved .award-logo-frame{ width:68px !important; height:68px !important; }
   .award-card-improved .award-logo-frame .award-logo,
@@ -3568,7 +3571,7 @@ a.lb-entry-name:hover{color:var(--accent)!important;text-decoration:underline;te
   .award-card-improved .award-title{ font-size:40px !important; }
   .award-card-improved .award-headline{ margin:0 0 4px !important; }
   .award-card-improved .award-group{ font-size:30px !important; }
-  .award-card-improved .award-cols{ gap:0.35in !important; }
+  .award-card-improved .award-cols{ gap:0.2in !important; }
   .award-card-improved .award-col{ padding:6px 12px 4px !important; }
   .award-card-improved .award-col-head{ font-size:16px !important; padding:2px 0 4px !important; margin-bottom:3px !important; }
   .award-card-improved .award-table td{ padding:1.5px 5px !important; }
@@ -3580,15 +3583,15 @@ a.lb-entry-name:hover{color:var(--accent)!important;text-decoration:underline;te
      height bounded (5 rows × [2-line name + 3 breakdown lines + "+N more"]
      measures ~0.3in under the sheet even with every cap maxed out). */
   .award-card-improved .award-name-cell{
-    font-size:25px !important;
-    line-height:1.12 !important;
+    font-size:31px !important;
+    line-height:1.05 !important;
     white-space:normal !important;
     overflow:visible !important;
     text-overflow:clip !important;
     overflow-wrap:break-word !important;
   }
-  .award-card-improved .award-time-cell{ width:1.75in !important; }
-  .award-card-improved .improved-drop{ font-size:40px !important; }
+  .award-card-improved .award-time-cell{ width:1.95in !important; }
+  .award-card-improved .improved-drop{ font-size:48px !important; line-height:1 !important; }
   /* "total drop" caption under the big green number — small, solid green
      (no opacity: transparency would re-trigger driver rasterization). */
   .improved-drop .drop-cap{
@@ -3633,17 +3636,18 @@ a.lb-entry-name:hover{color:var(--accent)!important;text-decoration:underline;te
      what makes 100% print scale safe: short names get maximum type, long
      names shrink instead of growing the row, and only a truly pathological
      name (40+ chars) would ever ellipsize. */
-  .award-card .award-name-cell .poster-name.nm-long{ font-size:30px !important; line-height:1.08 !important; }
-  .award-card-improved .improved-name.nm-long{ font-size:21px !important; }
+  .award-card .award-name-cell .poster-name.nm-long{ font-size:32px !important; line-height:1.08 !important; }
+  .award-card-improved .improved-name.nm-long{ font-size:28px !important; }
   /* Further step-downs for marathon names. Thresholds are set so each
      tier's two clamped lines comfortably hold every name routed to it
      (FF: ≤20 chars @30px, 21-29 @20px, 30-41 @16px, beyond @14px —
      verified against 45-character double-barrel names with the boundary-
      length fixture). Real rosters essentially never leave the first
      two tiers, so almost every name prints at the full 30px. */
-  .award-card .award-name-cell .poster-name.nm-xlong{ font-size:23px !important; line-height:1.12 !important; }
-  .award-card .award-name-cell .poster-name.nm-xxl{ font-size:18px !important; line-height:1.16 !important; }
-  .award-card-improved .improved-name.nm-xlong{ font-size:15px !important; }
+  .award-card .award-name-cell .poster-name.nm-xlong{ font-size:26px !important; line-height:1.12 !important; }
+  .award-card .award-name-cell .poster-name.nm-xxl{ font-size:20px !important; line-height:1.16 !important; }
+  .award-card-improved .improved-name.nm-xlong{ font-size:22px !important; }
+  .award-card-improved .improved-name.nm-xxl{ font-size:18px !important; }
   /* ================= PRINT FLATTEN — kill ALL transparency ==============
      Every rgba() color, gradient-with-alpha, opacity and blur on the poster
      becomes a transparency group / soft mask in the printed PDF. Printer
