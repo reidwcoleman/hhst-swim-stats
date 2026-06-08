@@ -12,7 +12,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
 <link rel="stylesheet" href="assets/styles.css?v=27"/>
-<link rel="stylesheet" href="assets/training.css?v=1"/>
+<link rel="stylesheet" href="assets/training.css?v=2"/>
 <style>
   /* ---- Page-scoped polish for the swimmer dashboard ----
      Aligns this page's inline-style risks to the shared design tokens
@@ -399,7 +399,7 @@
 </footer>
 
 <script src="assets/data.js?v=28"></script>
-<script src="assets/training.js?v=1"></script>
+<script src="assets/training.js?v=2"></script>
 <script>
   HHST.initTheme();
   document.getElementById('themeToggle').addEventListener('click', HHST.toggleTheme);
@@ -1104,7 +1104,9 @@
       drill:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/><path d="M2 17c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/><path d="M2 7c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/></svg>',
       dry:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7v10M18 7v10M4 9h2M18 9h2M9 12h6M9 9v6M15 9v6"/></svg>',
       arrow:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
-      star:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/></svg>'
+      star:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/></svg>',
+      bolt:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>',
+      chev:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>'
     };
     const ag = (stats.ageGroup && stats.ageGroup !== 'Unknown') ? stats.ageGroup : '';
     const first = (swimmer.name || 'Your swimmer').split(' ')[0];
@@ -1137,22 +1139,30 @@
     };
 
     function topMsg(t){
-      if(t.status === 'developing'){
-        return `This event has the most room to grow. From <b>${escapeHtml(t.time)}</b>, a strong ${ag || 'age-group'} time is about <b>${escapeHtml(t.benchTime || t.goalTime)}</b>. Chip away with the ${escapeHtml(t.stroke)} drills below.`;
+      const stretch = t.stretchTime
+        ? ` — on the way to a strong ${ag || 'age-group'} time around <b>${escapeHtml(t.stretchTime)}</b>`
+        : '';
+      const start = t.topMethod ? ` Start with <b>${escapeHtml(t.topMethod)}</b> below.` : '';
+      if(t.status === 'developing' || t.status === 'onTrack'){
+        return `From <b>${escapeHtml(t.time)}</b>, a realistic next goal is <b>${escapeHtml(t.goalTime)}</b>${stretch}.${start}`;
       }
-      if(t.status === 'onTrack'){
-        return `${escapeHtml(first)} is closing in on a strong time here. From <b>${escapeHtml(t.time)}</b>, the ${ag || 'age-group'} goal is about <b>${escapeHtml(t.benchTime || t.goalTime)}</b> — these drills get you there.`;
-      }
-      return `Keep building this one. The next barrier to break is <b>${escapeHtml(t.goalTime)}</b> — here's exactly how to chase it.`;
+      return `Keep sharpening this one — your next target is <b>${escapeHtml(t.goalTime)}</b>.${start}`;
     }
 
+    // Each focus event renders as a condensable-but-open card (<details open>):
+    // a "how to actually get faster" method list, then drills, dryland & cues.
     function focusCard(t){
       const gap = (t.goalSec != null && isFinite(t.seconds)) ? Math.max(0, t.seconds - t.goalSec) : null;
       let pct = 0;
       if(t.goalSec != null && t.seconds > 0) pct = Math.max(6, Math.min(100, Math.round(t.goalSec / t.seconds * 100)));
       const gapLabel = gap != null
-        ? (gap < 0.05 ? 'Right on the line!' : `<b>${gap.toFixed(2)}s</b> to your goal`)
+        ? (gap < 0.05 ? 'Right on the line!' : `<b>${gap.toFixed(2)}s</b> to your next goal`)
         : '';
+      const methods = `<div class="tr-methods">` + (t.methods || []).map((m,i) => `
+        <div class="tr-method">
+          <span class="tr-method-num">${i+1}</span>
+          <span class="tr-method-body"><b>${escapeHtml(m.title)}</b><span>${escapeHtml(m.how)}</span></span>
+        </div>`).join('') + `</div>`;
       const drills = `<div class="tr-cards" style="--c:${t.color}">` + t.drills.map(d => `
         <div class="tr-card">
           ${d.focus ? `<span class="tr-card-tag">${escapeHtml(d.focus)}</span>` : ''}
@@ -1167,8 +1177,10 @@
         </div>`).join('') + `</div>`;
       const cues = `<ul class="tr-cues" style="--c:${t.color}">` +
         t.cues.map(c => `<li>${I.check}<span>${escapeHtml(c)}</span></li>`).join('') + `</ul>`;
-      return `<div class="tr-focus" style="--c:${t.color}">
-        <div class="tr-focus-head">
+      const stretchNote = t.stretchTime
+        ? `<div class="tr-stretch">Longer-term ${ag || 'age-group'} goal: <b>${escapeHtml(t.stretchTime)}</b></div>` : '';
+      return `<details class="tr-focus" open style="--c:${t.color}">
+        <summary class="tr-focus-head">
           <div class="tr-focus-dot" style="--c:${t.color}">${t.emoji}</div>
           <div class="tr-focus-title">${escapeHtml(t.event)}</div>
           ${statusChip(t.status)}
@@ -1178,12 +1190,16 @@
             <span class="tr-goal">${escapeHtml(t.goalTime)}</span>
             <span class="tr-goal-cap">${escapeHtml(t.goalKind)}</span>
           </div>
-        </div>
+          <span class="tr-focus-chev">${I.chev}</span>
+        </summary>
         <div class="tr-focus-body">
           <div class="tr-gap">
             <div class="tr-gap-meta"><span>Now ${escapeHtml(t.time)}</span><span>${gapLabel}</span><span>Goal ${escapeHtml(t.goalTime)}</span></div>
             <div class="tr-gap-track"><div class="tr-gap-fill" data-w="${pct}" style="width:0%"></div></div>
+            ${stretchNote}
           </div>
+          <div class="tr-mini-head tr-mini-hero">${I.bolt} How to actually get faster</div>
+          ${methods}
           <div class="tr-focus-cols">
             <div class="tr-col">
               <div class="tr-mini-head">${I.drill} Drills to swim</div>
@@ -1194,10 +1210,10 @@
               ${dry}
             </div>
           </div>
-          <div class="tr-mini-head" style="margin-top:16px">${I.check} Technique checkpoints</div>
+          <div class="tr-mini-head">${I.check} Technique checkpoints</div>
           ${cues}
         </div>
-      </div>`;
+      </details>`;
     }
 
     let html = '';

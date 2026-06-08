@@ -8,6 +8,93 @@
 
 /* ---- A stroke's accent color is passed in via --c on a wrapper ---- */
 
+/* =============================================================
+   Collapsible section (open by default) — <details class="tr-acc" open>
+   ============================================================= */
+.tr-acc{
+  border:1px solid var(--border);border-radius:var(--radius-md);
+  background:var(--surface-glass);overflow:hidden;margin:14px 0 0;
+}
+.tr-acc > summary{
+  list-style:none;cursor:pointer;display:flex;align-items:center;gap:12px;
+  padding:15px 18px;font-family:'Inter',sans-serif;font-weight:700;font-size:14px;
+  letter-spacing:.01em;color:var(--text);-webkit-tap-highlight-color:transparent;
+  transition:background .18s ease;
+}
+.tr-acc > summary::-webkit-details-marker{display:none}
+.tr-acc > summary:hover{background:var(--bg-alt)}
+.tr-acc > summary:focus-visible{outline:none;box-shadow:inset 0 0 0 2px var(--ring)}
+.tr-acc-ico{
+  flex:0 0 auto;width:32px;height:32px;border-radius:9px;display:grid;place-items:center;
+  color:var(--c,var(--accent));background:color-mix(in srgb,var(--c,var(--accent)) 14%,transparent);
+}
+.tr-acc-ico svg{width:17px;height:17px}
+.tr-acc-title{margin-right:auto}
+.tr-acc-count{
+  font-size:11px;font-weight:700;color:var(--text-subtle);
+  background:var(--bg-alt);border:1px solid var(--border);border-radius:999px;padding:2px 9px;
+}
+.tr-acc-chev{flex:0 0 auto;color:var(--text-subtle);transition:transform .25s cubic-bezier(.16,1,.3,1)}
+.tr-acc-chev svg{width:18px;height:18px;display:block}
+.tr-acc[open] > summary .tr-acc-chev{transform:rotate(180deg)}
+.tr-acc-body{padding:2px 18px 18px}
+.tr-acc-body > .tr-cards,.tr-acc-body > .tr-cues{margin-top:4px}
+
+/* =============================================================
+   "How to actually get faster" — numbered method cards (the heart)
+   ============================================================= */
+.tr-methods{display:grid;gap:12px}
+.tr-method{
+  display:flex;gap:14px;align-items:flex-start;
+  padding:16px 17px;border-radius:var(--radius-md);
+  background:var(--bg-alt);border:1px solid var(--border);
+  transition:border-color .2s ease,box-shadow .2s ease,transform .2s cubic-bezier(.16,1,.3,1);
+}
+.tr-method:hover{border-color:var(--border-strong);box-shadow:var(--shadow-sm)}
+.tr-method-num{
+  flex:0 0 auto;width:30px;height:30px;border-radius:9px;display:grid;place-items:center;
+  font-family:'Fraunces',serif;font-weight:700;font-size:15px;line-height:1;
+  color:var(--c,var(--accent));background:color-mix(in srgb,var(--c,var(--accent)) 15%,transparent);
+  border:1px solid color-mix(in srgb,var(--c,var(--accent)) 28%,transparent);
+}
+.tr-method-body{min-width:0}
+.tr-method-body b{display:block;font-size:15px;font-weight:700;color:var(--text);margin-bottom:3px;line-height:1.3}
+.tr-method-body span{display:block;font-size:13.5px;line-height:1.6;color:var(--text-muted)}
+
+/* ===== Big idea (whyFast) callout ===== */
+.tr-bigidea{
+  display:flex;gap:13px;align-items:flex-start;margin:16px 0 2px;
+  padding:16px 18px;border-radius:var(--radius-md);
+  background:color-mix(in srgb,var(--c,var(--accent)) 11%,transparent);
+  border:1px solid color-mix(in srgb,var(--c,var(--accent)) 30%,transparent);
+}
+.tr-bigidea svg{flex:0 0 auto;width:21px;height:21px;margin-top:1px;color:var(--c,var(--accent))}
+.tr-bigidea p{margin:0;font-size:15px;line-height:1.6;color:var(--text)}
+.tr-bigidea strong{color:var(--text);font-weight:700}
+
+/* ===== Progression timeline (beginner → advanced) ===== */
+.tr-prog{display:flex;flex-wrap:wrap;gap:8px 6px;align-items:center}
+.tr-prog-step{
+  display:inline-flex;align-items:center;gap:8px;padding:9px 14px;border-radius:999px;
+  background:var(--bg-alt);border:1px solid var(--border);font-size:13px;color:var(--text);line-height:1.3;
+}
+.tr-prog-step .tr-prog-num{
+  width:18px;height:18px;border-radius:50%;display:grid;place-items:center;flex:0 0 auto;
+  font-size:11px;font-weight:700;color:var(--accent-contrast);background:var(--c,var(--accent));
+}
+.tr-prog-arrow{color:var(--text-subtle);display:flex}
+.tr-prog-arrow svg{width:16px;height:16px}
+
+/* ===== "Track your progress" measure note ===== */
+.tr-measure{
+  display:flex;gap:11px;align-items:flex-start;margin-top:14px;
+  padding:13px 16px;border-radius:var(--radius);
+  background:var(--bg-alt);border:1px dashed var(--border-strong);
+}
+.tr-measure svg{flex:0 0 auto;width:18px;height:18px;margin-top:1px;color:var(--c,var(--accent))}
+.tr-measure p{margin:0;font-size:13.5px;line-height:1.55;color:var(--text-muted)}
+.tr-measure strong{color:var(--text)}
+
 /* ===== Cue checklist (the "think about this" list) ===== */
 .tr-cues{list-style:none;display:grid;gap:10px;margin:0 0 4px;padding:0}
 .tr-cues li{
@@ -261,9 +348,24 @@
   text-transform:uppercase;color:var(--text-muted);margin-bottom:10px;
 }
 .tr-mini-head svg{width:15px;height:15px;color:var(--c,var(--accent))}
+/* spacing between the stacked sections inside a focus card */
+.tr-focus-body > .tr-mini-head{margin-top:18px}
+/* the "How to actually get faster" heading reads a touch louder + accented */
+.tr-mini-head.tr-mini-hero{font-size:13px;color:var(--c,var(--accent))}
 /* compact cue list inside a focus card */
 .tr-focus .tr-cues li{font-size:13.5px;padding:9px 12px}
 .tr-focus .tr-cues li svg{width:16px;height:16px}
+
+/* Focus card is a condensable-but-open <details> — style the summary + chevron */
+details.tr-focus > summary{list-style:none;cursor:pointer}
+details.tr-focus > summary::-webkit-details-marker{display:none}
+details.tr-focus > summary:focus-visible{outline:none;box-shadow:inset 0 0 0 2px var(--ring)}
+.tr-focus-chev{flex:0 0 auto;margin-left:2px;color:var(--text-subtle);transition:transform .25s cubic-bezier(.16,1,.3,1)}
+.tr-focus-chev svg{width:18px;height:18px;display:block}
+details.tr-focus[open] > summary .tr-focus-chev{transform:rotate(180deg)}
+/* longer-term (age-group) goal note under the gap bar */
+.tr-stretch{margin-top:9px;font-size:12.5px;color:var(--text-subtle)}
+.tr-stretch b{color:var(--text);font-variant-numeric:tabular-nums}
 
 /* Strengths row */
 .tr-strengths{margin-top:22px;padding-top:20px;border-top:1px solid var(--border)}

@@ -15,7 +15,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
 <link rel="stylesheet" href="assets/styles.css?v=27"/>
-<link rel="stylesheet" href="assets/training.css?v=1"/>
+<link rel="stylesheet" href="assets/training.css?v=2"/>
 <style>
   /* A warm, energetic hero for the guide (page-scoped, gf- prefixed). */
   .gf-hero h1{max-width:16ch;margin-left:auto;margin-right:auto}
@@ -79,7 +79,7 @@
   <a href="index.html">Swimmer Lookup</a> · <a href="get-faster.html">Get Faster</a> · <a href="admin.html">Coach / Admin Login</a>
 </footer>
 
-<script src="assets/training.js?v=1"></script>
+<script src="assets/training.js?v=2"></script>
 <script>
   // ---- theme toggle (self-contained; matches the rest of the site) ----
   document.getElementById('themeToggle').addEventListener('click', function(){
@@ -100,16 +100,17 @@
     warn:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>',
     bulb:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1h6c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z"/></svg>',
     arrow: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
-    flag:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22V4M4 4h13l-2 4 2 4H4"/></svg>'
+    flag:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22V4M4 4h13l-2 4 2 4H4"/></svg>',
+    bolt:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>',
+    prog:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M21 7v6h-6"/></svg>',
+    measure: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>',
+    chev:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>'
   };
 
   function cueList(cues, color){
     return '<ul class="tr-cues" style="--c:'+color+'">' +
       cues.map(function(c){ return '<li>'+ICON.check+'<span>'+esc(c)+'</span></li>'; }).join('') +
       '</ul>';
-  }
-  function subhead(label, icon, color){
-    return '<div class="tr-subhead" style="--c:'+color+'">'+(icon||'')+'<span>'+esc(label)+'</span><span class="tr-subhead-line"></span></div>';
   }
   function mistakeCards(mistakes, color){
     return '<div class="tr-cards" style="--c:'+color+'">' + mistakes.map(function(m){
@@ -141,18 +142,56 @@
     return '<div class="tr-focus-note" style="--c:'+color+'">'+ICON.bulb+'<p><strong>Coach’s focus:</strong> '+esc(text)+'</p></div>';
   }
 
+  // Collapsible section — open by default (<details open>), with a rotating chevron.
+  function acc(title, iconKey, count, body, color){
+    return '<details class="tr-acc" open style="--c:'+color+'">'+
+      '<summary>'+
+        '<span class="tr-acc-ico">'+(ICON[iconKey]||'')+'</span>'+
+        '<span class="tr-acc-title">'+esc(title)+'</span>'+
+        (count ? '<span class="tr-acc-count">'+count+'</span>' : '')+
+        '<span class="tr-acc-chev">'+ICON.chev+'</span>'+
+      '</summary>'+
+      '<div class="tr-acc-body">'+body+'</div>'+
+    '</details>';
+  }
+  // Numbered "how to actually get faster" method cards — the heart of the guide.
+  function methodCards(items, color){
+    return '<div class="tr-methods">'+items.map(function(m,i){
+      return '<div class="tr-method">'+
+        '<span class="tr-method-num">'+(i+1)+'</span>'+
+        '<span class="tr-method-body"><b>'+esc(m.title)+'</b><span>'+esc(m.how)+'</span></span>'+
+      '</div>';
+    }).join('')+'</div>';
+  }
+  function bigIdea(text, color){
+    return '<div class="tr-bigidea" style="--c:'+color+'">'+ICON.bolt+'<p><strong>What makes you fast:</strong> '+esc(text)+'</p></div>';
+  }
+  function progressionHtml(steps, color){
+    if(!steps || !steps.length) return '';
+    var body = '<div class="tr-methods">'+steps.map(function(s,i){
+      return '<div class="tr-method"><span class="tr-method-num">'+(i+1)+'</span><span class="tr-method-body"><span>'+esc(s)+'</span></span></div>';
+    }).join('')+'</div>';
+    return acc('Your path: beginner → advanced', 'prog', '', body, color);
+  }
+  function measureHtml(text, color){
+    if(!text) return '';
+    return '<div class="tr-measure" style="--c:'+color+'">'+ICON.measure+'<p><strong>Track your progress:</strong> '+esc(text)+'</p></div>';
+  }
+
   function renderStroke(s){
     return '<div class="chart-card" style="--c:'+s.color+'">'+
       '<div class="gf-stroke-head">'+
         '<div class="gf-stroke-emoji" style="--c:'+s.color+'">'+s.emoji+'</div>'+
         '<div><h2>'+esc(s.name)+'</h2><p class="gf-tagline">'+esc(s.tagline)+'</p></div>'+
       '</div>'+
-      '<p class="gf-how">'+esc(s.how)+'</p>'+
-      subhead('Technique checkpoints', ICON.check, s.color)+ cueList(s.cues, s.color)+
-      subhead('Common mistakes & how to fix them', ICON.warn, s.color)+ mistakeCards(s.mistakes, s.color)+
-      subhead('Drills to practice', ICON.drill, s.color)+ drillCards(s.drills, s.color)+
-      subhead('Dryland — no pool needed', ICON.dry, s.color)+ drylandCards(s.dryland, s.color)+
-      focusNote(s.focus, s.color)+
+      bigIdea(s.whyFast, s.color)+
+      acc('How to actually get faster', 'bolt', s.getFaster.length, methodCards(s.getFaster, s.color), s.color)+
+      acc('Technique checkpoints', 'check', s.cues.length, cueList(s.cues, s.color), s.color)+
+      acc('Common mistakes & fixes', 'warn', s.mistakes.length, mistakeCards(s.mistakes, s.color), s.color)+
+      acc('Drills to practice', 'drill', s.drills.length, drillCards(s.drills, s.color), s.color)+
+      acc('Dryland — no pool needed', 'dry', s.dryland.length, drylandCards(s.dryland, s.color), s.color)+
+      progressionHtml(s.progression, s.color)+
+      measureHtml(s.measure, s.color)+
     '</div>';
   }
 
@@ -163,8 +202,8 @@
         '<div><h2>'+esc(x.name)+'</h2><p class="gf-tagline">'+esc(x.tagline)+'</p></div>'+
       '</div>'+
       '<p class="gf-how">'+esc(x.how)+'</p>'+
-      subhead('Keys', ICON.check, x.color)+ cueList(x.cues, x.color)+
-      subhead('How to practice it', ICON.drill, x.color)+ drillCards(x.items, x.color)+
+      acc('Keys', 'check', x.cues.length, cueList(x.cues, x.color), x.color)+
+      acc('How to practice it', 'drill', x.items.length, drillCards(x.items, x.color), x.color)+
       focusNote(x.focus, x.color)+
     '</div>';
   }
