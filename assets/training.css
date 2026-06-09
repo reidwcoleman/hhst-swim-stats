@@ -321,7 +321,7 @@
 }
 .tr-focus-head{
   display:flex;align-items:center;gap:13px;flex-wrap:wrap;
-  padding:16px 18px;border-bottom:1px solid var(--border);
+  padding:16px 18px;
   background:color-mix(in srgb,var(--c,var(--accent)) 7%,transparent);
 }
 .tr-focus-dot{flex:0 0 auto;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-size:19px;
@@ -356,13 +356,24 @@
 .tr-focus .tr-cues li{font-size:13.5px;padding:9px 12px}
 .tr-focus .tr-cues li svg{width:16px;height:16px}
 
-/* Focus card is a condensable-but-open <details> — style the summary + chevron */
-details.tr-focus > summary{list-style:none;cursor:pointer}
+/* Focus card is a condensable <details> — style the summary + chevron.
+   Only the open card shows a divider under its header, so collapsed cards
+   read as clean single rows and the whole section stays short. */
+details.tr-focus > summary{list-style:none;cursor:pointer;transition:background .18s ease}
 details.tr-focus > summary::-webkit-details-marker{display:none}
+details.tr-focus > summary:hover{background:color-mix(in srgb,var(--c,var(--accent)) 13%,transparent)}
 details.tr-focus > summary:focus-visible{outline:none;box-shadow:inset 0 0 0 2px var(--ring)}
+details.tr-focus[open] > summary.tr-focus-head{border-bottom:1px solid var(--border)}
 .tr-focus-chev{flex:0 0 auto;margin-left:2px;color:var(--text-subtle);transition:transform .25s cubic-bezier(.16,1,.3,1)}
 .tr-focus-chev svg{width:18px;height:18px;display:block}
 details.tr-focus[open] > summary .tr-focus-chev{transform:rotate(180deg)}
+/* nested "Drills, dryland & technique" sub-accordion inside an open card */
+.tr-focus-body > .tr-acc.tr-sub{margin-top:18px;background:var(--bg-alt)}
+/* "biggest opportunity" intro line at the top of the first (open) card */
+.tr-focus-intro{font-size:14px;line-height:1.6;color:var(--text-muted);margin:0 0 16px}
+.tr-focus-intro b{color:var(--text)}
+/* the first focus card is the biggest opportunity — give it a hair more weight */
+.tr-focus-list > details.tr-focus:first-child{border-color:var(--border-strong);box-shadow:var(--shadow-sm)}
 /* longer-term (age-group) goal note under the gap bar */
 .tr-stretch{margin-top:9px;font-size:12.5px;color:var(--text-subtle)}
 .tr-stretch b{color:var(--text);font-variant-numeric:tabular-nums}

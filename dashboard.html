@@ -12,7 +12,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
 <link rel="stylesheet" href="assets/styles.css?v=27"/>
-<link rel="stylesheet" href="assets/training.css?v=2"/>
+<link rel="stylesheet" href="assets/training.css?v=3"/>
 <style>
   /* ---- Page-scoped polish for the swimmer dashboard ----
      Aligns this page's inline-style risks to the shared design tokens
@@ -1149,9 +1149,12 @@
       return `Keep sharpening this one — your next target is <b>${escapeHtml(t.goalTime)}</b>.${start}`;
     }
 
-    // Each focus event renders as a condensable-but-open card (<details open>):
-    // a "how to actually get faster" method list, then drills, dryland & cues.
-    function focusCard(t){
+    // Each focus event is a condensable card (<details>). The biggest
+    // opportunity opens by default; the rest stay collapsed so the section
+    // stays short. When open it leads with the "how to get faster" methods,
+    // and tucks drills / dryland / technique into one more nested accordion
+    // (collapsed) so even an open card doesn't run on forever.
+    function focusCard(t, isOpen, intro){
       const gap = (t.goalSec != null && isFinite(t.seconds)) ? Math.max(0, t.seconds - t.goalSec) : null;
       let pct = 0;
       if(t.goalSec != null && t.seconds > 0) pct = Math.max(6, Math.min(100, Math.round(t.goalSec / t.seconds * 100)));
@@ -1179,7 +1182,23 @@
         t.cues.map(c => `<li>${I.check}<span>${escapeHtml(c)}</span></li>`).join('') + `</ul>`;
       const stretchNote = t.stretchTime
         ? `<div class="tr-stretch">Longer-term ${ag || 'age-group'} summer-league goal: <b>${escapeHtml(t.stretchTime)}</b></div>` : '';
-      return `<details class="tr-focus" open style="--c:${t.color}">
+      const more = `<details class="tr-acc tr-sub" style="--c:${t.color}">
+        <summary>
+          <span class="tr-acc-ico">${I.drill}</span>
+          <span class="tr-acc-title">Drills, dryland &amp; technique</span>
+          <span class="tr-acc-count">${t.drills.length + t.dryland.length + t.cues.length}</span>
+          <span class="tr-acc-chev">${I.chev}</span>
+        </summary>
+        <div class="tr-acc-body">
+          <div class="tr-focus-cols">
+            <div class="tr-col"><div class="tr-mini-head">${I.drill} Drills to swim</div>${drills}</div>
+            <div class="tr-col"><div class="tr-mini-head">${I.dry} Dryland at home</div>${dry}</div>
+          </div>
+          <div class="tr-mini-head">${I.check} Technique checkpoints</div>
+          ${cues}
+        </div>
+      </details>`;
+      return `<details class="tr-focus" ${isOpen ? 'open' : ''} style="--c:${t.color}">
         <summary class="tr-focus-head">
           <div class="tr-focus-dot" style="--c:${t.color}">${t.emoji}</div>
           <div class="tr-focus-title">${escapeHtml(t.event)}</div>
@@ -1193,6 +1212,7 @@
           <span class="tr-focus-chev">${I.chev}</span>
         </summary>
         <div class="tr-focus-body">
+          ${intro ? `<div class="tr-focus-intro">${intro}</div>` : ''}
           <div class="tr-gap">
             <div class="tr-gap-meta"><span>Now ${escapeHtml(t.time)}</span><span>${gapLabel}</span><span>Goal ${escapeHtml(t.goalTime)}</span></div>
             <div class="tr-gap-track"><div class="tr-gap-fill" data-w="${pct}" style="width:0%"></div></div>
@@ -1200,41 +1220,17 @@
           </div>
           <div class="tr-mini-head tr-mini-hero">${I.bolt} How to actually get faster</div>
           ${methods}
-          <div class="tr-focus-cols">
-            <div class="tr-col">
-              <div class="tr-mini-head">${I.drill} Drills to swim</div>
-              ${drills}
-            </div>
-            <div class="tr-col">
-              <div class="tr-mini-head">${I.dry} Dryland at home</div>
-              ${dry}
-            </div>
-          </div>
-          <div class="tr-mini-head">${I.check} Technique checkpoints</div>
-          ${cues}
+          ${more}
         </div>
       </details>`;
     }
 
     let html = '';
-    const tf = plan.topFocus;
-    if(tf){
-      html += `<div class="tr-top" style="--c:${tf.color}">
-        <div class="tr-top-emoji" style="--c:${tf.color}">${tf.emoji}</div>
-        <div class="tr-top-main">
-          <div class="tr-top-label">Start here · your biggest opportunity</div>
-          <div class="tr-top-event">${escapeHtml(tf.event)}</div>
-          <div class="tr-top-sub">${topMsg(tf)}</div>
-        </div>
-        <div class="tr-top-times">
-          <div class="tr-time-block"><div class="tr-time-val">${escapeHtml(tf.time)}</div><div class="tr-time-cap">Now</div></div>
-          <div class="tr-time-arrow">${I.arrow}</div>
-          <div class="tr-time-block"><div class="tr-time-val is-goal">${escapeHtml(tf.goalTime)}</div><div class="tr-time-cap">${escapeHtml(tf.goalKind)}</div></div>
-        </div>
-      </div>`;
-    } else if(allStrong){
-      // Every event on record is already at or under its age-group goal — make
-      // the section feel like a celebration rather than an empty plan.
+    // Only the celebratory "strong everywhere" state gets a hero band. For a
+    // normal plan the "biggest opportunity" message lives inside the first
+    // (open) card instead of a separate banner, so the same event isn't shown
+    // twice and the section stays short.
+    if(allStrong){
       html += `<div class="tr-top" style="--c:#34d399">
         <div class="tr-top-emoji" style="--c:#34d399">🏆</div>
         <div class="tr-top-main">
@@ -1245,16 +1241,12 @@
       </div>`;
     }
 
-    const DETAIL = 4;
-    const focusDetailed = plan.focus.slice(0, DETAIL);
-    if(focusDetailed.length){
-      html += `<div class="tr-focus-list">` + focusDetailed.map(focusCard).join('') + `</div>`;
-    }
-
-    const rest = plan.focus.slice(DETAIL);
-    if(rest.length){
-      html += `<div class="tr-plan-foot">Also on your list: ` +
-        rest.map(t => `<strong>${escapeHtml(t.event)}</strong> (${escapeHtml(t.time)} → ${escapeHtml(t.goalTime)})`).join(' · ') +
+    // Every focus event is a collapsible card; only the first (biggest
+    // opportunity) opens by default and carries the "start here" message, so
+    // the section stays compact.
+    if(plan.focus.length){
+      html += `<div class="tr-focus-list">` +
+        plan.focus.map((t,i) => focusCard(t, i === 0, i === 0 ? topMsg(t) : '')).join('') +
         `</div>`;
     }
 
