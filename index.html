@@ -217,83 +217,81 @@
   }
   .nav-links .nav-getfaster:hover{color:var(--accent);background:rgba(96,165,250,.12)}
 
-  /* ===== Highlighted "Get Faster" CTA banner =====
-     A deliberately eye-catching, animated card that sits between the live
-     team-pulse strip and "How it works", so every visitor sees the new
-     training guide. Page-scoped (idx-gf*). */
-  .idx-gf{
-    max-width:1180px;margin:0 auto;
-    padding:36px max(24px,env(safe-area-inset-right)) 22px max(24px,env(safe-area-inset-left));
+  /* ===== Get Faster CTA — sits directly under the swimmer-lookup card =====
+     A refined, glassy banner on the dark hero, aligned to the lookup card's
+     width and folded into the hero's staggered entrance. */
+  .hero-inner > .idx-gf-card{
+    display:flex;align-items:center;gap:15px;text-align:left;
+    max-width:620px;margin:18px auto 0;
+    padding:15px 16px 15px 17px;border-radius:var(--radius-lg);
+    text-decoration:none!important;color:#fff;
+    background:linear-gradient(125deg,rgba(96,165,250,.18),rgba(125,211,252,.07));
+    border:1px solid rgba(125,211,252,.30);
+    -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+    box-shadow:0 16px 38px -18px rgba(37,99,235,.55),inset 0 1px 0 rgba(255,255,255,.08);
+    transition:transform .22s cubic-bezier(.16,1,.3,1),box-shadow .22s ease,border-color .22s ease;
+    opacity:0;transform:translateY(18px);
+    animation:heroIn .9s cubic-bezier(.16,1,.3,1) .42s forwards;
   }
-  .idx-gf-card{
-    position:relative;overflow:hidden;isolation:isolate;
-    display:flex;align-items:center;gap:22px;
-    padding:24px 28px;border-radius:var(--radius-xl);
-    background:linear-gradient(120deg,#0d2150 0%,#1a3a80 52%,#2563eb 100%);
-    color:#fff;text-decoration:none!important;
-    border:1px solid rgba(125,211,252,.42);
-    box-shadow:0 20px 46px -16px rgba(37,99,235,.55);
-    transition:transform .24s cubic-bezier(.16,1,.3,1),box-shadow .24s cubic-bezier(.16,1,.3,1);
-    animation:idxGfPulse 3.4s ease-in-out infinite;
+  .hero-inner > .idx-gf-card:hover{
+    transform:translateY(-2px);
+    border-color:rgba(125,211,252,.52);
+    box-shadow:0 22px 46px -18px rgba(37,99,235,.62),inset 0 1px 0 rgba(255,255,255,.12);
   }
-  .idx-gf-card:hover{
-    transform:translateY(-3px);
-    box-shadow:0 28px 60px -16px rgba(37,99,235,.68);
-    animation-play-state:paused;
-  }
-  .idx-gf-card:focus-visible{outline:none;box-shadow:0 0 0 4px var(--ring),0 20px 46px -16px rgba(37,99,235,.55)}
-  /* Pulsing outer ring to draw the eye */
-  @keyframes idxGfPulse{
-    0%,100%{box-shadow:0 20px 46px -16px rgba(37,99,235,.55),0 0 0 0 rgba(125,211,252,0)}
-    50%{box-shadow:0 20px 46px -16px rgba(37,99,235,.6),0 0 0 6px rgba(125,211,252,.14)}
-  }
-  /* Slow shimmer sweep */
-  .idx-gf-card::before{
-    content:'';position:absolute;top:0;left:-130%;width:55%;height:100%;z-index:0;
-    background:linear-gradient(100deg,transparent,rgba(255,255,255,.18),transparent);
-    transform:skewX(-18deg);animation:idxGfSheen 5s ease-in-out infinite;
-  }
-  @keyframes idxGfSheen{0%,55%{left:-130%}100%{left:170%}}
-  /* Soft radial glow behind the bolt */
-  .idx-gf-glow{
-    position:absolute;left:-40px;top:50%;transform:translateY(-50%);z-index:0;
-    width:240px;height:240px;border-radius:50%;pointer-events:none;
-    background:radial-gradient(closest-side,rgba(125,211,252,.30),transparent 70%);
-  }
+  .hero-inner > .idx-gf-card:focus-visible{outline:none;box-shadow:0 0 0 3px var(--ring),0 16px 38px -18px rgba(37,99,235,.55)}
   .idx-gf-mark{
-    position:relative;z-index:1;flex:0 0 auto;
-    width:60px;height:60px;border-radius:var(--radius-md);display:grid;place-items:center;
-    background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.28);
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.3);
+    flex:0 0 auto;width:44px;height:44px;border-radius:13px;display:grid;place-items:center;
+    background:linear-gradient(140deg,rgba(252,211,77,.30),rgba(251,191,36,.12));
+    border:1px solid rgba(252,211,77,.42);box-shadow:inset 0 1px 0 rgba(255,255,255,.25);
   }
-  .idx-gf-mark svg{width:30px;height:30px;color:#fde68a}
-  .idx-gf-text{position:relative;z-index:1;flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:4px}
-  .idx-gf-badge{
-    align-self:flex-start;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
-    color:#0b1d3a;background:linear-gradient(135deg,#fcd34d,#fbbf24);
-    padding:4px 11px;border-radius:999px;box-shadow:0 4px 12px -4px rgba(251,191,36,.6);
-  }
-  .idx-gf-text strong{font-family:'Fraunces',serif;font-weight:800;font-size:clamp(20px,2.6vw,26px);letter-spacing:-.02em;line-height:1.15}
-  .idx-gf-sub{font-size:14.5px;line-height:1.5;color:#cfe0f7}
+  .idx-gf-mark svg{width:23px;height:23px;color:#fde68a}
+  .idx-gf-text{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:2px}
+  .idx-gf-text strong{font-family:'Inter',sans-serif;font-weight:700;font-size:16px;letter-spacing:-.01em;color:#fff;line-height:1.25}
+  .idx-gf-sub{font-size:13px;line-height:1.45;color:var(--hero-muted)}
   .idx-gf-btn{
-    position:relative;z-index:1;flex:0 0 auto;
-    display:inline-flex;align-items:center;gap:9px;white-space:nowrap;
-    font-weight:700;font-size:15px;color:#0b1d3a;
-    background:#fff;padding:14px 24px;border-radius:var(--radius);
-    box-shadow:0 10px 24px -8px rgba(0,0,0,.4);
-    transition:transform .2s cubic-bezier(.16,1,.3,1),box-shadow .2s;
+    flex:0 0 auto;display:inline-flex;align-items:center;gap:7px;white-space:nowrap;
+    font-weight:700;font-size:13.5px;color:#0b1d3a;
+    background:#fff;padding:11px 17px;border-radius:var(--radius);
+    box-shadow:0 8px 20px -8px rgba(0,0,0,.4);
+    transition:transform .2s cubic-bezier(.16,1,.3,1),box-shadow .2s ease;
   }
-  .idx-gf-btn svg{width:18px;height:18px;transition:transform .2s cubic-bezier(.16,1,.3,1)}
-  .idx-gf-card:hover .idx-gf-btn{transform:translateY(-1px);box-shadow:0 14px 30px -8px rgba(0,0,0,.5)}
-  .idx-gf-card:hover .idx-gf-btn svg{transform:translateX(3px)}
-  @media (max-width:760px){
-    .idx-gf-card{flex-direction:column;align-items:flex-start;gap:16px;padding:22px}
-    .idx-gf-btn{width:100%;justify-content:center}
-    .idx-gf-glow{left:50%;top:-20px;transform:translateX(-50%)}
-  }
+  .idx-gf-btn svg{width:16px;height:16px;transition:transform .2s cubic-bezier(.16,1,.3,1)}
+  .hero-inner > .idx-gf-card:hover .idx-gf-btn{transform:translateY(-1px);box-shadow:0 12px 26px -8px rgba(0,0,0,.5)}
+  .hero-inner > .idx-gf-card:hover .idx-gf-btn svg{transform:translateX(3px)}
   @media (prefers-reduced-motion:reduce){
-    .idx-gf-card{animation:none}
-    .idx-gf-card::before{animation:none;display:none}
+    .hero-inner > .idx-gf-card{opacity:1;transform:none;animation:none}
+  }
+  @media (max-width:560px){
+    .hero-inner > .idx-gf-card{flex-direction:column;align-items:stretch;text-align:center;gap:12px;padding:18px;max-width:none}
+    .idx-gf-mark{align-self:center}
+    .idx-gf-text{align-items:center}
+    .idx-gf-btn{width:100%;justify-content:center;padding:13px 17px;font-size:14.5px}
+  }
+
+  /* ===== Slim "Get Faster" announcement banner (under the header) ===== */
+  .gf-promo{
+    display:flex;align-items:center;justify-content:center;gap:11px;flex-wrap:wrap;
+    padding:9px 20px;text-decoration:none!important;
+    background:linear-gradient(90deg,#13306a,#1d4ed8 55%,#2563eb);
+    color:#dbe7fb;font-size:13px;font-weight:500;
+    border-bottom:1px solid rgba(125,211,252,.22);
+    transition:filter .2s ease;
+  }
+  .gf-promo:hover{filter:brightness(1.07)}
+  .gf-promo-tag{
+    flex:0 0 auto;font-size:10px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;
+    color:#0b1d3a;background:linear-gradient(135deg,#fcd34d,#fbbf24);
+    padding:3px 9px;border-radius:999px;
+  }
+  .gf-promo-text strong{color:#fff;font-weight:700}
+  .gf-promo-cta{display:inline-flex;align-items:center;gap:5px;font-weight:700;color:#fff;white-space:nowrap}
+  .gf-promo-cta svg{width:14px;height:14px;transition:transform .2s ease}
+  .gf-promo:hover .gf-promo-cta svg{transform:translateX(3px)}
+  @media (max-width:560px){
+    .gf-promo{font-size:12px;padding:8px 14px;gap:8px}
+    .gf-promo-text{flex:1 1 100%;text-align:center;order:2}
+    .gf-promo-tag{order:1}
+    .gf-promo-cta{order:3}
   }
 </style>
 
@@ -335,6 +333,15 @@
     </a>
   </nav>
 </header>
+
+<!-- Slim site announcement banner for the Get Faster guide -->
+<a class="gf-promo" href="get-faster.html">
+  <span class="gf-promo-tag">New</span>
+  <span class="gf-promo-text"><strong>Get Faster guide</strong> — free stroke-by-stroke tips &amp; drills for every stroke</span>
+  <span class="gf-promo-cta">Open guide
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+  </span>
+</a>
 
 <section class="hero">
   <div class="drops" id="drops"></div>
@@ -405,6 +412,21 @@
       </form>
     </div>
 
+    <!-- Get Faster CTA — sits directly under the swimmer-lookup card -->
+    <a class="idx-gf-card" href="get-faster.html">
+      <span class="idx-gf-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>
+      </span>
+      <span class="idx-gf-text">
+        <strong>Want to get faster?</strong>
+        <span class="idx-gf-sub">Free stroke-by-stroke tips, drills &amp; at-home dryland for every stroke.</span>
+      </span>
+      <span class="idx-gf-btn">
+        Open the guide
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </span>
+    </a>
+
     <div class="idx-note" role="note">
       <span class="idx-note-chip" aria-hidden="true">DQ</span>
       <p><strong>Swimmer got disqualified at a meet?</strong> A DQ means no legal time was recorded, so that swim won't show a time or count toward a personal best or leaderboard — but it still appears in your swimmer's meet history as a race they swam.</p>
@@ -416,27 +438,6 @@
       <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-5"/></svg> Time-drop charts</span>
     </div>
   </div>
-</section>
-
-<!-- HIGHLIGHTED CTA — the public "Get Faster" training guide. Placed directly
-     under the hero (above the team-pulse strip) so it's one of the first things
-     every visitor sees. -->
-<section class="idx-gf">
-  <a class="idx-gf-card" href="get-faster.html">
-    <span class="idx-gf-glow" aria-hidden="true"></span>
-    <span class="idx-gf-mark" aria-hidden="true">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>
-    </span>
-    <span class="idx-gf-text">
-      <span class="idx-gf-badge">New · Free for everyone</span>
-      <strong>Want to get faster? Here's exactly how.</strong>
-      <span class="idx-gf-sub">A full coach's playbook for every stroke — technique, the fixes that drop time, and at-home dryland — plus a plan built from your swimmer's own times.</span>
-    </span>
-    <span class="idx-gf-btn">
-      Open the guide
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-    </span>
-  </a>
 </section>
 
 <!-- LIVE TEAM PULSE — scoped to the current season (filled from Firestore) -->
