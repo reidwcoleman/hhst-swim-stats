@@ -399,7 +399,7 @@
 </footer>
 
 <script src="assets/data.js?v=28"></script>
-<script src="assets/training.js?v=2"></script>
+<script src="assets/training.js?v=3"></script>
 <script>
   HHST.initTheme();
   document.getElementById('themeToggle').addEventListener('click', HHST.toggleTheme);
@@ -1114,10 +1114,10 @@
     const allStrong = plan.hasData && !plan.focus.length && plan.strengths.length;
     if(lead){
       if(allStrong){
-        lead.textContent = `${first} is swimming strong times across the board${ag ? ` for the ${ag} age group` : ''} — here's how to keep them sharp and chase the next level.`;
+        lead.textContent = `${first} is swimming strong summer-league times across the board${ag ? ` for ${ag}` : ''} — here's how to keep them sharp and chase the next level.`;
       } else {
         lead.textContent = ag
-          ? `Personalized tips built from ${first}'s own race times and goal times for the ${ag} age group — exactly what to practice next to drop time.`
+          ? `Personalized tips built from ${first}'s own race times and realistic summer-league goal times for ${ag} swimmers — exactly what to practice next to drop time.`
           : `Personalized tips built from ${first}'s own race times — exactly what to practice next to drop time.`;
       }
     }
@@ -1140,7 +1140,7 @@
 
     function topMsg(t){
       const stretch = t.stretchTime
-        ? ` — on the way to a strong ${ag || 'age-group'} time around <b>${escapeHtml(t.stretchTime)}</b>`
+        ? ` — on the way to a strong ${ag || 'age-group'} summer-league time around <b>${escapeHtml(t.stretchTime)}</b>`
         : '';
       const start = t.topMethod ? ` Start with <b>${escapeHtml(t.topMethod)}</b> below.` : '';
       if(t.status === 'developing' || t.status === 'onTrack'){
@@ -1178,7 +1178,7 @@
       const cues = `<ul class="tr-cues" style="--c:${t.color}">` +
         t.cues.map(c => `<li>${I.check}<span>${escapeHtml(c)}</span></li>`).join('') + `</ul>`;
       const stretchNote = t.stretchTime
-        ? `<div class="tr-stretch">Longer-term ${ag || 'age-group'} goal: <b>${escapeHtml(t.stretchTime)}</b></div>` : '';
+        ? `<div class="tr-stretch">Longer-term ${ag || 'age-group'} summer-league goal: <b>${escapeHtml(t.stretchTime)}</b></div>` : '';
       return `<details class="tr-focus" open style="--c:${t.color}">
         <summary class="tr-focus-head">
           <div class="tr-focus-dot" style="--c:${t.color}">${t.emoji}</div>
@@ -1240,7 +1240,7 @@
         <div class="tr-top-main">
           <div class="tr-top-label">Strong across the board</div>
           <div class="tr-top-event">Every event is at its goal</div>
-          <div class="tr-top-sub">${escapeHtml(first)} is hitting strong ${ag || 'age-group'} times in every event on record. Keep them sharp, then chase the next barrier in each — the full guide has a drill for every stroke.</div>
+          <div class="tr-top-sub">${escapeHtml(first)} is hitting strong ${ag || 'age-group'} summer-league times in every event on record. Keep them sharp, then chase the next barrier in each — the full guide has a drill for every stroke.</div>
         </div>
       </div>`;
     }
