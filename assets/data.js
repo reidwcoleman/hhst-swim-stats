@@ -397,10 +397,28 @@
   }
 
   // -------- Firestore reads --------
+  // A few legacy uploads ingested status placeholders ("NT", "N", "N/A"…) as
+  // result rows before the importer learned to skip them. Those are NOT races
+  // (the swimmer never swam), so they must not count toward races logged or
+  // render as times in meet history. Raced-but-no-time codes (DQ / DNF) are
+  // real races and are kept, normalized onto the dq flag the UI already
+  // understands. Today's importer never writes such rows — this guard cleans
+  // the old ones at read time for every page at once.
+  function sanitizeResults(sw){
+    if(sw && Array.isArray(sw.results)){
+      sw.results = sw.results.filter(r => {
+        if(!r) return false;
+        if(isFinite(r.seconds) || r.dq) return true;
+        if(isRacedStatus(r.time)){ r.dq = true; return true; }
+        return false;
+      });
+    }
+    return sw;
+  }
   async function readAll(){
     const snap = await FB.db.collection('swimmers').get();
     const swimmers = {};
-    snap.forEach(doc => { swimmers[doc.id] = doc.data(); });
+    snap.forEach(doc => { swimmers[doc.id] = sanitizeResults(doc.data()); });
     let meta = { lastUpload: null, meetCount: 0 };
     try{
       const m = await FB.db.collection('meta').doc('stats').get();
@@ -410,7 +428,7 @@
   }
   async function getSwimmer(key){
     const d = await FB.db.collection('swimmers').doc(key).get();
-    return d.exists ? d.data() : null;
+    return d.exists ? sanitizeResults(d.data()) : null;
   }
 
   // -------- Ingest (admin) --------
@@ -2418,8 +2436,17 @@
       if(!events[evKey]) events[evKey] = [];
       events[evKey].push(r);
     });
-    const bestTimes = Object.entries(events).map(([event, arr])=>{
-      const sorted = arr.slice().sort((a,b)=> (a.seconds||Infinity)-(b.seconds||Infinity));
+    // Finite-safe sort key: DQ rows carry no comparable seconds. Number.MAX_VALUE
+    // instead of Infinity — with two no-time rows an Infinity-Infinity comparator
+    // returns NaN, which makes Array.sort's behavior undefined and can corrupt
+    // the whole ordering (wrong "best" picked).
+    const secOf = r => isFinite(r.seconds) ? r.seconds : Number.MAX_VALUE;
+    const bestTimes = Object.entries(events)
+      // An event the swimmer has only ever DQ'd in has no best time — it stays
+      // in meet history but must never render as a "Personal Best" card.
+      .filter(([, arr]) => arr.some(r => isFinite(r.seconds)))
+      .map(([event, arr])=>{
+      const sorted = arr.slice().sort((a,b)=> secOf(a)-secOf(b));
       const byDate = arr.slice().sort((a,b)=> (new Date(a.date).getTime()||0) - (new Date(b.date).getTime()||0));
       const first  = byDate.find(r => isFinite(r.seconds));
       const latest = byDate.slice().reverse().find(r => isFinite(r.seconds));
@@ -2439,13 +2466,12 @@
       };
     }).sort((a,b)=> compareEventLabel(a.event, b.event));
 
-    let prCount = 0;
-    bestTimes.forEach(b=>{
-      if(b.history.length >= 2){
-        const sorted = b.history.slice().sort((a,b)=> new Date(a.date)-new Date(b.date));
-        if(sorted[sorted.length-1].seconds <= sorted[0].seconds) prCount++;
-      }
-    });
+    // "PRs held" = events where the swimmer's LATEST swim is their fastest —
+    // exactly what the dashboard and Season Stats labels promise. (This used
+    // to compare the latest swim against the FIRST swim, which over-counted:
+    // a kid who went 30.0 → 25.0 → 27.0 "beat their first time" but is not
+    // currently at their best.) latestIsPR already encodes the labelled rule.
+    const prCount = bestTimes.filter(b => b.latestIsPR).length;
 
     // Place breakdown across all races
     let gold = 0, silver = 0, bronze = 0, top10 = 0;
@@ -2724,7 +2750,13 @@
           else if(p === 3) bronze++;
         });
       } else {
-        const s = statsForSwimmer(sw, { season });
+        // Team aggregates promise "time trials excluded" — strip them before
+        // the per-swimmer roll-up. (A swimmer's own dashboard keeps trials on
+        // their profile; the TEAM boards must not count them toward PRs or
+        // time dropped.)
+        const s = statsForSwimmer(
+          { ...sw, results: (sw.results||[]).filter(r => r && !r.timeTrial) },
+          { season });
         gold += s.gold; silver += s.silver; bronze += s.bronze;
         totalDropSec += s.totalTimeDropSec;
         recentDropSec += s.recentMeetDropSec;

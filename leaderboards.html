@@ -282,7 +282,7 @@
   Highcroft Hurricanes Swim Team · <a href="index.html">Swimmer Lookup</a> · <a href="meet-recap.html">Meet Recap</a> · <a href="awards.html">Fastest Five</a> · <a href="admin.html">Admin</a>
 </footer>
 
-<script src="assets/data.js?v=29"></script>
+<script src="assets/data.js?v=30"></script>
 <script src="assets/mobile-nav.js" defer></script>
 <script>
   HHST.initTheme();
@@ -433,7 +433,11 @@
       if(!swrs.length) return '';
       let races = 0, drop = 0, prs = 0;
       swrs.forEach(sw => {
-        const s = HHST.statsForSwimmer(sw, { season });
+        // Strip time trials so this table's PR column matches the KPI cards,
+        // which exclude trials via teamStats.
+        const s = HHST.statsForSwimmer(
+          { ...sw, results: (sw.results||[]).filter(r => r && !r.timeTrial) },
+          { season });
         // Races exclude time trials to match the KPI "Races Logged" (teamStats);
         // drop/PRs come from statsForSwimmer, exactly as the KPI cards do.
         races += (sw.results||[]).filter(r => r && (!season || r.season === season) && !r.timeTrial).length;
