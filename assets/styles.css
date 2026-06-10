@@ -2060,12 +2060,12 @@ tr.row-dq td{background:rgba(226,85,76,.04)}
 
 /* ============ ADMIN QUICK NAV (Leaderboards / Fastest Five PDF) ============ */
 .admin-quick-nav{
-  display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
   gap:14px;margin:0 0 28px;
 }
 .quick-nav-card{
-  display:flex;align-items:center;gap:16px;
-  padding:18px 20px;border-radius:var(--radius-md);
+  display:flex;align-items:center;gap:13px;
+  padding:16px;border-radius:var(--radius-md);
   background:var(--card-grad);
   border:1px solid var(--border-strong);
   color:var(--text)!important;text-decoration:none;
@@ -2087,12 +2087,12 @@ tr.row-dq td{background:rgba(226,85,76,.04)}
 }
 .quick-nav-card:hover::before{opacity:1}
 .quick-nav-icon{
-  width:48px;height:48px;flex-shrink:0;
+  width:42px;height:42px;flex-shrink:0;
   border-radius:var(--radius);display:grid;place-items:center;
   color:#fff;position:relative;z-index:1;
   box-shadow:inset 0 1px 0 rgba(255,255,255,.25);
 }
-.quick-nav-icon svg{width:24px;height:24px}
+.quick-nav-icon svg{width:21px;height:21px}
 .quick-nav-icon-trophy{
   background:linear-gradient(135deg,#e2ac2d,#c98f0e);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.25),
@@ -2108,11 +2108,12 @@ tr.row-dq td{background:rgba(226,85,76,.04)}
   position:relative;z-index:1;
 }
 .quick-nav-title{
-  font-family:var(--font-display);font-weight:700;font-size:19px;
-  color:var(--text);letter-spacing:-.01em;
+  font-family:var(--font-display);font-weight:700;font-size:16.5px;
+  color:var(--text);letter-spacing:-.01em;line-height:1.2;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 .quick-nav-sub{
-  font-size:13px;color:var(--text-muted);font-weight:500;
+  font-size:12.5px;color:var(--text-muted);font-weight:500;line-height:1.45;
 }
 .quick-nav-arrow{
   width:20px;height:20px;color:var(--text-subtle);flex-shrink:0;
@@ -2195,7 +2196,7 @@ tr.row-dq td{background:rgba(226,85,76,.04)}
   font-size:14px;background:var(--surface);
 }
 .roster-table thead th{
-  text-align:left;padding:11px 14px;
+  text-align:left;padding:10px 12px;
   background:var(--bg-alt);color:var(--text-muted);
   font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.08em;
   border-bottom:1px solid var(--border);
@@ -2205,7 +2206,7 @@ tr.row-dq td{background:rgba(226,85,76,.04)}
 .roster-table thead th:last-child{border-top-right-radius:12px}
 .roster-table thead th.th-races{text-align:center}
 .roster-table tbody td{
-  padding:13px 14px;color:var(--text);
+  padding:12px;color:var(--text);
   border-bottom:1px solid var(--border);
   vertical-align:middle;
   white-space:nowrap;          /* never wrap labels like "Group" */
@@ -2219,25 +2220,25 @@ tr.row-dq td{background:rgba(226,85,76,.04)}
 
 /* Swimmer name cell — name + small training-group chip stacked */
 .cell-name{min-width:170px}
-.swimmer-name-cell{display:flex;align-items:center;gap:8px;flex-wrap:nowrap;min-width:0}
+.swimmer-name-cell{display:flex;align-items:center;gap:6px;flex-wrap:nowrap;min-width:0}
 .swimmer-name-cell strong{
   font-weight:600;font-size:14.5px;color:var(--text);
   letter-spacing:-.005em;white-space:nowrap;
 }
 .training-chip{
   display:inline-flex;align-items:center;
-  padding:2px 8px;border-radius:999px;
+  padding:2px 7px;border-radius:999px;
   background:var(--bg-alt);
   border:1px solid var(--border);
-  color:var(--text-muted);font-size:11px;font-weight:600;
+  color:var(--text-muted);font-size:10.5px;font-weight:600;
   letter-spacing:.02em;white-space:nowrap;flex-shrink:0;
 }
 
 /* Age column */
 .cell-age{
-  font-family:var(--font-display);font-weight:600;
+  font-family:var(--font-mono);font-weight:600;font-size:13.5px;
   color:var(--text);font-variant-numeric:tabular-nums;
-  width:60px;
+  width:48px;
 }
 
 /* Age-Group bracket pill — color-coded per bracket */
@@ -2289,7 +2290,7 @@ tr.row-dq td{background:rgba(226,85,76,.04)}
 
 /* Parent / Email cells — show primary, +N for overflow, full list in tooltip */
 .cell-parents, .cell-email{
-  max-width:220px;overflow:hidden;text-overflow:ellipsis;
+  max-width:185px;overflow:hidden;text-overflow:ellipsis;
 }
 .parents-cell, .email-primary{
   overflow:hidden;text-overflow:ellipsis;
@@ -2309,14 +2310,14 @@ tr.row-dq td{background:rgba(226,85,76,.04)}
 }
 
 /* Races count chip */
-.cell-races{text-align:center;width:80px}
+.cell-races{text-align:center;width:64px}
 .race-count{
   display:inline-grid;place-items:center;
-  min-width:30px;height:26px;padding:0 9px;
+  min-width:26px;height:24px;padding:0 7px;
   border-radius:999px;
   background:rgba(95,169,236,.1);
   color:var(--accent);border:1px solid rgba(95,169,236,.22);
-  font-family:var(--font-display);font-weight:700;font-size:13.5px;
+  font-family:var(--font-mono);font-weight:600;font-size:12.5px;
   font-variant-numeric:tabular-nums;
 }
 
@@ -2327,8 +2328,8 @@ tr.row-dq td{background:rgba(226,85,76,.04)}
 }
 .roster-table .row-actions button{
   background:transparent;border:1px solid var(--border-strong);
-  color:var(--text-muted);padding:6px 11px;
-  font-size:12px;font-weight:600;border-radius:var(--radius-sm);cursor:pointer;
+  color:var(--text-muted);padding:6px 9px;
+  font-size:11.5px;font-weight:600;border-radius:var(--radius-sm);cursor:pointer;
   transition:color .18s ease,border-color .18s ease,background .18s ease;white-space:nowrap;
 }
 .roster-table .row-actions button:hover{
