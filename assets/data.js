@@ -1166,6 +1166,93 @@
       return a.meet < b.meet ? -1 : a.meet > b.meet ? 1 : 0;
     });
   }
+  // ---- PR drops at one meet, vs the swimmer's own previous best ----------
+  // For each stroke+distance the swimmer raced at `meetName`, compare their
+  // best swim AT that meet to their previous best across ALL earlier real
+  // meets — any season, because a PR is a PR even when the old best is last
+  // year's. Time trials and practice sessions never count on either side.
+  // Only positive drops (true PRs) are returned, biggest first.
+  // This is THE shared definition behind every "Most Improved" surface, and
+  // it is deliberately independent of which meets the swimmer attended:
+  // the old previous-meet pairing silently hid any swimmer who skipped the
+  // baseline meet, no matter how much they PR'd (e.g. the 15-18 boys who
+  // missed one meet, then PR'd in every event at the next).
+  function prDropsAtMeet(sw, meetName, opts){
+    const includeTimeTrials = !!(opts && opts.includeTimeTrials);
+    const rows = (sw.results || []).filter(r =>
+      r && isFinite(r.seconds) &&
+      (includeTimeTrials || (!r.timeTrial && !isPracticeMeet(r.meet))));
+    const strokeOf = r => (r.stroke || extractStroke(r.event) || '').trim();
+    const distOf   = r => ((r.distance != null ? String(r.distance) : '').trim() || extractDistance(r.event) || '');
+    // Latest date seen at the target meet — only swims at or before it can be
+    // a baseline. Dateless legacy rows count as earlier.
+    let targetTs = -Infinity;
+    rows.forEach(r => {
+      if(r.meet !== meetName) return;
+      const t = parseFlexibleDate(r.date);
+      if(isFinite(t) && t > targetTs) targetTs = t;
+    });
+    const tgt = {}, prior = {};
+    rows.forEach(r => {
+      const st = strokeOf(r);
+      if(!st) return;                      // unstroked legacy row — can't match
+      const k = st + '|' + distOf(r);
+      if(r.meet === meetName){
+        if(!tgt[k] || r.seconds < tgt[k].seconds) tgt[k] = r;
+      } else {
+        const t = parseFlexibleDate(r.date);
+        if(isFinite(targetTs) && isFinite(t) && t > targetTs) return; // future meet — not a baseline
+        if(!prior[k] || r.seconds < prior[k].seconds) prior[k] = r;
+      }
+    });
+    // Freestyle times at the target meet, by distance — for the plausibility
+    // guard below (no stroke beats freestyle over the same distance).
+    const freeAt = {};
+    Object.keys(tgt).forEach(k => {
+      const [st, d] = k.split('|');
+      if(st === 'Freestyle') freeAt[d] = tgt[k].seconds;
+    });
+    const drops = [];
+    Object.keys(tgt).forEach(k => {
+      const tr = tgt[k];
+      const [stroke, dist] = k.split('|');
+      // Guessed-distance guard: a non-free target time IMPOSSIBLY faster
+      // (>30%) than the swimmer's own free at that distance is a mislabeled
+      // distance — drop it rather than report a fake plunge.
+      if(stroke !== 'Freestyle' && freeAt[dist] && tr.seconds < freeAt[dist] * 0.70) return;
+      let br = prior[k];
+      // Distance-label rescue: when this stroke has exactly ONE distance on
+      // each side and the baseline's distance is one the ingest could have
+      // INFERRED from an age bracket (15/25/50), pair them — but only when
+      // the target race is at least as long, so a shorter target can't
+      // manufacture a bogus drop.
+      if(!br){
+        const priorKeys = Object.keys(prior).filter(x => x.split('|')[0] === stroke);
+        const tgtKeys   = Object.keys(tgt).filter(x => x.split('|')[0] === stroke);
+        if(priorKeys.length === 1 && tgtKeys.length === 1){
+          const bNum = parseInt(priorKeys[0].split('|')[1], 10);
+          const tNum = parseInt(dist, 10);
+          if(isFinite(tNum) && isFinite(bNum) && tNum >= bNum &&
+             (bNum === 15 || bNum === 25 || bNum === 50)) br = prior[priorKeys[0]];
+        }
+      }
+      if(!br) return;                      // never raced this stroke before — a debut, not a drop
+      const drop = br.seconds - tr.seconds;
+      if(drop > 0.0001){
+        drops.push({
+          event: tr.event, stroke, dist,
+          drop,
+          fromSec: br.seconds, toSec: tr.seconds,
+          fromTime: br.time || fmtTime(br.seconds),
+          toTime:   tr.time || fmtTime(tr.seconds),
+          fromMeet: br.meet || ''
+        });
+      }
+    });
+    drops.sort((a,b)=> b.drop - a.drop);
+    return { drops, total: drops.reduce((s,d)=> s + d.drop, 0) };
+  }
+
   // ---- Most Improved (latest meet vs the meet before it) ----------------
   // Ranks swimmers by total seconds dropped between the current season's most
   // recent meet (the "target") and the meet immediately before it within the
@@ -1197,17 +1284,11 @@
       ? seasonMeets.find(m => m.meet === opts.meet) || { meet: opts.meet, ts: -Infinity, dateStr: opts.date || '' }
       : seasonMeets[seasonMeets.length - 1];
 
-    // 2) Baseline meet = the meet just before target IN THIS SEASON. Most
-    //    Improved only makes sense once the season has two meets to compare —
-    //    when there's just one, return empty so the board stays hidden (we do
-    //    NOT reach back into a previous season).
-    const baselineSeason = season;
-    const tIdx = seasonMeets.findIndex(m => m.meet === target.meet);
-    const baseline = tIdx > 0 ? seasonMeets[tIdx - 1] : null;
-    if(!baseline) return empty;
-
-    // 3) For each swimmer, compare their target-meet time to their baseline-meet
-    //    time, per event (best time at each meet when an event was swum twice).
+    // 2) Per-swimmer drops: each swimmer's best at the target meet vs their
+    //    own previous best across ALL earlier real meets (any season) — see
+    //    prDropsAtMeet. No baseline meet is required, so the board works for
+    //    a season's very first meet and NEVER hides a swimmer who skipped the
+    //    previous meet: a PR is judged against their own best, not attendance.
     const drops = [];
     swimmers.forEach(sw => {
       // People filter: only rank swimmers on this season's roster (legacy
@@ -1216,128 +1297,27 @@
         const sws = Array.isArray(sw.seasons) ? sw.seasons : [];
         if(sws.length && !sws.includes(season)) return;
       }
-      // Index each meet's swims by STROKE, then by distance. Matching on stroke
-      // (not the raw event label) is what makes the comparison survive the
-      // common case where the earlier "practice meet" was uploaded WITHOUT a
-      // distance: that file's distance gets inferred from the swimmer's age
-      // bracket (6&U→15, 7-8/9-10→25, 11-12+→50), which can disagree with the
-      // real distance the swimmer actually raced at the later meet. Keying on
-      // the event label ("15 Free" vs "25 Free") would silently drop those
-      // swimmers from Most Improved entirely. tgtByStroke[stroke] is a Map of
-      // distance → { sec, ev } holding the swimmer's best swim of that stroke.
-      const strokeOf = r => r.stroke || extractStroke(r.event) || '';
-      const distOf   = r => ((r.distance != null ? String(r.distance) : '').trim() || extractDistance(r.event) || '');
-      const tgtByStroke = {}, baseByStroke = {};
-      function indexResult(into, r){
-        const st = strokeOf(r); if(!st) return;     // unstroked legacy row → can't compare
-        const d = distOf(r);
-        if(!into[st]) into[st] = new Map();
-        const cur = into[st].get(d);
-        if(cur === undefined || r.seconds < cur.sec) into[st].set(d, { sec: r.seconds, ev: r.event, time: r.time });
-      }
-      // bestEver: the swimmer's fastest-ever time per stroke|distance across
-      // ACTUAL meets (time trials + practice meets excluded). This is the PR
-      // baseline — a target swim only counts toward Most Improved when it matches
-      // this best (i.e. it set a personal record), not merely beat last meet.
-      const bestEver = {};
-      (sw.results||[]).forEach(r => {
-        if(!r || !isFinite(r.seconds)) return;
-        if(r.timeTrial) return; // time trials excluded from Most Improved
-        if(isPracticeMeet(r.meet)) return; // practice-meet times are not actual meet times
-        const st = strokeOf(r); if(st){
-          const k = st + '|' + distOf(r);
-          if(bestEver[k] === undefined || r.seconds < bestEver[k]) bestEver[k] = r.seconds;
-        }
-        if(r.meet === target.meet && (!season || r.season === season)) indexResult(tgtByStroke, r);
-        if(r.meet === baseline.meet && (!baselineSeason || r.season === baselineSeason)) indexResult(baseByStroke, r);
+      const { drops: eventsDropped, total } = prDropsAtMeet(sw, target.meet);
+      if(!(total > 0)) return;
+      const info = swimmerSeasonInfo(sw, season);
+      const bracket = resolveBracket(info);
+      if(!bracket || bracket === 'Unknown') return;
+      drops.push({
+        key: sw.key,
+        name: sw.name,
+        preferredName: sw.preferredName || '',
+        gender: info.gender || '',
+        age: info.age || '',
+        bracket,
+        totalDrop: total,
+        eventsDropped: eventsDropped.map(d => ({
+          event: d.event, drop: d.drop,
+          fromSec: d.fromSec, toSec: d.toSec,
+          fromTime: d.fromTime, toTime: d.toTime,
+          fromMeet: d.fromMeet
+        })),
+        eventCount: eventsDropped.length
       });
-      // Plausibility guard for guessed-distance data: no stroke beats freestyle
-      // over the same distance, so if a non-free TARGET time is faster than the
-      // swimmer's own freestyle at that distance, the distance label is wrong
-      // (a 25 mislabeled 50, etc.) — drop it rather than report a fake plunge.
-      const tgtFree = tgtByStroke['Freestyle']; // Map dist → { sec, ev } (may be undefined)
-      let totalDrop = 0;
-      const eventsDropped = [];
-      Object.keys(tgtByStroke).forEach(stroke => {
-        const tMap = tgtByStroke[stroke];
-        const bMap = baseByStroke[stroke];
-        if(!bMap) return;                          // stroke not swum at the baseline meet → can't compare
-        tMap.forEach((tEntry, dist) => {
-          if(stroke !== 'Freestyle' && tgtFree){
-            const f = tgtFree.get(dist);
-            // Only discard a non-free time that is IMPOSSIBLY faster than the
-            // swimmer's own free at this distance — i.e. a wrong distance label
-            // (a 25 mislabeled 50 reads ~40-50% fast). The old test (`< f.sec`)
-            // also deleted a LEGITIMATE drop whenever a back/fly specialist swam
-            // an easy/warm-down freestyle slower than their hard stroke (back
-            // 28.0 vs an easy free 29.0 is real, not a label error). Require a
-            // >30% gap so true mislabels are still caught but normal effort
-            // differences survive.
-            if(f && tEntry.sec < f.sec * 0.70) return;
-          }
-          let bEntry = bMap.get(dist);
-          // Distance label diverged across the two meets — almost always because
-          // the baseline "practice/best-times" meet had no real distance, so the
-          // ingest inferred one from the swimmer's age bracket (6&U→15,
-          // 7-8/9-10→25, 11-12+→50) that disagrees with the distance actually
-          // raced at the target meet. Fall back to the single same-stroke swim
-          // at each meet so the swimmer isn't silently dropped — BUT only when
-          // the target race is at least as long as the baseline's (labelled)
-          // distance. A faster time over an equal-or-longer race is a genuine
-          // improvement; a faster time over a SHORTER race is just the shorter
-          // race and would manufacture a huge bogus drop (a 50-yd baseline paired
-          // with a 25-yd target reads as a ~20s "improvement"), so we refuse it.
-          // When either meet has multiple distances for this stroke we can't tell
-          // which swims pair up, so an exact distance match is required instead.
-          if(!bEntry && tMap.size === 1 && bMap.size === 1){
-            const [bDist, only] = bMap.entries().next().value;
-            const tNum = parseInt(dist, 10), bNum = parseInt(bDist, 10);
-            // Only rescue when the BASELINE distance is one the ingest could have
-            // INFERRED from an age bracket (15 / 25 / 50) — that is the only reason
-            // the two labels legitimately diverge. A baseline of 100/200 was never
-            // inferred, so pairing e.g. a 100 baseline with a 200 target is two
-            // DIFFERENT real races, not a relabel, and must not be fused into a
-            // fake drop. (Still require target >= baseline so a shorter target
-            // can't manufacture a plunge.)
-            const inferable = (bNum === 15 || bNum === 25 || bNum === 50);
-            if(isFinite(tNum) && isFinite(bNum) && tNum >= bNum && inferable) bEntry = only;
-          }
-          if(!bEntry) return;                      // not swum at the baseline meet → can't compare
-          const drop = bEntry.sec - tEntry.sec;
-          if(drop > 0){
-            // PR-only gate: the target swim must be the swimmer's fastest-ever
-            // for this stroke+distance across actual meets. tEntry.sec is itself
-            // in bestEver, so bestEver[key] <= tEntry.sec always; equality means
-            // no earlier real-meet swim was faster → it's a PR. A drop over the
-            // previous meet that is still slower than an older PB doesn't count.
-            const prBest = bestEver[stroke + '|' + dist];
-            if(prBest === undefined || tEntry.sec > prBest + 1e-6) return;
-            totalDrop += drop;
-            eventsDropped.push({
-              event: tEntry.ev, drop,
-              fromSec: bEntry.sec, toSec: tEntry.sec,
-              fromTime: bEntry.time || fmtTime(bEntry.sec),
-              toTime:   tEntry.time || fmtTime(tEntry.sec)
-            });
-          }
-        });
-      });
-      if(totalDrop > 0){
-        const info = swimmerSeasonInfo(sw, season);
-        const bracket = resolveBracket(info);
-        if(!bracket || bracket === 'Unknown') return;
-        drops.push({
-          key: sw.key,
-          name: sw.name,
-          preferredName: sw.preferredName || '',
-          gender: info.gender || '',
-          age: info.age || '',
-          bracket,
-          totalDrop,
-          eventsDropped,
-          eventCount: eventsDropped.length
-        });
-      }
     });
 
     // Group by competition group (Boys / Girls / mixed) and slice top N
@@ -1356,8 +1336,10 @@
     return {
       meet: target.meet,
       date: target.dateStr || '',
-      baselineMeet: baseline.meet,
-      baselineSeason: baselineSeason,
+      // Baselines are now per-swimmer previous bests, not one meet — kept as
+      // empty strings so existing callers render nothing rather than break.
+      baselineMeet: '',
+      baselineSeason: '',
       boards: byGroup
     };
   }
@@ -2524,72 +2506,44 @@
     const favorite = bestTimes.slice().sort((a,b)=> b.count - a.count)[0] || null;
     const totalTimeDropSec = bestTimes.reduce((sum,b)=> sum + Math.max(0, b.improvement), 0);
 
-    // ---- Most Improved: the swimmer's TWO most recent meets, this season -----
-    // "Most improved" = seconds dropped between your latest meet and the meet
-    // right before it, matched within the SAME stroke+distance (freestyle vs
-    // freestyle, never freestyle vs breaststroke) and counted only where you
-    // swam FASTER — a PR over the prior meet, so no drop means no improvement.
-    // It needs two meets; with fewer there's nothing to compare. Time trials
-    // never count, and we refuse to pair meets from different seasons so last
-    // year is never compared to this year (a concrete `season` already scopes
-    // `results` to one season; "All seasons combined" is guarded by the tags).
+    // ---- Most Improved: PRs at the swimmer's MOST RECENT meet --------------
+    // recentMeetDropSec = total seconds this swimmer beat their own previous
+    // bests by at their latest real meet; mostImproved = the single biggest of
+    // those PR drops. Baselines come from their best across ALL earlier real
+    // meets (any season, full history — NOT just "the previous meet"), so a
+    // swimmer who skipped a meet still gets full credit when they PR. Time
+    // trials and practice sessions never count on either side; the Time Trial
+    // dashboard opts back in via includeTimeTrials.
     let recentMeetDropSec = 0;
     let mostImproved = null;
     {
-      const meetTs = {}, meetSeasonTag = {};
+      // Latest real meet within the (season-filtered) results…
+      const meetTs = {};
       results.forEach(r => {
-        // Two REAL meets only: practice / best-times sessions and time trials
-        // never count as one of the two meets (the Time Trial dashboard opts
-        // back in via includeTimeTrials).
         if(!r || !r.meet || (!includeTimeTrials && (r.timeTrial || isPracticeMeet(r.meet)))) return;
         const ts = parseFlexibleDate(r.date);
         const t = isFinite(ts) ? ts : -Infinity;
         if(meetTs[r.meet] === undefined || t > meetTs[r.meet]) meetTs[r.meet] = t;
-        if(r.season) meetSeasonTag[r.meet] = r.season;
       });
-      // Newest → oldest; tie-break on meet name so the pair is deterministic.
+      // Newest → oldest; tie-break on meet name so the pick is deterministic.
       const order = Object.keys(meetTs).sort((a,b) =>
         meetTs[b] !== meetTs[a] ? meetTs[b] - meetTs[a] : (a < b ? 1 : a > b ? -1 : 0));
-      if(order.length >= 2){
-        const targetMeet = order[0], baselineMeet = order[1];
-        const crossYear = meetSeasonTag[targetMeet] && meetSeasonTag[baselineMeet]
-          && meetSeasonTag[targetMeet] !== meetSeasonTag[baselineMeet];
-        if(!crossYear){
-          // Best swim of each stroke+distance at one meet (handles an event swum
-          // twice in a session). Keying on stroke+distance is what keeps the
-          // comparison freestyle-vs-freestyle and never freestyle-vs-breaststroke.
-          const bestByEvent = meetName => {
-            const m = {};
-            results.forEach(r => {
-              if(!r || r.meet !== meetName || (!includeTimeTrials && (r.timeTrial || isPracticeMeet(r.meet))) || !isFinite(r.seconds)) return;
-              const stroke = (r.stroke || extractStroke(r.event) || '').trim();
-              if(!stroke) return;                 // unstroked legacy row — can't match
-              const dist = (r.distance != null ? String(r.distance) : (extractDistance(r.event) || '')).trim();
-              const k = `${stroke}|${dist}`;
-              if(!m[k] || r.seconds < m[k].seconds) m[k] = r;
-            });
-            return m;
+      if(order.length){
+        // …but baselines read the swimmer's FULL history (sw.results), so last
+        // season's best is still the bar to beat.
+        const targetMeet = order[0];
+        const { drops, total } = prDropsAtMeet(sw, targetMeet, { includeTimeTrials });
+        recentMeetDropSec = total;
+        if(drops.length){
+          const top = drops[0];
+          mostImproved = {
+            event: top.event,
+            improvement: top.drop,
+            firstTime: top.fromTime,
+            time: top.toTime,
+            fromMeet: top.fromMeet,
+            toMeet: targetMeet
           };
-          const tgt = bestByEvent(targetMeet), base = bestByEvent(baselineMeet);
-          const drops = [];
-          Object.keys(tgt).forEach(k => {
-            const tr = tgt[k], br = base[k];
-            if(!br) return;                       // not swum at the earlier meet → can't compare
-            const drop = br.seconds - tr.seconds;
-            if(drop > 0){                          // only a PR over the prior meet counts
-              recentMeetDropSec += drop;
-              drops.push({
-                event: tr.event,
-                improvement: drop,
-                firstTime: br.time || fmtTime(br.seconds),
-                time:      tr.time || fmtTime(tr.seconds),
-                fromMeet:  baselineMeet,
-                toMeet:    targetMeet
-              });
-            }
-          });
-          drops.sort((a,b)=> b.improvement - a.improvement);
-          mostImproved = drops[0] || null;
         }
       }
     }

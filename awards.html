@@ -487,7 +487,7 @@
     <div class="awards-intro-head">
       <div>
         <h2 class="improved-h2">Most Improved</h2>
-        <p class="lead">Top time-droppers from the most recent meet — total seconds shaved across every event each swimmer raced. One poster per age group with Boys + Girls side-by-side.</p>
+        <p class="lead">Top time-droppers from the most recent meet — total seconds each swimmer beat their own previous best times by, across every event they raced. One poster per age group with Boys + Girls side-by-side.</p>
         <p class="awards-intro-meet"><strong id="improvedMeetName">—</strong><span id="improvedMeetDate" class="awards-intro-meet-date"></span><span id="improvedVsMeet" class="awards-intro-meet-date"></span></p>
         <div class="aw-meta">
           <span class="aw-badge aw-badge-improved" id="improvedCountBadge" hidden>
@@ -518,7 +518,7 @@
   Highcroft Hurricanes Swim Team · <a href="leaderboards.html">Season Stats</a> · <a href="meet-recap.html">Meet Recap</a> · <a href="admin.html">Admin</a>
 </footer>
 
-<script src="assets/data.js?v=31"></script>
+<script src="assets/data.js?v=32"></script>
 <script>
   HHST.initTheme();
   document.getElementById('themeToggle').addEventListener('click', HHST.toggleTheme);
@@ -865,11 +865,9 @@
 
     document.getElementById('improvedMeetName').textContent = meet;
     document.getElementById('improvedMeetDate').textContent = date ? ` · ${fmtMeetDate(date)}` : '';
-    // Say what the improvement is measured against (the previous meet — which may
-    // be last season's final meet when this season has only one meet so far).
-    document.getElementById('improvedVsMeet').textContent = baselineMeet
-      ? ` · vs ${baselineMeet}${baselineSeason && baselineSeason !== season ? ` (${baselineSeason})` : ''}`
-      : '';
+    // Improvements are measured against each swimmer's own previous best
+    // (across all earlier real meets), not against one baseline meet.
+    document.getElementById('improvedVsMeet').textContent = " · vs each swimmer's previous bests";
     improvedIntro.style.display = '';
 
     function bracketOf(key){ return key.replace(/^(Boys|Girls)\s+/i, ''); }
