@@ -87,6 +87,32 @@
   @media (max-width:560px){
     #meetTable{min-width:0}
   }
+
+  /* ---- PR share card (shr-) — button, modal, preview ---- */
+  .shr-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  .shr-head > div{flex:1 1 320px;min-width:0}
+  .shr-btn{flex:0 0 auto;display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+  .shr-overlay{position:fixed;inset:0;z-index:90;display:flex;align-items:center;justify-content:center;
+    padding:20px;background:rgba(4,12,24,.62);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+  .shr-modal{width:min(440px,100%);max-height:calc(100vh - 40px);overflow:auto;
+    background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);
+    box-shadow:var(--shadow-lg);padding:20px}
+  .shr-modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+  .shr-modal-head h3{margin:0;font-family:var(--font-display);font-size:19px;letter-spacing:-.01em}
+  .shr-close{display:grid;place-items:center;width:36px;height:36px;border-radius:var(--radius);
+    border:1px solid var(--border);background:var(--bg-alt);color:var(--text-muted);cursor:pointer;
+    transition:color .18s ease,border-color .18s ease,transform .18s cubic-bezier(.16,1,.3,1)}
+  .shr-close:hover{color:var(--text);border-color:var(--border-strong);transform:scale(1.05)}
+  .shr-close:focus-visible{outline:none;box-shadow:0 0 0 3px var(--ring)}
+  .shr-preview{display:block;width:100%;border-radius:var(--radius-md);border:1px solid var(--border);
+    box-shadow:var(--shadow-md);margin-bottom:16px}
+  .shr-actions{display:flex;gap:10px;flex-wrap:wrap}
+  .shr-actions .btn{flex:1 1 160px;justify-content:center;display:inline-flex;align-items:center;gap:8px}
+  .shr-hint{margin:12px 0 0;font-size:12.5px;line-height:1.5;color:var(--text-subtle);text-align:center}
+  @media (max-width:560px){
+    .shr-overlay{padding:12px}
+    .shr-modal{padding:16px}
+  }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
@@ -293,9 +319,41 @@
 
     <!-- BEST TIMES (richer) -->
     <div class="chart-card">
-      <h3>Personal Bests</h3>
-      <p class="lead">Best time in each event, with how much your swimmer has improved since their first attempt.</p>
+      <div class="shr-head">
+        <div>
+          <h3>Personal Bests</h3>
+          <p class="lead">Best time in each event, with how much your swimmer has improved since their first attempt.</p>
+        </div>
+        <button type="button" class="btn shr-btn" id="shareCardBtn" style="display:none">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+          Share card
+        </button>
+      </div>
       <div class="best-times-rich" id="bestTimes"></div>
+    </div>
+
+    <!-- PR SHARE CARD modal (filled by buildShareCard) -->
+    <div class="shr-overlay" id="shrOverlay" role="dialog" aria-modal="true" aria-label="Shareable personal-records card" style="display:none">
+      <div class="shr-modal">
+        <div class="shr-modal-head">
+          <h3>Share your Hurricane's PRs</h3>
+          <button type="button" class="shr-close" id="shrClose" aria-label="Close">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <img class="shr-preview" id="shrPreview" alt="Preview of the personal-records share card"/>
+        <div class="shr-actions">
+          <button type="button" class="btn lg" id="shrDownload">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download image
+          </button>
+          <button type="button" class="btn lg shr-native" id="shrShare" style="display:none">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/><line x1="15.4" y1="6.5" x2="8.6" y2="10.5"/></svg>
+            Share…
+          </button>
+        </div>
+        <p class="shr-hint">A picture-perfect summary of the season — great for the family group chat.</p>
+      </div>
     </div>
 
     <!-- PERSONALIZED TRAINING PLAN — data-driven "how to get faster" tips -->
@@ -337,7 +395,7 @@
       <p class="lead">Which strokes your swimmer has raced the most.</p>
       <div class="stroke-mix">
         <div class="stroke-chart-host">
-          <canvas id="strokeChart"></canvas>
+          <canvas id="strokeChart" role="img" aria-label="Doughnut chart of how many races this swimmer has swum in each stroke"></canvas>
         </div>
         <div class="stroke-legend" id="strokeLegend"></div>
       </div>
@@ -347,11 +405,11 @@
     <div class="chart-card">
       <h3>Event Deep Dive</h3>
       <p class="lead">Pick an event for a full breakdown of every time. The chart trends <strong>down</strong> as your swimmer gets faster; the gold ⭐ dot is the current personal record.</p>
-      <div class="tabs" id="eventTabs"></div>
+      <div class="tabs" id="eventTabs" role="tablist" aria-label="Choose an event to chart"></div>
       <div id="eventDeepStats" class="event-deep"></div>
       <div id="chartDrop" class="chart-drop" style="display:none"></div>
       <div class="chart-host">
-        <canvas id="progressChart"></canvas>
+        <canvas id="progressChart" role="img" aria-label="Line chart of this swimmer's race times for the selected event — lower is faster"></canvas>
       </div>
     </div>
 
@@ -620,6 +678,10 @@
       }));
     }
 
+    // Share-card button only makes sense once there's at least one PR to show.
+    const shrBtn = document.getElementById('shareCardBtn');
+    if(shrBtn) shrBtn.style.display = stats.bestTimes.length ? '' : 'none';
+
     // Team rankings
     renderRanks(sw);
 
@@ -640,11 +702,12 @@
       document.getElementById('eventDeepStats').innerHTML = '';
       document.getElementById('progressChart').style.display = 'none';
     } else {
-      tabs.innerHTML = stats.bestTimes.map((b,i)=>`<button data-i="${i}" class="${i===0?'active':''}">${escapeHtml(b.event)}</button>`).join('');
+      tabs.innerHTML = stats.bestTimes.map((b,i)=>`<button role="tab" aria-selected="${i===0?'true':'false'}" data-i="${i}" class="${i===0?'active':''}">${escapeHtml(b.event)}</button>`).join('');
       tabs.querySelectorAll('button').forEach(btn => {
         btn.addEventListener('click', ()=>{
-          tabs.querySelectorAll('button').forEach(x=>x.classList.remove('active'));
+          tabs.querySelectorAll('button').forEach(x=>{ x.classList.remove('active'); x.setAttribute('aria-selected','false'); });
           btn.classList.add('active');
+          btn.setAttribute('aria-selected','true');
           drawChart(stats.bestTimes[parseInt(btn.dataset.i,10)]);
         });
       });
@@ -1339,6 +1402,248 @@
   function escapeHtml(s){
     return (s||'').toString().replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
+
+  // ===== PR Share Card =====
+  // Paints a 1080×1350 (4:5) PNG of the swimmer's personal records in the
+  // site's "Meet Day" look, previews it in a modal, and offers download +
+  // native share (mobile). Pure canvas — no extra libraries, nothing uploaded.
+  (function(){
+    const openBtn  = document.getElementById('shareCardBtn');
+    const overlay  = document.getElementById('shrOverlay');
+    const preview  = document.getElementById('shrPreview');
+    const closeBtn = document.getElementById('shrClose');
+    const dlBtn    = document.getElementById('shrDownload');
+    const shareBtn = document.getElementById('shrShare');
+    if(!openBtn || !overlay) return;
+
+    let cardCanvas = null;
+    let lastFocus = null;
+
+    function roundRect(ctx, x, y, w, h, r){
+      ctx.beginPath();
+      ctx.moveTo(x+r, y);
+      ctx.arcTo(x+w, y,   x+w, y+h, r);
+      ctx.arcTo(x+w, y+h, x,   y+h, r);
+      ctx.arcTo(x,   y+h, x,   y,   r);
+      ctx.arcTo(x,   y,   x+w, y,   r);
+      ctx.closePath();
+    }
+    function wave(ctx, y, amp, color, alpha){
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 4;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      for(let x = -20; x <= 1100; x += 4){
+        const yy = y + Math.sin(x / 120) * amp;
+        x === -20 ? ctx.moveTo(x, yy) : ctx.lineTo(x, yy);
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    async function buildShareCard(){
+      // Make sure the display faces are actually loaded before measuring text.
+      try {
+        await Promise.all([
+          document.fonts.load('800 90px "Bricolage Grotesque"'),
+          document.fonts.load('700 40px "Figtree"'),
+          document.fonts.load('600 44px "IBM Plex Mono"')
+        ]);
+      } catch(e){ /* system fallbacks still look fine */ }
+
+      const W = 1080, H = 1350;
+      const c = document.createElement('canvas');
+      c.width = W; c.height = H;
+      const ctx = c.getContext('2d');
+
+      // --- Background: deep meet-day navy with a soft radial glow ---
+      const bg = ctx.createLinearGradient(0, 0, 0, H);
+      bg.addColorStop(0, '#0a1c33');
+      bg.addColorStop(.55, '#0c2545');
+      bg.addColorStop(1, '#081626');
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, W, H);
+      const glow = ctx.createRadialGradient(W/2, 230, 60, W/2, 230, 620);
+      glow.addColorStop(0, 'rgba(95,169,236,.20)');
+      glow.addColorStop(1, 'rgba(95,169,236,0)');
+      ctx.fillStyle = glow;
+      ctx.fillRect(0, 0, W, H);
+      // drifting wave lines, top and bottom
+      wave(ctx, 120, 10, '#7fe3ef', .14);
+      wave(ctx, 150, 12, '#5fa9ec', .10);
+      wave(ctx, 1255, 11, '#7fe3ef', .13);
+      wave(ctx, 1285, 13, '#5fa9ec', .09);
+
+      // --- Brand row ---
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#7fe3ef';
+      ctx.font = '700 26px "Figtree", system-ui, sans-serif';
+      const brand = 'H I G H C R O F T   H U R R I C A N E S';
+      ctx.fillText(brand, W/2, 96);
+
+      // --- Swimmer name (shrink-to-fit) ---
+      const name = (swimmer.name || 'Hurricane').trim();
+      let size = 96;
+      ctx.font = `800 ${size}px "Bricolage Grotesque", "Figtree", system-ui, sans-serif`;
+      while(size > 48 && ctx.measureText(name).width > W - 140){
+        size -= 4;
+        ctx.font = `800 ${size}px "Bricolage Grotesque", "Figtree", system-ui, sans-serif`;
+      }
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(name, W/2, 220);
+
+      // --- Subtitle + season pill ---
+      ctx.fillStyle = '#9db8d8';
+      ctx.font = '600 30px "Figtree", system-ui, sans-serif';
+      ctx.fillText('PERSONAL RECORDS', W/2, 274);
+      if(activeSeason){
+        ctx.font = '700 26px "Figtree", system-ui, sans-serif';
+        const padX = 26, txtW = ctx.measureText(activeSeason).width;
+        const pillW = txtW + padX*2, pillH = 52, px = (W - pillW)/2, py = 300;
+        roundRect(ctx, px, py, pillW, pillH, 26);
+        ctx.fillStyle = 'rgba(127,227,239,.12)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(127,227,239,.4)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.fillStyle = '#7fe3ef';
+        ctx.fillText(activeSeason, W/2, py + 35);
+      }
+
+      // --- PR panel ---
+      const rows = (stats.bestTimes || []).slice(0, 6);
+      const extra = Math.max(0, (stats.bestTimes || []).length - rows.length);
+      const panelX = 70, panelW = W - 140;
+      const rowH = 102, headRoom = 36;
+      const panelH = headRoom + rows.length * rowH + (extra ? 56 : 24);
+      // Center the panel + stats strip vertically in the space between the
+      // header block and the footer, so a 2-PR card doesn't pool empty space
+      // at the bottom while a 6-PR card still fills the frame.
+      const groupH = panelH + 44 + 100;
+      const panelY = 396 + Math.max(0, (1190 - 396 - groupH) / 2);
+      roundRect(ctx, panelX, panelY, panelW, panelH, 28);
+      ctx.fillStyle = 'rgba(255,255,255,.055)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,.12)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      rows.forEach((b, i) => {
+        const y = panelY + headRoom + i * rowH;
+        if(i > 0){
+          ctx.strokeStyle = 'rgba(255,255,255,.08)';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(panelX + 36, y);
+          ctx.lineTo(panelX + panelW - 36, y);
+          ctx.stroke();
+        }
+        const midY = y + rowH/2;
+        // stroke dot
+        ctx.fillStyle = STROKE_COLORS[b.stroke] || STROKE_COLORS.Other;
+        ctx.beginPath();
+        ctx.arc(panelX + 52, midY - 6, 10, 0, Math.PI*2);
+        ctx.fill();
+        // event + improvement
+        ctx.textAlign = 'left';
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '700 38px "Figtree", system-ui, sans-serif';
+        ctx.fillText(b.event, panelX + 84, midY + 2);
+        if(b.improvement > 0){
+          ctx.fillStyle = '#34d399';
+          ctx.font = '600 24px "Figtree", system-ui, sans-serif';
+          ctx.fillText('−' + b.improvement.toFixed(2) + 's ' + (activeSeason ? 'this season' : 'overall'), panelX + 84, midY + 34);
+        }
+        // time
+        ctx.textAlign = 'right';
+        ctx.fillStyle = '#fde68a';
+        ctx.font = '600 46px "IBM Plex Mono", ui-monospace, monospace';
+        ctx.fillText(b.time, panelX + panelW - 44, midY + 12);
+        ctx.textAlign = 'center';
+      });
+      if(extra){
+        ctx.fillStyle = '#8aa6c8';
+        ctx.font = '600 25px "Figtree", system-ui, sans-serif';
+        ctx.fillText(`+ ${extra} more event${extra === 1 ? '' : 's'} on the dashboard`, W/2, panelY + panelH - 26);
+      }
+
+      // --- Stats strip ---
+      const stripY = panelY + panelH + 44;
+      const cells = [
+        { v: String(stats.totalRaces || 0), l: 'RACES' },
+        { v: String(stats.meetCount || 0), l: 'MEETS' },
+        { v: stats.totalTimeDropSec > 0 ? '−' + fmtDrop(stats.totalTimeDropSec) : '—', l: 'TIME DROPPED' }
+      ];
+      const cellW = (W - 140) / 3;
+      cells.forEach((cell, i) => {
+        const cx = 70 + cellW * i + cellW/2;
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '800 56px "Bricolage Grotesque", "Figtree", system-ui, sans-serif';
+        ctx.fillText(cell.v, cx, stripY + 56);
+        ctx.fillStyle = '#7fa3cc';
+        ctx.font = '700 22px "Figtree", system-ui, sans-serif';
+        ctx.fillText(cell.l, cx, stripY + 96);
+      });
+
+      // --- Footer ---
+      ctx.fillStyle = '#5e7ba0';
+      ctx.font = '600 26px "Figtree", system-ui, sans-serif';
+      ctx.fillText('hhststats.com', W/2, H - 64);
+
+      return c;
+    }
+
+    function fileName(){
+      const slug = (swimmer.name || 'hurricane').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      return `${slug}-personal-records.png`;
+    }
+    function closeModal(){
+      overlay.style.display = 'none';
+      document.body.style.overflow = '';
+      if(lastFocus && lastFocus.focus) lastFocus.focus();
+    }
+
+    openBtn.addEventListener('click', async () => {
+      lastFocus = document.activeElement;
+      openBtn.disabled = true;
+      try {
+        cardCanvas = await buildShareCard();
+        preview.src = cardCanvas.toDataURL('image/png');
+        overlay.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+        closeBtn.focus();
+        // Native share only where files can actually be shared (mostly mobile).
+        if(navigator.canShare){
+          cardCanvas.toBlob(blob => {
+            if(!blob) return;
+            const f = new File([blob], fileName(), { type: 'image/png' });
+            shareBtn.style.display = navigator.canShare({ files: [f] }) ? '' : 'none';
+            shareBtn.onclick = () => {
+              navigator.share({ files: [f], title: `${swimmer.name} — Personal Records` }).catch(()=>{});
+            };
+          });
+        }
+      } catch(e){
+        console.error('Share card failed', e);
+      } finally {
+        openBtn.disabled = false;
+      }
+    });
+    dlBtn.addEventListener('click', () => {
+      if(!cardCanvas) return;
+      const a = document.createElement('a');
+      a.download = fileName();
+      a.href = cardCanvas.toDataURL('image/png');
+      a.click();
+    });
+    closeBtn.addEventListener('click', closeModal);
+    overlay.addEventListener('click', e => { if(e.target === overlay) closeModal(); });
+    document.addEventListener('keydown', e => {
+      if(e.key === 'Escape' && overlay.style.display !== 'none') closeModal();
+    });
+  })();
 </script>
 
 <script src="assets/mobile-nav.js" defer></script>

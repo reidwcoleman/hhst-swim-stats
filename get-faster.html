@@ -292,11 +292,11 @@
   var tabsHost = document.getElementById('gfTabs');
   var panelsHost = document.getElementById('gfPanels');
   tabsHost.innerHTML = TABS.map(function(t,i){
-    return '<button role="tab" data-tab="'+t.id+'" class="'+(i===0?'active':'')+'">'+
-      '<span class="gf-tab-emoji">'+t.emoji+'</span>'+esc(t.label)+'</button>';
+    return '<button role="tab" data-tab="'+t.id+'" aria-controls="panel-'+t.id+'" aria-selected="'+(i===0?'true':'false')+'" class="'+(i===0?'active':'')+'">'+
+      '<span class="gf-tab-emoji" aria-hidden="true">'+t.emoji+'</span>'+esc(t.label)+'</button>';
   }).join('');
   panelsHost.innerHTML = TABS.map(function(t,i){
-    return '<section class="gf-panel'+(i===0?' is-active':'')+'" id="panel-'+t.id+'" role="tabpanel">'+panelHtml(t)+'</section>';
+    return '<section class="gf-panel'+(i===0?' is-active':'')+'" id="panel-'+t.id+'" role="tabpanel" aria-label="'+esc(t.label)+'">'+panelHtml(t)+'</section>';
   }).join('');
 
   function show(id, scroll){
@@ -306,7 +306,7 @@
       if(on) found = true;
       var btn = tabsHost.querySelector('[data-tab="'+t.id+'"]');
       var pan = document.getElementById('panel-'+t.id);
-      if(btn) btn.classList.toggle('active', on);
+      if(btn){ btn.classList.toggle('active', on); btn.setAttribute('aria-selected', on ? 'true' : 'false'); }
       if(pan) pan.classList.toggle('is-active', on);
     });
     if(!found) return;

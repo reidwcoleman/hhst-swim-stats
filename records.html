@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<meta name="theme-color" content="#f4f8fb"/>
+<title>Team Records — Highcroft Hurricanes</title>
+<meta name="robots" content="noindex,nofollow"/>
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg"/>
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png"/>
+
+<!-- Set the saved theme before first paint to avoid a flash -->
+<script>(function(){try{var t=localStorage.getItem('hhst.theme')||'light';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Figtree:ital,wght@0,300..900;1,300..900&family=IBM+Plex+Mono:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="assets/styles.css?v=31"/>
+<style>
+  /* Hide everything until auth check completes — coaches only. */
+  body:not(.auth-ready) > *{visibility:hidden}
+
+  /* ===== Team Records (rb- prefixed) ===== */
+  .rb-controls{display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin:0 0 24px;
+    padding:18px 20px;background:var(--surface-glass);border:1px solid var(--border);
+    border-radius:var(--radius-lg);box-shadow:var(--shadow-sm)}
+  .rb-controls label{font-weight:700;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted)}
+  .rb-controls .lb-select{min-width:180px;font-size:16px;padding:13px 16px;
+    transition:border-color .18s cubic-bezier(.16,1,.3,1),box-shadow .18s cubic-bezier(.16,1,.3,1)}
+  .rb-controls .lb-select:hover{border-color:var(--border-strong)}
+  .rb-controls .lb-select:focus-visible{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--ring)}
+
+  /* Stroke filter chips */
+  .rb-strokes{display:flex;flex-wrap:wrap;gap:8px}
+  .rb-stroke{display:inline-flex;align-items:center;gap:7px;padding:9px 15px;border-radius:999px;
+    font-size:13.5px;font-weight:600;color:var(--text-muted);cursor:pointer;
+    background:var(--bg-alt);border:1px solid var(--border);
+    transition:color .18s ease,border-color .18s ease,background .18s ease,transform .18s cubic-bezier(.16,1,.3,1)}
+  .rb-stroke:hover{border-color:var(--border-strong);color:var(--text);transform:translateY(-1px)}
+  .rb-stroke:focus-visible{outline:none;box-shadow:0 0 0 3px var(--ring)}
+  .rb-stroke.active{color:#fff;background:linear-gradient(135deg,#2470ce,#1c59a8);border-color:transparent}
+  .rb-stroke .dot{width:8px;height:8px;border-radius:50%;background:var(--stroke-c,var(--accent))}
+  .rb-stroke.active .dot{background:#fff}
+
+  /* Record-book pulse row */
+  .rb-pulse{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:28px}
+  .rb-pulse-cell{padding:18px 20px;border-radius:var(--radius-md);background:var(--surface);
+    border:1px solid var(--border);box-shadow:var(--shadow-sm)}
+  .rb-pulse-v{font-family:var(--font-display);font-weight:800;font-size:28px;letter-spacing:-.02em;
+    font-variant-numeric:tabular-nums}
+  .rb-pulse-l{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);margin-top:3px}
+
+  /* Group cards */
+  .rb-group{margin-bottom:28px}
+  .rb-group-head{display:flex;align-items:center;gap:12px;margin:0 0 14px}
+  .rb-group-head h2{font-family:var(--font-display);font-size:22px;font-weight:700;margin:0;letter-spacing:-.01em}
+  .rb-group-count{font-size:13px;color:var(--text-muted)}
+  .rb-gender-pill{display:inline-flex;align-items:center;padding:4px 11px;border-radius:999px;
+    font-size:11px;font-weight:800;letter-spacing:.07em;text-transform:uppercase}
+  .rb-gender-pill.is-girls{background:rgba(244,114,182,.14);color:#f472b6;border:1px solid rgba(244,114,182,.32)}
+  .rb-gender-pill.is-boys{background:rgba(95,169,236,.14);color:var(--accent);border:1px solid rgba(95,169,236,.32)}
+  [data-theme="light"] .rb-gender-pill.is-girls{color:#be185d;background:rgba(244,114,182,.12)}
+  [data-theme="light"] .rb-gender-pill.is-boys{color:#1c59a8;background:rgba(95,169,236,.12)}
+
+  .rb-list{display:grid;gap:10px}
+  .rb-row{display:flex;align-items:center;gap:16px;padding:16px 20px;border-radius:var(--radius-md);
+    background:var(--bg-alt);border:1px solid var(--border);text-decoration:none;color:var(--text);
+    transition:transform .18s cubic-bezier(.16,1,.3,1),border-color .18s cubic-bezier(.16,1,.3,1),box-shadow .18s cubic-bezier(.16,1,.3,1),background .18s cubic-bezier(.16,1,.3,1)}
+  .rb-row:hover{transform:translateY(-2px);border-color:var(--border-strong);box-shadow:var(--shadow-md);background:var(--surface)}
+  .rb-row:focus-visible{outline:none;box-shadow:0 0 0 3px var(--ring);border-color:var(--accent)}
+  .rb-event{flex:0 0 110px;display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px;white-space:nowrap}
+  .rb-event .dot{flex:none;width:9px;height:9px;border-radius:50%}
+  .rb-holder{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:1px}
+  .rb-holder b{font-size:15px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rb-holder span{font-size:12px;color:var(--text-subtle);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rb-margin{flex:0 0 auto;font-size:12px;color:var(--text-subtle);white-space:nowrap}
+  .rb-time{flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+  .rb-time b{font-family:var(--font-mono);font-weight:600;font-size:19px;letter-spacing:-.01em;
+    color:var(--amber-strong,#c98f0e);font-variant-numeric:tabular-nums;white-space:nowrap}
+  [data-theme="dark"] .rb-time b,:root:not([data-theme="light"]) .rb-time b{color:#fde68a}
+  .rb-season{font-size:11.5px;color:var(--text-subtle);white-space:nowrap}
+  .rb-new{display:inline-flex;align-items:center;padding:3px 9px;border-radius:999px;
+    font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+    color:#081626;background:linear-gradient(135deg,#efc75e,#e2ac2d)}
+
+  .rb-empty{padding:28px;text-align:center;color:var(--text-subtle)}
+
+  /* Spinner */
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .rb-spinner{display:inline-block;width:32px;height:32px;border:3px solid var(--border-strong);
+    border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:14px}
+
+  /* ===== Mobile ===== */
+  @media (max-width:760px){
+    .rb-controls{flex-direction:column;align-items:stretch;gap:12px}
+    .rb-controls .lb-select{min-width:0;width:100%}
+  }
+  @media (max-width:560px){
+    .rb-row{flex-wrap:wrap;gap:8px 14px;padding:14px 16px}
+    .rb-event{flex:1 1 auto}
+    .rb-time{order:2;align-items:flex-start}
+    .rb-time b{font-size:18px}
+    .rb-holder{order:3;flex:1 1 100%}
+    .rb-margin{display:none}
+  }
+</style>
+
+<!-- Firebase compat SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="assets/firebase-init.js"></script>
+</head>
+<body>
+
+<header>
+  <nav>
+    <a class="brand" href="index.html">
+      <span class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2 12c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/>
+          <path d="M2 17c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/>
+          <path d="M2 7c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/>
+        </svg>
+      </span>
+      Highcroft <em>Hurricanes</em>
+    </a>
+    <ul class="nav-links">
+      <li><a href="index.html">Swimmer Lookup</a></li>
+      <li><a href="leaderboards.html">Season Stats</a></li>
+      <li><a href="records.html" class="active">Team Records</a></li>
+      <li><a href="awards.html">Fastest Five</a></li>
+      <li><a href="admin.html" class="btn">Admin</a></li>
+      <li>
+        <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+          <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+          <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+      </li>
+    </ul>
+  </nav>
+</header>
+
+<section class="dash-hero leaderboard-hero">
+  <div class="dash-hero-inner">
+    <div class="leaderboard-hero-content">
+      <div class="kicker"><span class="pulse"></span> Club Record Book · Coaches View</div>
+      <h1>Team Records</h1>
+      <p class="lb-sub">The fastest swim the club has ever recorded in every event, for every age group — who holds it, where it was set, and how safe it is.</p>
+    </div>
+  </div>
+</section>
+
+<main class="admin-shell">
+
+  <div id="loadingState" class="card empty">
+    <div class="rb-spinner" aria-hidden="true"></div>
+    <p class="lead" style="margin:0">Building the record book…</p>
+  </div>
+
+  <div id="emptyState" class="card empty" style="display:none">
+    <h2 style="margin-bottom:6px">No times in the system yet</h2>
+    <p class="lead">Upload meet results from the Admin page and the record book will write itself.</p>
+    <a href="admin.html" class="btn lg" style="margin-top:8px;display:inline-flex">Open Admin</a>
+  </div>
+
+  <div id="recordsStage" style="display:none">
+
+    <!-- RECORD BOOK PULSE -->
+    <div class="rb-pulse" id="rbPulse"></div>
+
+    <!-- FILTERS -->
+    <div class="rb-controls">
+      <label for="rbGroupSelect">Age group</label>
+      <select id="rbGroupSelect" class="lb-select"><option value="">All age groups</option></select>
+      <div class="rb-strokes" id="rbStrokes" role="group" aria-label="Filter by stroke"></div>
+    </div>
+
+    <!-- GROUP CARDS -->
+    <div id="rbGroups"></div>
+
+  </div>
+</main>
+
+<footer>
+  Highcroft Hurricanes Swim Team · <a href="index.html">Swimmer Lookup</a> · <a href="leaderboards.html">Season Stats</a> · <a href="awards.html">Fastest Five</a> · <a href="admin.html">Admin</a>
+</footer>
+
+<script src="assets/data.js?v=29"></script>
+<script src="assets/mobile-nav.js" defer></script>
+<script>
+  HHST.initTheme();
+  document.getElementById('themeToggle').addEventListener('click', HHST.toggleTheme);
+
+  // ============ Coaches-only gate (matches leaderboards.html) ============
+  (function gateBehindAdmin(){
+    let resolved = false;
+    FB.auth.onAuthStateChanged(user => {
+      if(resolved) return;
+      resolved = true;
+      if(user){
+        document.body.classList.add('auth-ready');
+      } else {
+        location.replace('admin.html?next=' + encodeURIComponent('records.html'));
+      }
+    });
+  })();
+
+  function escapeHtml(s){
+    return (s||'').toString().replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function fmtMeetDate(raw){
+    raw = (raw||'').trim();
+    if(!raw) return '';
+    let m = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+    let d;
+    if(m){ d = new Date(+m[1], +m[2]-1, +m[3]); }
+    else { m = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/); if(m){ let y=+m[3]; if(y<100) y+=2000; d = new Date(y, +m[1]-1, +m[2]); } }
+    if(!d || isNaN(d.getTime())) return raw;
+    return d.toLocaleDateString(undefined, { month:'short', day:'numeric', year:'numeric' });
+  }
+
+  const STROKE_COLORS = {
+    'Freestyle':'#5fa9ec','Backstroke':'#34c796','Breaststroke':'#e2ac2d',
+    'Butterfly':'#f472b6','IM':'#a18bea'
+  };
+  const STROKES = ['Freestyle','Backstroke','Breaststroke','Butterfly','IM'];
+
+  // recordBook: { group -> { event -> { holder, runnerUp } } }
+  // Each (group,event) keeps the best-ever swim per swimmer, so the record
+  // margin compares the holder against the next-fastest DIFFERENT swimmer.
+  let recordBook = {};
+  let groupOrder = [];
+  let currentSeason = '';
+  let activeGroup = '';
+  let activeStroke = '';
+
+  (async () => {
+    await new Promise(resolve => { const unsub = FB.auth.onAuthStateChanged(u => { unsub(); resolve(u); }); });
+    if(!FB.auth.currentUser) return;
+    const loading = document.getElementById('loadingState');
+    const empty   = document.getElementById('emptyState');
+    const stage   = document.getElementById('recordsStage');
+    try {
+      const { swimmers } = await HHST.readAll();
+      const list = Object.values(swimmers || {});
+      currentSeason = HHST.currentSeasonWithTimes(list) || '';
+      buildRecordBook(list);
+      loading.style.display = 'none';
+      if(!groupOrder.length){ empty.style.display = 'block'; return; }
+      stage.style.display = 'block';
+      buildControls();
+      renderPulse();
+      render();
+    } catch(err){
+      console.error(err);
+      loading.innerHTML = '<p class="lead" style="color:var(--red-light);margin:0">Couldn\'t load team data. Try refreshing.</p>';
+    }
+  })();
+
+  function buildRecordBook(list){
+    // best-ever per (group, event, swimmer) — real meet swims only
+    const perSwimmer = {}; // group|event|key -> swim
+    list.forEach(sw => {
+      (sw.results || []).forEach(r => {
+        if(!r || r.timeTrial || !isFinite(r.seconds)) return;
+        if(HHST.isPracticeMeet(r.meet)) return;
+        // The swimmer's competition group AT THE TIME of the swim (per-season
+        // age/gender), so a 2024 record stays a 9-10 record even after they age up.
+        const group = HHST.competitionGroup(sw, r.season || '');
+        if(!group || group === 'Unknown') return;
+        const id = group + '|' + r.event + '|' + sw.key;
+        const prev = perSwimmer[id];
+        if(!prev || r.seconds < prev.seconds){
+          perSwimmer[id] = {
+            group, event: r.event, key: sw.key,
+            name: sw.name, preferredName: sw.preferredName || '',
+            stroke: r.stroke || HHST.extractStroke(r.event) || '',
+            time: r.time, seconds: r.seconds,
+            meet: r.meet || '', date: r.date || '', season: r.season || ''
+          };
+        }
+      });
+    });
+    // holder + runner-up per (group, event)
+    recordBook = {};
+    Object.values(perSwimmer).forEach(s => {
+      const g = recordBook[s.group] || (recordBook[s.group] = {});
+      const slot = g[s.event] || (g[s.event] = { holder: null, runnerUp: null });
+      if(!slot.holder || s.seconds < slot.holder.seconds){
+        slot.runnerUp = slot.holder;
+        slot.holder = s;
+      } else if(!slot.runnerUp || s.seconds < slot.runnerUp.seconds){
+        slot.runnerUp = s;
+      }
+    });
+    // group order: youngest → oldest bracket, Girls before Boys within each
+    const brackets = HHST.AGE_GROUP_ORDER.filter(b => b !== 'Unknown');
+    groupOrder = [];
+    brackets.forEach(b => {
+      ['Girls ' + b, 'Boys ' + b, b].forEach(g => {
+        if(recordBook[g]) groupOrder.push(g);
+      });
+    });
+    // any leftover group labels (defensive)
+    Object.keys(recordBook).forEach(g => { if(!groupOrder.includes(g)) groupOrder.push(g); });
+  }
+
+  function buildControls(){
+    const sel = document.getElementById('rbGroupSelect');
+    groupOrder.forEach(g => sel.insertAdjacentHTML('beforeend',
+      `<option value="${escapeHtml(g)}">${escapeHtml(g)}</option>`));
+    sel.addEventListener('change', () => { activeGroup = sel.value; render(); });
+
+    const host = document.getElementById('rbStrokes');
+    const chips = [{ label:'All strokes', value:'', color:'' }]
+      .concat(STROKES.map(s => ({ label:s, value:s, color:STROKE_COLORS[s] })));
+    host.innerHTML = chips.map(c =>
+      `<button type="button" class="rb-stroke${c.value===''?' active':''}" data-stroke="${escapeHtml(c.value)}"
+        ${c.color ? `style="--stroke-c:${c.color}"` : ''} aria-pressed="${c.value===''?'true':'false'}">
+        ${c.color ? '<span class="dot" aria-hidden="true"></span>' : ''}${escapeHtml(c.label)}
+      </button>`).join('');
+    host.querySelectorAll('.rb-stroke').forEach(btn => btn.addEventListener('click', () => {
+      activeStroke = btn.dataset.stroke;
+      host.querySelectorAll('.rb-stroke').forEach(x => {
+        const on = x === btn;
+        x.classList.toggle('active', on);
+        x.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+      render();
+    }));
+  }
+
+  function allHolders(){
+    const out = [];
+    groupOrder.forEach(g => Object.values(recordBook[g]).forEach(slot => out.push(slot.holder)));
+    return out;
+  }
+
+  function renderPulse(){
+    const holders = allHolders();
+    const swimmerSet = new Set(holders.map(h => h.key));
+    const newThisSeason = currentSeason ? holders.filter(h => h.season === currentSeason).length : 0;
+    let oldest = null;
+    holders.forEach(h => {
+      const t = new Date(h.date).getTime();
+      if(isFinite(t) && t > 0 && (!oldest || t < oldest.t)) oldest = { t, h };
+    });
+    const cells = [
+      { v: holders.length, l: 'Club records' },
+      { v: swimmerSet.size, l: 'Record holders' },
+      { v: newThisSeason, l: currentSeason ? `Set in ${escapeHtml(currentSeason)}` : 'Set this season' }
+    ];
+    if(oldest){
+      const yrs = Math.max(0, (Date.now() - oldest.t) / 31557600000);
+      cells.push({ v: yrs >= 1 ? yrs.toFixed(1) + 'y' : 'New', l: 'Oldest record' });
+    }
+    document.getElementById('rbPulse').innerHTML = cells.map(c =>
+      `<div class="rb-pulse-cell"><div class="rb-pulse-v">${c.v}</div><div class="rb-pulse-l">${c.l}</div></div>`).join('');
+  }
+
+  function genderPill(group){
+    if(/^Girls /.test(group)) return '<span class="rb-gender-pill is-girls">Girls</span>';
+    if(/^Boys /.test(group))  return '<span class="rb-gender-pill is-boys">Boys</span>';
+    return '';
+  }
+
+  function render(){
+    const host = document.getElementById('rbGroups');
+    const groups = activeGroup ? groupOrder.filter(g => g === activeGroup) : groupOrder;
+    let html = '';
+    groups.forEach(g => {
+      const events = Object.keys(recordBook[g])
+        .filter(ev => !activeStroke || (recordBook[g][ev].holder.stroke === activeStroke))
+        .sort(HHST.compareEventLabel);
+      if(!events.length) return;
+      const rows = events.map(ev => {
+        const { holder: h, runnerUp: ru } = recordBook[g][ev];
+        const dot = STROKE_COLORS[h.stroke] || 'var(--accent)';
+        const isNew = currentSeason && h.season === currentSeason;
+        const margin = ru ? (ru.seconds - h.seconds) : null;
+        const where = [h.meet, fmtMeetDate(h.date)].filter(Boolean).join(' · ');
+        return `<a class="rb-row" href="dashboard.html?s=${encodeURIComponent(h.key)}" aria-label="Open ${escapeHtml(h.name)}'s dashboard">
+          <span class="rb-event"><span class="dot" style="background:${dot}" aria-hidden="true"></span>${escapeHtml(ev)}</span>
+          <span class="rb-holder"><b>${escapeHtml(h.name)}</b>${where ? `<span>${escapeHtml(where)}</span>` : ''}</span>
+          ${margin != null && margin > 0.001 ? `<span class="rb-margin">by ${margin.toFixed(2)}s</span>` : ''}
+          <span class="rb-time"><b>${escapeHtml(h.time)}</b>${h.season ? `<span class="rb-season">${escapeHtml(h.season)}</span>` : ''}</span>
+          ${isNew ? '<span class="rb-new">New</span>' : ''}
+        </a>`;
+      }).join('');
+      html += `<div class="rb-group">
+        <div class="rb-group-head">${genderPill(g)}<h2>${escapeHtml(g)}</h2><span class="rb-group-count">${events.length} record${events.length===1?'':'s'}</span></div>
+        <div class="rb-list">${rows}</div>
+      </div>`;
+    });
+    host.innerHTML = html || '<div class="card"><div class="rb-empty">No records match this filter yet.</div></div>';
+  }
+</script>
+
+</body>
+</html>
