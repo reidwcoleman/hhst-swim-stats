@@ -652,22 +652,18 @@
     setSeasonBadge(season);
     const brackets = HHST.AGE_GROUP_ORDER.filter(b => b !== 'Unknown' && DIST_FOR_BRACKET[b]);
 
-    // Fastest Five shows the most recent meet's times, not season-bests. Find
-    // that meet once (newest in the current season) and scope every board to it.
-    const seasonMeets = HHST.meetsInSeason(allSwimmers, season);
-    const latestMeet = seasonMeets.length ? seasonMeets[seasonMeets.length - 1] : null;
-    const targetMeet = latestMeet ? latestMeet.meet : '';
-    const targetMeetLabel = latestMeet
-      ? escapeHtml(latestMeet.meet) + (latestMeet.dateStr ? ' · ' + escapeHtml(fmtMeetDate(latestMeet.dateStr)) : '')
-      : '';
+    // Fastest Five ranks each swimmer's season-best (their PR) against everyone
+    // else in the age group — the five fastest PRs win a spot, no matter which
+    // meet they were swum at. A PR set at the most recent meet naturally shows
+    // up here; an older but still-faster time also holds its place.
 
     const cards = brackets.map(bracket => {
       const dist = DIST_FOR_BRACKET[bracket];
       // leaderboardsByEvent splits Boys/Girls automatically when gender is on file.
-      // Scoped to the most recent season that has times so older seasons' times
-      // don't carry over, then to the most recent meet so the poster reflects
-      // how everyone swam at that meet (not their season-best).
-      const boards = HHST.leaderboardsByEvent(allSwimmers, { stroke: 'Freestyle', distance: dist }, { limit: 5, season, meet: targetMeet });
+      // Scoped to the most recent season that has times (so older seasons' times
+      // don't carry over) but NOT to a single meet — leaving opts.meet unset
+      // makes it rank each swimmer's best time of the season (their PR).
+      const boards = HHST.leaderboardsByEvent(allSwimmers, { stroke: 'Freestyle', distance: dist }, { limit: 5, season });
 
       // Only entries that actually belong to THIS bracket — strip the gender prefix.
       const boysKey  = `Boys ${bracket}`;
@@ -716,7 +712,7 @@
         <div class="award-headline">
           <span class="award-group">${escapeHtml(bracketLabel(bracket))}</span>
           <span class="award-event">${escapeHtml(eventLabel)}</span>
-          ${targetMeetLabel ? `<span class="award-event award-event-meet">${targetMeetLabel}</span>` : ''}
+          <span class="award-event award-event-meet">Season Bests</span>
         </div>
         ${inner}
         <div class="award-footer">
