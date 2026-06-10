@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<meta name="theme-color" content="#f4f8fb"/>
+<title>Meet Recap — Highcroft Hurricanes</title>
+<meta name="robots" content="noindex,nofollow"/>
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg"/>
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png"/>
+
+<!-- Set the saved theme before first paint to avoid a flash -->
+<script>(function(){try{var t=localStorage.getItem('hhst.theme')||'light';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Figtree:ital,wght@0,300..900;1,300..900&family=IBM+Plex+Mono:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="assets/styles.css?v=31"/>
+<style>
+  /* Hide everything until auth check completes — coaches only. */
+  body:not(.auth-ready) > *{visibility:hidden}
+
+  /* ===== Meet Recap (mr- prefixed) ===== */
+  .mr-picker{display:flex;flex-wrap:wrap;align-items:center;gap:16px;margin:0 0 24px;
+    padding:18px 20px;background:var(--surface-glass);border:1px solid var(--border);
+    border-radius:var(--radius-lg);box-shadow:var(--shadow-sm)}
+  .mr-picker label{font-weight:700;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted)}
+  .mr-picker .lb-select{min-width:260px;max-width:100%;font-size:16px;padding:13px 16px;
+    transition:border-color .18s cubic-bezier(.16,1,.3,1),box-shadow .18s cubic-bezier(.16,1,.3,1)}
+  .mr-picker .lb-select:hover{border-color:var(--border-strong)}
+  .mr-picker .lb-select:focus-visible{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--ring)}
+  .mr-meta{display:flex;flex-wrap:wrap;gap:8px}
+  .mr-chip{display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:999px;
+    font-size:12px;font-weight:700;background:rgba(95,169,236,.12);color:var(--accent);
+    border:1px solid rgba(95,169,236,.28)}
+  [data-theme="light"] .mr-chip{color:#1c59a8}
+
+  .mr-section-title{display:flex;align-items:baseline;gap:12px;margin:28px 0 16px;flex-wrap:wrap}
+  .mr-section-title h2{font-family:var(--font-display);font-size:22px;font-weight:700;line-height:1.2;margin:0;letter-spacing:-.01em}
+  .mr-section-title span{color:var(--text-muted);font-size:13px}
+
+  /* PR wall */
+  .mr-wall{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+  .mr-pr{display:flex;flex-direction:column;gap:8px;padding:16px 18px;border-radius:var(--radius-md);
+    background:var(--bg-alt);border:1px solid var(--border);text-decoration:none;color:var(--text);
+    position:relative;overflow:hidden;
+    transition:transform .18s cubic-bezier(.16,1,.3,1),border-color .18s cubic-bezier(.16,1,.3,1),box-shadow .18s cubic-bezier(.16,1,.3,1),background .18s cubic-bezier(.16,1,.3,1)}
+  .mr-pr::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--pr-c,var(--accent));opacity:.85}
+  .mr-pr:hover{transform:translateY(-2px);border-color:var(--border-strong);box-shadow:var(--shadow-md);background:var(--surface)}
+  .mr-pr:focus-visible{outline:none;box-shadow:0 0 0 3px var(--ring);border-color:var(--accent)}
+  .mr-pr-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .mr-pr-name{font-weight:700;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .mr-pr-group{flex:none;font-size:11px;color:var(--text-subtle);white-space:nowrap}
+  .mr-pr-line{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+  .mr-pr-event{font-size:13px;color:var(--text-muted);font-weight:600}
+  .mr-pr-time{font-family:var(--font-mono);font-weight:600;font-size:18px;font-variant-numeric:tabular-nums}
+  .mr-pr-drop{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;
+    padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;
+    background:rgba(15,161,113,.14);color:var(--green-light);border:1px solid rgba(15,161,113,.28)}
+  [data-theme="light"] .mr-pr-drop{color:#047857;background:rgba(15,161,113,.1)}
+  .mr-pr-first{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;
+    padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;
+    background:rgba(95,169,236,.12);color:var(--accent);border:1px solid rgba(95,169,236,.28)}
+  [data-theme="light"] .mr-pr-first{color:#1c59a8}
+
+  /* Top drops — reuse the mover-row recipe from Season Stats */
+  .mr-movers{display:grid;gap:10px}
+  .mr-mover{display:flex;align-items:center;gap:14px;padding:18px 20px;border-radius:var(--radius-md);
+    background:var(--bg-alt);border:1px solid var(--border);text-decoration:none;color:var(--text);
+    transition:transform .18s cubic-bezier(.16,1,.3,1),border-color .18s cubic-bezier(.16,1,.3,1),box-shadow .18s cubic-bezier(.16,1,.3,1),background .18s cubic-bezier(.16,1,.3,1)}
+  .mr-mover:hover{transform:translateY(-2px);border-color:var(--border-strong);box-shadow:var(--shadow-md);background:var(--surface)}
+  .mr-mover:focus-visible{outline:none;box-shadow:0 0 0 3px var(--ring);border-color:var(--accent)}
+  .mr-mover-rank{flex:0 0 auto;width:30px;height:30px;display:grid;place-items:center;border-radius:var(--radius-sm);
+    font-family:var(--font-display);font-weight:700;font-size:14px;color:var(--text-muted);
+    background:var(--surface);border:1px solid var(--border)}
+  .mr-mover:first-child .mr-mover-rank{color:var(--green-light);border-color:rgba(15,161,113,.28);background:rgba(15,161,113,.14)}
+  [data-theme="light"] .mr-mover:first-child .mr-mover-rank{color:#047857;background:rgba(15,161,113,.1)}
+  .mr-mover-name{display:flex;flex-direction:column;min-width:0;flex:1 1 auto;font-weight:600;font-size:15px}
+  .mr-mover-name > span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .mr-mover-sub{display:block;font-size:12px;color:var(--text-subtle);font-weight:400;margin-top:1px}
+  .mr-mover-drop{flex:0 0 auto;font-family:var(--font-display);font-weight:700;font-size:17px;color:var(--green-light);white-space:nowrap;font-variant-numeric:tabular-nums}
+  [data-theme="light"] .mr-mover-drop{color:#047857}
+  .mr-mover-arrow{flex:0 0 auto;color:var(--text-subtle);transition:transform .18s cubic-bezier(.16,1,.3,1),color .18s cubic-bezier(.16,1,.3,1);display:flex}
+  .mr-mover:hover .mr-mover-arrow{transform:translateX(3px);color:var(--accent)}
+
+  .mr-empty-cell{padding:24px;text-align:center;color:var(--text-subtle)}
+  .roster-table tbody td{font-variant-numeric:tabular-nums}
+  .mr-drop-val{color:var(--green-light);white-space:nowrap;font-weight:600;font-variant-numeric:tabular-nums}
+  [data-theme="light"] .mr-drop-val{color:#047857}
+  .mr-muted{color:var(--text-muted)}
+
+  /* Spinner */
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .mr-spinner{display:inline-block;width:32px;height:32px;border:3px solid var(--border-strong);
+    border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:14px}
+
+  /* ===== Mobile ===== */
+  @media (max-width:760px){
+    .mr-picker{flex-direction:column;align-items:stretch;gap:10px}
+    .mr-picker .lb-select{min-width:0;width:100%}
+    .mr-meta{align-self:flex-start}
+  }
+  @media (max-width:480px){
+    .mr-picker{padding:16px}
+    .mr-wall{grid-template-columns:1fr}
+    .mr-mover{padding:16px}
+  }
+</style>
+
+<!-- Firebase compat SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="assets/firebase-init.js"></script>
+</head>
+<body>
+
+<header>
+  <nav>
+    <a class="brand" href="index.html">
+      <span class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2 12c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/>
+          <path d="M2 17c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/>
+          <path d="M2 7c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/>
+        </svg>
+      </span>
+      Highcroft <em>Hurricanes</em>
+    </a>
+    <ul class="nav-links">
+      <li><a href="index.html">Swimmer Lookup</a></li>
+      <li><a href="leaderboards.html">Season Stats</a></li>
+      <li><a href="meet-recap.html" class="active">Meet Recap</a></li>
+      <li><a href="awards.html">Fastest Five</a></li>
+      <li><a href="admin.html" class="btn">Admin</a></li>
+      <li>
+        <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+          <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+          <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+      </li>
+    </ul>
+  </nav>
+</header>
+
+<section class="dash-hero leaderboard-hero">
+  <div class="dash-hero-inner">
+    <div class="leaderboard-hero-content">
+      <div class="kicker"><span class="pulse"></span> Post-Meet Highlights · Coaches View</div>
+      <h1>Meet Recap</h1>
+      <p class="lb-sub">Pick any meet for an instant highlights reel — every personal record set that day, the biggest time drops, medals, and how each age group showed up.</p>
+    </div>
+  </div>
+</section>
+
+<main class="admin-shell">
+
+  <div id="loadingState" class="card empty">
+    <div class="mr-spinner" aria-hidden="true"></div>
+    <p class="lead" style="margin:0">Loading meet data…</p>
+  </div>
+
+  <div id="emptyState" class="card empty" style="display:none">
+    <h2 style="margin-bottom:6px">No meets in the system yet</h2>
+    <p class="lead">Upload meet results from the Admin page and the recap will build itself after every meet.</p>
+    <a href="admin.html" class="btn lg" style="margin-top:8px;display:inline-flex">Open Admin</a>
+  </div>
+
+  <div id="recapStage" style="display:none">
+
+    <!-- MEET PICKER -->
+    <div class="mr-picker">
+      <label for="meetSelect">Meet</label>
+      <select id="meetSelect" class="lb-select"></select>
+      <div class="mr-meta">
+        <span class="mr-chip" id="meetDateChip" style="display:none"></span>
+        <span class="mr-chip" id="meetSeasonChip" style="display:none"></span>
+      </div>
+    </div>
+
+    <!-- HEADLINE STAT CARDS -->
+    <div class="stat-grid">
+      <div class="stat-card stat-races"><div class="accent"></div>
+        <div class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+        <div class="label">Swimmers</div>
+        <div class="value" id="kSwimmers">—</div>
+        <div class="sub">Raced at this meet</div>
+      </div>
+      <div class="stat-card stat-meets"><div class="accent"></div>
+        <div class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/><path d="M2 17c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/><path d="M2 7c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/></svg></div>
+        <div class="label">Races Swum</div>
+        <div class="value" id="kRaces">—</div>
+        <div class="sub">Across all events</div>
+      </div>
+      <div class="stat-card stat-prs"><div class="accent"></div>
+        <div class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M21 7v6h-6"/></svg></div>
+        <div class="label">PRs Smashed</div>
+        <div class="value" id="kPRs">—</div>
+        <div class="sub" id="kPRsSub">New personal bests set</div>
+      </div>
+      <div class="stat-card stat-events"><div class="accent"></div>
+        <div class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/></svg></div>
+        <div class="label">First Swims</div>
+        <div class="value" id="kFirsts">—</div>
+        <div class="sub">First time racing an event</div>
+      </div>
+      <div class="stat-card stat-podium"><div class="accent"></div>
+        <div class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M8.5 13L5 22l7-4 7 4-3.5-9"/></svg></div>
+        <div class="label">Podium Finishes</div>
+        <div class="value" id="kPodium">—</div>
+        <div class="sub" id="kPodiumSub">Top-3 placings</div>
+      </div>
+      <div class="stat-card stat-drop"><div class="accent"></div>
+        <div class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14l-7 7-7-7"/><path d="M12 3v18"/></svg></div>
+        <div class="label">Time Dropped</div>
+        <div class="value" id="kDrop">—</div>
+        <div class="sub">Total shaved off PRs at this meet</div>
+      </div>
+    </div>
+
+    <!-- MEDALS -->
+    <div class="card">
+      <h2>Medals</h2>
+      <p class="lead" id="medalsLead">Heat-finish placings at this meet.</p>
+      <div class="medal-row">
+        <div class="medal medal-gold">
+          <div class="medal-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M8.5 13L5 22l7-4 7 4-3.5-9"/></svg></div>
+          <div class="medal-count" id="mGold">0</div>
+          <div class="medal-label">Gold</div>
+        </div>
+        <div class="medal medal-silver">
+          <div class="medal-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M8.5 13L5 22l7-4 7 4-3.5-9"/></svg></div>
+          <div class="medal-count" id="mSilver">0</div>
+          <div class="medal-label">Silver</div>
+        </div>
+        <div class="medal medal-bronze">
+          <div class="medal-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M8.5 13L5 22l7-4 7 4-3.5-9"/></svg></div>
+          <div class="medal-count" id="mBronze">0</div>
+          <div class="medal-label">Bronze</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BIGGEST DROPS -->
+    <div class="card" id="dropsCard" style="display:none">
+      <h2>Biggest Drops of the Day</h2>
+      <p class="lead">The largest single-event improvements over each swimmer's previous best — click through to their dashboard.</p>
+      <div class="mr-movers" id="dropsList"></div>
+    </div>
+
+    <!-- PR WALL -->
+    <div class="mr-section-title"><h2>The PR Wall</h2><span id="wallSub"></span></div>
+    <div class="card">
+      <div class="mr-wall" id="prWall"></div>
+      <div class="mr-empty-cell" id="wallEmpty" style="display:none">No personal records were set at this meet — sometimes that's just how the water is. On to the next one!</div>
+    </div>
+
+    <!-- BY AGE GROUP -->
+    <div class="mr-section-title"><h2>By Age Group</h2><span id="byGroupSub"></span></div>
+    <div class="card">
+      <div class="table-wrap">
+        <table class="roster-table responsive-cards" style="min-width:560px">
+          <thead><tr><th>Age Group</th><th>Swimmers</th><th>Races</th><th>PRs</th><th>Time Dropped</th></tr></thead>
+          <tbody id="byGroupBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<footer>
+  Highcroft Hurricanes Swim Team · <a href="index.html">Swimmer Lookup</a> · <a href="leaderboards.html">Season Stats</a> · <a href="awards.html">Fastest Five</a> · <a href="admin.html">Admin</a>
+</footer>
+
+<script src="assets/data.js?v=29"></script>
+<script src="assets/mobile-nav.js" defer></script>
+<script>
+  HHST.initTheme();
+  document.getElementById('themeToggle').addEventListener('click', HHST.toggleTheme);
+
+  // ============ Coaches-only gate (matches leaderboards.html) ============
+  (function gateBehindAdmin(){
+    let resolved = false;
+    FB.auth.onAuthStateChanged(user => {
+      if(resolved) return;
+      resolved = true;
+      if(user){
+        document.body.classList.add('auth-ready');
+      } else {
+        location.replace('admin.html?next=' + encodeURIComponent('meet-recap.html'));
+      }
+    });
+  })();
+
+  function escapeHtml(s){
+    return (s||'').toString().replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function fmtNum(n){ return (n||0).toLocaleString(); }
+  function fmtDropSec(sec){
+    if(!isFinite(sec) || sec <= 0) return '—';
+    if(sec >= 60){ const m = Math.floor(sec/60); return `−${m}:${(sec-m*60).toFixed(2).padStart(5,'0')}`; }
+    return '−' + sec.toFixed(2) + 's';
+  }
+  function fmtMeetDate(raw){
+    raw = (raw||'').trim();
+    if(!raw) return '';
+    let m = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+    let d;
+    if(m){ d = new Date(+m[1], +m[2]-1, +m[3]); }
+    else { m = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/); if(m){ let y=+m[3]; if(y<100) y+=2000; d = new Date(y, +m[1]-1, +m[2]); } }
+    if(!d || isNaN(d.getTime())) return raw;
+    return d.toLocaleDateString(undefined, { month:'short', day:'numeric', year:'numeric' });
+  }
+
+  const STROKE_COLORS = {
+    'Freestyle':'#5fa9ec','Backstroke':'#34c796','Breaststroke':'#e2ac2d',
+    'Butterfly':'#f472b6','IM':'#a18bea','Other':'#94a3b8'
+  };
+
+  let swimmers = {};
+  let meets = [];        // [{meet, date}] newest first, real meets only
+  let activeMeet = '';
+
+  (async () => {
+    await new Promise(resolve => { const unsub = FB.auth.onAuthStateChanged(u => { unsub(); resolve(u); }); });
+    if(!FB.auth.currentUser) return;
+    const loading = document.getElementById('loadingState');
+    const empty   = document.getElementById('emptyState');
+    const stage   = document.getElementById('recapStage');
+    try {
+      const { swimmers: data } = await HHST.readAll();
+      swimmers = data || {};
+      // Real competition meets only — no time trials, no practice sessions.
+      meets = HHST.getAllMeets(Object.values(swimmers).map(stripToRealResults), {})
+        .filter(m => m.meet && !HHST.isPracticeMeet(m.meet));
+      loading.style.display = 'none';
+      if(!meets.length){ empty.style.display = 'block'; return; }
+      stage.style.display = 'block';
+      const sel = document.getElementById('meetSelect');
+      sel.innerHTML = meets.map((m, i) =>
+        `<option value="${escapeHtml(m.meet)}">${escapeHtml(m.meet)}${i===0?' (latest)':''}</option>`).join('');
+      activeMeet = meets[0].meet;
+      sel.value = activeMeet;
+      sel.addEventListener('change', () => { activeMeet = sel.value; render(); });
+      render();
+    } catch(err){
+      console.error(err);
+      loading.innerHTML = '<p class="lead" style="color:var(--red-light);margin:0">Couldn\'t load meet data. Try refreshing.</p>';
+    }
+  })();
+
+  // A copy of the swimmer with only real-meet results (no time trials /
+  // practice sessions), so every stat on this page means "at an actual meet".
+  function stripToRealResults(sw){
+    return { ...sw, results: (sw.results||[]).filter(r => r && !r.timeTrial && !HHST.isPracticeMeet(r.meet)) };
+  }
+
+  // Every PR-setting swim at `meetName`: walk each swimmer's full per-event
+  // history in date order and record the swims at this meet that beat every
+  // earlier time. First-ever swims of an event are tracked separately — a
+  // debut is a milestone, not a "drop".
+  function prsAtMeet(meetName){
+    const prs = [], firsts = [];
+    Object.values(swimmers).forEach(sw => {
+      const byEvent = {};
+      (sw.results||[]).forEach(r => {
+        if(!r || r.timeTrial || !isFinite(r.seconds) || HHST.isPracticeMeet(r.meet)) return;
+        (byEvent[r.event] = byEvent[r.event] || []).push(r);
+      });
+      Object.values(byEvent).forEach(list => {
+        list.sort((a,b) => (new Date(a.date).getTime()||0) - (new Date(b.date).getTime()||0));
+        let best = Infinity;
+        list.forEach(r => {
+          if(r.seconds < best - 0.0001){
+            if(r.meet === meetName){
+              const rec = {
+                key: sw.key, name: sw.name,
+                group: HHST.competitionGroup(sw, r.season || ''),
+                event: r.event, stroke: r.stroke || HHST.extractStroke(r.event) || 'Other',
+                time: r.time, seconds: r.seconds,
+                drop: isFinite(best) ? (best - r.seconds) : 0
+              };
+              (isFinite(best) ? prs : firsts).push(rec);
+            }
+            best = r.seconds;
+          }
+        });
+      });
+    });
+    prs.sort((a,b) => b.drop - a.drop);
+    return { prs, firsts };
+  }
+
+  function render(){
+    const meetName = activeMeet;
+    const meetInfo = meets.find(m => m.meet === meetName) || {};
+
+    // Races + swimmers + medals at this meet (DQs count as races swum).
+    let races = 0, gold = 0, silver = 0, bronze = 0;
+    const raced = new Set();
+    let season = '';
+    const byGroup = {}; // bracket -> {swimmers:Set, races, prs, drop}
+    Object.values(swimmers).forEach(sw => {
+      (sw.results||[]).forEach(r => {
+        if(!r || r.timeTrial || r.meet !== meetName) return;
+        races++;
+        raced.add(sw.key);
+        if(r.season && !season) season = r.season;
+        const p = parseInt(r.place, 10);
+        if(p === 1) gold++; else if(p === 2) silver++; else if(p === 3) bronze++;
+        const bracket = HHST.swimmerSeasonInfo(sw, r.season || '').bracket || 'Unknown';
+        const g = byGroup[bracket] || (byGroup[bracket] = { swimmers:new Set(), races:0, prs:0, drop:0 });
+        g.swimmers.add(sw.key);
+        g.races++;
+      });
+    });
+
+    const { prs, firsts } = prsAtMeet(meetName);
+    const totalDrop = prs.reduce((s, p) => s + p.drop, 0);
+    prs.concat(firsts).forEach(p => {
+      const bracket = (p.group || '').replace(/^(Girls|Boys)\s+/, '') || 'Unknown';
+      const g = byGroup[bracket];
+      if(g){ g.prs++; g.drop += p.drop; }
+    });
+
+    // Picker chips
+    const dateChip = document.getElementById('meetDateChip');
+    const seasonChip = document.getElementById('meetSeasonChip');
+    const dateStr = fmtMeetDate(meetInfo.date);
+    dateChip.style.display = dateStr ? '' : 'none';
+    dateChip.textContent = dateStr;
+    seasonChip.style.display = season ? '' : 'none';
+    seasonChip.textContent = season;
+
+    // KPIs
+    document.getElementById('kSwimmers').textContent = fmtNum(raced.size);
+    document.getElementById('kRaces').textContent = fmtNum(races);
+    document.getElementById('kPRs').textContent = fmtNum(prs.length);
+    document.getElementById('kPRsSub').textContent = prs.length
+      ? `${Math.round(prs.length / Math.max(1, races) * 100)}% of races were a new best`
+      : 'New personal bests set';
+    document.getElementById('kFirsts').textContent = fmtNum(firsts.length);
+    document.getElementById('kPodium').textContent = fmtNum(gold + silver + bronze);
+    document.getElementById('kPodiumSub').textContent = (gold + silver + bronze)
+      ? `${gold} gold · ${silver} silver · ${bronze} bronze` : 'Top-3 placings';
+    document.getElementById('kDrop').textContent = fmtDropSec(totalDrop);
+
+    document.getElementById('mGold').textContent = fmtNum(gold);
+    document.getElementById('mSilver').textContent = fmtNum(silver);
+    document.getElementById('mBronze').textContent = fmtNum(bronze);
+    document.getElementById('medalsLead').textContent = `Heat-finish placings at ${meetName}.`;
+
+    renderDrops(prs);
+    renderWall(prs, firsts, meetName);
+    renderByGroup(byGroup);
+  }
+
+  function renderDrops(prs){
+    const card = document.getElementById('dropsCard');
+    const list = document.getElementById('dropsList');
+    const top = prs.filter(p => p.drop > 0.001).slice(0, 5);
+    if(!top.length){ card.style.display = 'none'; return; }
+    card.style.display = '';
+    list.innerHTML = top.map((p, i) => `
+      <a class="mr-mover" href="dashboard.html?s=${encodeURIComponent(p.key)}">
+        <span class="mr-mover-rank">${i + 1}</span>
+        <span class="mr-mover-name"><span>${escapeHtml(p.name)}</span><span class="mr-mover-sub">${escapeHtml(p.event)}${p.group && p.group !== 'Unknown' ? ' · ' + escapeHtml(p.group) : ''}</span></span>
+        <span class="mr-mover-drop">−${p.drop.toFixed(2)}s</span>
+        <span class="mr-mover-arrow" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      </a>`).join('');
+  }
+
+  function renderWall(prs, firsts, meetName){
+    const wall = document.getElementById('prWall');
+    const wallEmpty = document.getElementById('wallEmpty');
+    const sub = document.getElementById('wallSub');
+    const all = prs.concat(firsts.slice().sort((a,b) => a.seconds - b.seconds));
+    sub.textContent = all.length
+      ? `${prs.length} new best${prs.length===1?'':'s'}${firsts.length ? ` + ${firsts.length} first swim${firsts.length===1?'':'s'}` : ''} at ${meetName}`
+      : '';
+    if(!all.length){
+      wall.innerHTML = '';
+      wallEmpty.style.display = '';
+      return;
+    }
+    wallEmpty.style.display = 'none';
+    wall.innerHTML = all.map(p => {
+      const color = STROKE_COLORS[p.stroke] || STROKE_COLORS.Other;
+      const badge = p.drop > 0.001
+        ? `<span class="mr-pr-drop"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="M19 12l-7 7-7-7"/></svg>−${p.drop.toFixed(2)}s off their best</span>`
+        : `<span class="mr-pr-first"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/></svg>First time racing it</span>`;
+      return `<a class="mr-pr" style="--pr-c:${color}" href="dashboard.html?s=${encodeURIComponent(p.key)}">
+        <span class="mr-pr-top"><span class="mr-pr-name">${escapeHtml(p.name)}</span>${p.group && p.group !== 'Unknown' ? `<span class="mr-pr-group">${escapeHtml(p.group)}</span>` : ''}</span>
+        <span class="mr-pr-line"><span class="mr-pr-event">${escapeHtml(p.event)}</span><span class="mr-pr-time">${escapeHtml(p.time)}</span></span>
+        ${badge}
+      </a>`;
+    }).join('');
+  }
+
+  function renderByGroup(byGroup){
+    const body = document.getElementById('byGroupBody');
+    document.getElementById('byGroupSub').textContent = activeMeet;
+    const rows = HHST.AGE_GROUP_ORDER.filter(b => b !== 'Unknown').map(bracket => {
+      const g = byGroup[bracket];
+      if(!g || !g.swimmers.size) return '';
+      return `<tr>
+        <td data-label="Age Group"><span class="bracket-pill bracket-${bracket.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'')}">${escapeHtml(bracket)}</span></td>
+        <td data-label="Swimmers">${g.swimmers.size}</td>
+        <td data-label="Races">${fmtNum(g.races)}</td>
+        <td data-label="PRs">${fmtNum(g.prs)}</td>
+        <td data-label="Time Dropped">${g.drop > 0.001 ? `<span class="mr-drop-val">${fmtDropSec(g.drop)}</span>` : '<span class="mr-muted">—</span>'}</td>
+      </tr>`;
+    }).filter(Boolean).join('');
+    body.innerHTML = rows || `<tr><td colspan="5" class="mr-empty-cell">No age-group data for this meet.</td></tr>`;
+  }
+</script>
+
+</body>
+</html>
