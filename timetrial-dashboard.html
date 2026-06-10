@@ -366,7 +366,7 @@
   <a href="admin.html">Admin</a>
 </footer>
 
-<script src="assets/data.js?v=30"></script>
+<script src="assets/data.js?v=31"></script>
 <script>
 (function(){
   HHST.initTheme();
@@ -546,7 +546,9 @@
     document.getElementById('swEmpty').style.display = 'none';
     document.getElementById('swBody').style.display = 'block';
 
-    var st = HHST.statsForSwimmer({ key:sw.key||key, name:sw.name, seasonInfo:sw.seasonInfo, results:tt }, {});
+    // includeTimeTrials is required — statsForSwimmer now drops trial swims from
+    // PR/drop math by default, and this whole view IS trial swims.
+    var st = HHST.statsForSwimmer({ key:sw.key||key, name:sw.name, seasonInfo:sw.seasonInfo, results:tt }, { includeTimeTrials:true });
     setText('swTrials', st.totalRaces);
     setText('swEvents', st.eventCount);
     setText('swPRs', st.prCount);

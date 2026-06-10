@@ -462,7 +462,7 @@
   Highcroft Hurricanes Swim Team · <a href="index.html">Back to home</a>
 </footer>
 
-<script src="assets/data.js?v=30"></script>
+<script src="assets/data.js?v=31"></script>
 <script src="assets/training.js?v=3"></script>
 <script>
   HHST.initTheme();
@@ -900,10 +900,13 @@
       document.getElementById('meetCounter').textContent =
         rows.length ? `${rows.length} race${rows.length===1?'':'s'}` : '';
 
-      // For each event, what was this swimmer's PR in the full history? Mark matching row.
+      // For each event, what was this swimmer's PR in the full history? Mark
+      // matching row. Time trials and practice sessions are never PRs, so they
+      // neither earn the PR note nor set the bar a real meet swim must beat.
       const prByEvent = {};
       allRaces.forEach(r => {
         if(!isFinite(r.seconds)) return;
+        if(r.timeTrial || HHST.isPracticeMeet(r.meet)) return;
         if(!(r.event in prByEvent) || r.seconds < prByEvent[r.event].sec){
           prByEvent[r.event] = { sec: r.seconds, date: r.date, meet: r.meet };
         }

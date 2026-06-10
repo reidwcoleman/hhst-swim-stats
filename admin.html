@@ -1149,7 +1149,7 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
   </div>
 </div>
 
-<script src="assets/data.js?v=30"></script>
+<script src="assets/data.js?v=31"></script>
 <script>
   HHST.initTheme();
 
@@ -2301,7 +2301,9 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
       : '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>';
     const typeChip = isRoster
       ? '<span class="training-chip" style="background:rgba(58,140,227,.16);color:#3a8ce3;border-color:rgba(58,140,227,.32)">Roster</span>'
-      : '<span class="training-chip" style="background:rgba(201,143,14,.16);color:#c98f0e;border-color:rgba(201,143,14,.32)">Meet</span>';
+      : (u.timeTrial
+        ? '<span class="training-chip" style="background:rgba(124,92,224,.16);color:#a18bea;border-color:rgba(124,92,224,.32)">Time Trial</span>'
+        : '<span class="training-chip" style="background:rgba(201,143,14,.16);color:#c98f0e;border-color:rgba(201,143,14,.32)">Meet</span>');
     const when = (function(){
       const t = u.uploadedAt;
       let d = null;

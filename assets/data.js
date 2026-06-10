@@ -1060,6 +1060,7 @@
       if(!group || group === 'Unknown') continue;
       const matching = (sw.results||[]).filter(r => {
         if(r.timeTrial) return false; // time trials excluded from Fastest Five / leaderboards
+        if(isPracticeMeet(r.meet)) return false; // practice sessions aren't PRs either
         if(season && r.season !== season) return false;
         if(meet && r.meet !== meet) return false;
         if(eventMatcher.stroke && r.stroke !== eventMatcher.stroke) return false;
@@ -2432,6 +2433,16 @@
     const meets = new Set();
     results.forEach(r=>{
       if(r.meet) meets.add(r.meet); // guard so a blank meet doesn't inflate meetCount vs recentMeets
+    });
+    // PR & time-drop math runs on REAL meet swims ONLY — time trials and
+    // practice/best-times sessions are never personal records and never count
+    // as time dropped, anywhere on the site. They still show in meet history
+    // and still count toward races/meets attended above. The Time Trial
+    // dashboard opts back in via includeTimeTrials to analyze trial progress.
+    const realResults = includeTimeTrials
+      ? results
+      : results.filter(r => r && !r.timeTrial && !isPracticeMeet(r.meet));
+    realResults.forEach(r=>{
       const evKey = r.event;
       if(!events[evKey]) events[evKey] = [];
       events[evKey].push(r);
@@ -2619,7 +2630,7 @@
     const inSeason = r => !season || (r && r.season === season);
     const myEvents = {};
     (sw.results||[]).forEach(r => {
-      if(!isFinite(r.seconds) || !inSeason(r) || r.timeTrial) return;
+      if(!isFinite(r.seconds) || !inSeason(r) || r.timeTrial || isPracticeMeet(r.meet)) return;
       if(!(r.event in myEvents) || r.seconds < myEvents[r.event]) myEvents[r.event] = r.seconds;
     });
     const ranks = {};
@@ -2632,7 +2643,7 @@
         if(myGender && oInfo.gender && oInfo.gender !== myGender) return;
         let best = Infinity;
         (other.results||[]).forEach(r => {
-          if(r.event === event && isFinite(r.seconds) && inSeason(r) && !r.timeTrial && r.seconds < best) best = r.seconds;
+          if(r.event === event && isFinite(r.seconds) && inSeason(r) && !r.timeTrial && !isPracticeMeet(r.meet) && r.seconds < best) best = r.seconds;
         });
         if(isFinite(best)) competitors.push({ key: other.key, sec: best });
       });
@@ -2668,6 +2679,7 @@
       (sw.results||[]).forEach(r => {
         if(!isFinite(r.seconds)) return;
         if(r.timeTrial) return; // time trials excluded from team leaderboards
+        if(isPracticeMeet(r.meet)) return; // practice sessions excluded too
         if(season && r.season !== season) return;
         if(meet && r.meet !== meet) return;
         const evStroke = r.stroke || extractStroke(r.event);
