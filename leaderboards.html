@@ -3,20 +3,20 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
-<meta name="theme-color" content="#0b1d3a"/>
+<meta name="theme-color" content="#f4f8fb"/>
 <title>Season Stats — Highcroft Hurricanes</title>
 <meta name="robots" content="noindex,nofollow"/>
 <link rel="icon" type="image/svg+xml" href="assets/favicon.svg"/>
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png"/>
 
 <!-- Set the saved theme before first paint to avoid a flash -->
-<script>(function(){try{var t=localStorage.getItem('hhst.theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+<script>(function(){try{var t=localStorage.getItem('hhst.theme')||'light';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,75..125,400..900;1,75..125,400..900&family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=IBM+Plex+Mono:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="assets/styles.css?v=27"/>
+<link rel="stylesheet" href="assets/styles.css?v=28"/>
 <style>
   /* Hide everything until auth check completes — admins only. */
   body:not(.auth-ready) > *{visibility:hidden}
@@ -31,15 +31,15 @@
   .ss-season-bar .lb-select:hover{border-color:var(--border-strong)}
   .ss-season-bar .lb-select:focus-visible{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--ring)}
   .ss-season-badge{display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:999px;font-size:12px;font-weight:700;
-    background:rgba(16,185,129,.14);color:var(--green-light);border:1px solid rgba(16,185,129,.28)}
-  [data-theme="light"] .ss-season-badge{color:#047857;background:rgba(16,185,129,.1)}
+    background:rgba(15,161,113,.14);color:var(--green-light);border:1px solid rgba(15,161,113,.28)}
+  [data-theme="light"] .ss-season-badge{color:#047857;background:rgba(15,161,113,.1)}
   .ss-section-title{display:flex;align-items:baseline;gap:12px;margin:24px 0}
-  .ss-section-title h2{font-family:'Fraunces',serif;font-size:22px;font-weight:700;line-height:1.2;margin:0;letter-spacing:-.01em}
+  .ss-section-title h2{font-family:var(--font-display);font-size:22px;font-weight:700;line-height:1.2;margin:0;letter-spacing:-.01em}
   .ss-section-title span{color:var(--text-muted);font-size:13px}
   .ss-table-row-link{cursor:pointer;transition:background .18s cubic-bezier(.16,1,.3,1)}
   .ss-table-row-link:hover{background:var(--bg-alt)}
-  .ss-cur-chip{background:rgba(16,185,129,.14);color:var(--green-light);border-color:rgba(16,185,129,.28)}
-  [data-theme="light"] .ss-cur-chip{color:#047857;background:rgba(16,185,129,.1)}
+  .ss-cur-chip{background:rgba(15,161,113,.14);color:var(--green-light);border-color:rgba(15,161,113,.28)}
+  [data-theme="light"] .ss-cur-chip{color:#047857;background:rgba(15,161,113,.1)}
   .ss-drop{color:var(--green-light);white-space:nowrap;font-weight:600;font-variant-numeric:tabular-nums}
   [data-theme="light"] .ss-drop{color:#047857}
   .ss-drop-min{font-size:12px;font-weight:400;margin-top:2px;color:var(--text-subtle)}
@@ -54,7 +54,7 @@
 
   /* ===== Top Movers ===== */
   .ss-movers-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0}
-  .ss-movers-head h2{font-family:'Fraunces',serif;font-size:22px;font-weight:700;line-height:1.2;margin:0;letter-spacing:-.01em}
+  .ss-movers-head h2{font-family:var(--font-display);font-size:22px;font-weight:700;line-height:1.2;margin:0;letter-spacing:-.01em}
   .ss-movers-head .ss-muted{font-size:13px}
   .ss-movers-list{display:grid;gap:10px;margin-top:16px}
   .ss-mover{display:flex;align-items:center;gap:14px;padding:18px 20px;border-radius:var(--radius-md);
@@ -63,14 +63,14 @@
   .ss-mover:hover{transform:translateY(-2px);border-color:var(--border-strong);box-shadow:var(--shadow-md);background:var(--surface)}
   .ss-mover:focus-visible{outline:none;box-shadow:0 0 0 3px var(--ring);border-color:var(--accent)}
   .ss-mover-rank{flex:0 0 auto;width:30px;height:30px;display:grid;place-items:center;border-radius:var(--radius-sm);
-    font-family:'Fraunces',serif;font-weight:700;font-size:14px;color:var(--text-muted);
+    font-family:var(--font-display);font-weight:700;font-size:14px;color:var(--text-muted);
     background:var(--surface);border:1px solid var(--border)}
-  .ss-mover:nth-child(1) .ss-mover-rank{color:var(--green-light);border-color:rgba(16,185,129,.28);background:rgba(16,185,129,.14)}
-  [data-theme="light"] .ss-mover:nth-child(1) .ss-mover-rank{color:#047857;background:rgba(16,185,129,.1)}
+  .ss-mover:nth-child(1) .ss-mover-rank{color:var(--green-light);border-color:rgba(15,161,113,.28);background:rgba(15,161,113,.14)}
+  [data-theme="light"] .ss-mover:nth-child(1) .ss-mover-rank{color:#047857;background:rgba(15,161,113,.1)}
   .ss-mover-name{display:flex;flex-direction:column;min-width:0;flex:1 1 auto;font-weight:600;font-size:15px}
   .ss-mover-name > span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .ss-mover-sub{display:block;font-size:12px;color:var(--text-subtle);font-weight:400;margin-top:1px}
-  .ss-mover-drop{flex:0 0 auto;font-family:'Fraunces',serif;font-weight:700;font-size:17px;color:var(--green-light);white-space:nowrap;font-variant-numeric:tabular-nums}
+  .ss-mover-drop{flex:0 0 auto;font-family:var(--font-display);font-weight:700;font-size:17px;color:var(--green-light);white-space:nowrap;font-variant-numeric:tabular-nums}
   [data-theme="light"] .ss-mover-drop{color:#047857}
   .ss-mover-arrow{flex:0 0 auto;color:var(--text-subtle);transition:transform .18s cubic-bezier(.16,1,.3,1),color .18s cubic-bezier(.16,1,.3,1);display:flex}
   .ss-mover:hover .ss-mover-arrow{transform:translateX(3px);color:var(--accent)}
@@ -281,7 +281,7 @@
   Highcroft Hurricanes Swim Team · <a href="index.html">Swimmer Lookup</a> · <a href="awards.html">Fastest Five</a> · <a href="admin.html">Admin</a>
 </footer>
 
-<script src="assets/data.js?v=28"></script>
+<script src="assets/data.js?v=29"></script>
 <script src="assets/mobile-nav.js" defer></script>
 <script>
   HHST.initTheme();

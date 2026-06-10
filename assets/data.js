@@ -2765,8 +2765,9 @@
 
   // -------- Theme --------
   function initTheme(){
-    const saved = localStorage.getItem('hhst.theme');
-    if(saved) document.documentElement.setAttribute('data-theme', saved);
+    // Light is the product default; dark is the opt-in night-meet theme.
+    const saved = localStorage.getItem('hhst.theme') || 'light';
+    document.documentElement.setAttribute('data-theme', saved);
   }
   function toggleTheme(){
     const cur = document.documentElement.getAttribute('data-theme');

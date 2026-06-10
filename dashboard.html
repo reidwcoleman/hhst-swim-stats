@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
-<meta name="theme-color" content="#0b1d3a"/>
+<meta name="theme-color" content="#f4f8fb"/>
 <title>Swimmer Dashboard — Highcroft Hurricanes</title>
 <meta name="robots" content="noindex,nofollow"/>
 <meta name="description" content="Your Hurricane's personal dashboard — best times, meet history, progress charts by event, and personal records."/>
@@ -11,14 +11,14 @@
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png"/>
 
 <!-- Set the saved theme before first paint to avoid a flash -->
-<script>(function(){try{var t=localStorage.getItem('hhst.theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+<script>(function(){try{var t=localStorage.getItem('hhst.theme')||'light';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,75..125,400..900;1,75..125,400..900&family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=IBM+Plex+Mono:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="assets/styles.css?v=27"/>
-<link rel="stylesheet" href="assets/training.css?v=4"/>
+<link rel="stylesheet" href="assets/styles.css?v=28"/>
+<link rel="stylesheet" href="assets/training.css?v=5"/>
 <style>
   /* ---- Page-scoped polish for the swimmer dashboard ----
      Aligns this page's inline-style risks to the shared design tokens
@@ -404,7 +404,7 @@
   Highcroft Hurricanes Swim Team · <a href="index.html">Back to home</a>
 </footer>
 
-<script src="assets/data.js?v=28"></script>
+<script src="assets/data.js?v=29"></script>
 <script src="assets/training.js?v=3"></script>
 <script>
   HHST.initTheme();
@@ -471,11 +471,11 @@
     return n + (s[(v-20)%10] || s[v] || s[0]);
   }
   const STROKE_COLORS = {
-    'Freestyle':   '#60a5fa',
-    'Backstroke':  '#34d399',
-    'Breaststroke':'#fbbf24',
+    'Freestyle':   '#5fa9ec',
+    'Backstroke':  '#34c796',
+    'Breaststroke':'#e2ac2d',
     'Butterfly':   '#f472b6',
-    'IM':          '#a78bfa',
+    'IM':          '#a18bea',
     'Other':       '#94a3b8'
   };
 
@@ -768,7 +768,7 @@
     if(strokeChart) strokeChart.destroy();
     strokeChart = new Chart(host, {
       type: 'doughnut',
-      data: { labels, datasets:[{ data, backgroundColor: colors, borderColor: isLight ? '#fff' : '#102849', borderWidth: 3 }] },
+      data: { labels, datasets:[{ data, backgroundColor: colors, borderColor: isLight ? '#fff' : '#0c1f35', borderWidth: 3 }] },
       options: {
         responsive: true,
         maintainAspectRatio: false,
@@ -898,7 +898,7 @@
     const times   = sorted.map(r => r.time);
     const meets   = sorted.map(r => r.meet || '');
     const bestSec = Math.min(...seconds);
-    const pointBg = seconds.map(s => s === bestSec ? '#fbbf24' : (document.documentElement.getAttribute('data-theme')==='light' ? '#2563eb' : '#60a5fa'));
+    const pointBg = seconds.map(s => s === bestSec ? '#e2ac2d' : (document.documentElement.getAttribute('data-theme')==='light' ? '#2470ce' : '#5fa9ec'));
     const pointR  = seconds.map(s => s === bestSec ? 8 : 5);
 
     // At-a-glance drop badge: how much faster the PR is vs the very first race
@@ -918,10 +918,10 @@
 
     const isLight = document.documentElement.getAttribute('data-theme') === 'light';
     const textColor = isLight ? '#516a8a' : '#b2c5e0';
-    const gridColor = isLight ? 'rgba(30,64,175,.08)' : 'rgba(96,165,250,.12)';
-    const accentColor = isLight ? '#2563eb' : '#60a5fa';
-    const fillTop = isLight ? 'rgba(37,99,235,.22)' : 'rgba(96,165,250,.35)';
-    const fillBot = isLight ? 'rgba(37,99,235,.02)' : 'rgba(96,165,250,.02)';
+    const gridColor = isLight ? 'rgba(30,64,175,.08)' : 'rgba(95,169,236,.12)';
+    const accentColor = isLight ? '#2470ce' : '#5fa9ec';
+    const fillTop = isLight ? 'rgba(36,112,206,.22)' : 'rgba(95,169,236,.35)';
+    const fillBot = isLight ? 'rgba(36,112,206,.02)' : 'rgba(95,169,236,.02)';
 
     if(chart) chart.destroy();
     const grad = ctx.createLinearGradient(0,0,0,300);
@@ -1237,8 +1237,8 @@
     // (open) card instead of a separate banner, so the same event isn't shown
     // twice and the section stays short.
     if(allStrong){
-      html += `<div class="tr-top" style="--c:#34d399">
-        <div class="tr-top-emoji" style="--c:#34d399">🏆</div>
+      html += `<div class="tr-top" style="--c:#34c796">
+        <div class="tr-top-emoji" style="--c:#34c796">🏆</div>
         <div class="tr-top-main">
           <div class="tr-top-label">Strong across the board</div>
           <div class="tr-top-event">Every event is at its goal</div>

@@ -3,20 +3,20 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
-<meta name="theme-color" content="#0b1d3a"/>
+<meta name="theme-color" content="#f4f8fb"/>
 <title>Admin — Highcroft Hurricanes</title>
 <meta name="robots" content="noindex,nofollow"/>
 <link rel="icon" type="image/svg+xml" href="assets/favicon.svg"/>
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png"/>
 
 <!-- Set the saved theme before first paint to avoid a flash -->
-<script>(function(){try{var t=localStorage.getItem('hhst.theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+<script>(function(){try{var t=localStorage.getItem('hhst.theme')||'light';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,75..125,400..900;1,75..125,400..900&family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=IBM+Plex+Mono:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="assets/styles.css?v=27"/>
+<link rel="stylesheet" href="assets/styles.css?v=28"/>
 
 <!-- ============================================================
      ADMIN PAGE POLISH — visual/UX refinements layered on top of
@@ -57,7 +57,7 @@
   .card .lead code,.collapsible-body code,.field-hint code,details code{
     background:var(--bg-alt);border:1px solid var(--border);
     padding:1px 6px;border-radius:var(--radius-sm);font-size:.88em;
-    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--text)}
+    font-family:var(--font-mono);color:var(--text)}
 
   /* ---- Unify the three card families on one resting/hover treatment.
          Resting: token border + soft shadow. Hover: stronger border + one
@@ -93,9 +93,9 @@
   .quick-nav-arrow{transition:transform .18s cubic-bezier(.16,1,.3,1)}
 
   /* Two time-trial quick-nav icon tints, moved out of inline styles. */
-  .quick-nav-icon-clock{background:linear-gradient(135deg,#38bdf8,#0ea5e9);
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 8px 20px -10px #0ea5e9}
-  .quick-nav-icon-chart{background:linear-gradient(135deg,#a78bfa,#7c3aed);
+  .quick-nav-icon-clock{background:linear-gradient(135deg,#45d0e4,#17b8d4);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 8px 20px -10px #17b8d4}
+  .quick-nav-icon-chart{background:linear-gradient(135deg,#a18bea,#7c3aed);
     box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 8px 20px -10px #7c3aed}
 
   /* ---- Drop zones: one signature accent (icon lift + drag ring). The
@@ -112,24 +112,24 @@
   .drop-zone:focus-within{box-shadow:0 0 0 3px var(--ring)}
   /* The named-meet zone is the warmer "primary" — a faint amber wash + a
      left-anchored accent glow on drag set it apart from the roster zone. */
-  .meet-drop{background:rgba(245,158,11,.05)}
-  .meet-drop:hover,.meet-drop.drag{border-color:var(--amber-500,#f59e0b)!important;
-    background:rgba(245,158,11,.10)}
-  .meet-drop.drag{box-shadow:0 0 0 3px rgba(245,158,11,.25) inset}
-  .meet-drop svg{color:var(--amber-500,#f59e0b)}
+  .meet-drop{background:rgba(201,143,14,.05)}
+  .meet-drop:hover,.meet-drop.drag{border-color:var(--amber-500,#c98f0e)!important;
+    background:rgba(201,143,14,.10)}
+  .meet-drop.drag{box-shadow:0 0 0 3px rgba(201,143,14,.25) inset}
+  .meet-drop svg{color:var(--amber-500,#c98f0e)}
 
   /* ---- "How to get this file from SwimTopia" stepper (meet card) ---- */
   .st-guide{margin:0 0 20px;border:1px solid var(--border);border-radius:var(--radius-md);
     background:var(--bg-alt);overflow:hidden}
   .st-guide-summary{display:flex;align-items:center;gap:10px;padding:14px 16px;
     font-weight:600;color:var(--text);border-bottom:1px solid var(--border)}
-  .st-guide-summary > svg:first-child{width:18px;height:18px;color:var(--amber-500,#f59e0b);flex:none}
+  .st-guide-summary > svg:first-child{width:18px;height:18px;color:var(--amber-500,#c98f0e);flex:none}
   .st-steps{counter-reset:st;list-style:none;margin:0;padding:16px 18px 18px;display:grid;gap:11px}
   .st-steps li{counter-increment:st;position:relative;padding-left:40px;font-size:13.5px;
     line-height:1.55;color:var(--text-muted)}
   .st-steps li::before{content:counter(st);position:absolute;left:0;top:-1px;width:25px;height:25px;
     display:grid;place-items:center;border-radius:50%;background:var(--surface);border:1px solid var(--border);
-    color:var(--amber-500,#f59e0b);font-family:'Fraunces',serif;font-weight:700;font-size:13px;
+    color:var(--amber-500,#c98f0e);font-family:var(--font-display);font-weight:700;font-size:13px;
     font-variant-numeric:tabular-nums}
   .st-steps li strong{color:var(--text);font-weight:600}
   .st-steps code{background:var(--surface);border:1px solid var(--border);border-radius:6px;
@@ -178,7 +178,7 @@
     width:100%;padding:13px 16px;border-radius:var(--radius);
     background:var(--surface);color:var(--text);
     border:1px solid var(--border-strong);font-size:16px;
-    font-family:'Inter',sans-serif;
+    font-family:var(--font-body);
     transition:border-color .18s ease,box-shadow .18s ease;
   }
   .axp-input::placeholder{color:var(--text-subtle)}
@@ -248,7 +248,7 @@
   }
 
   /* ---- "Add a Meet" card: keep the warm badge identity ---- */
-  .meet-card-badge{box-shadow:0 8px 18px -8px rgba(245,158,11,.6)}
+  .meet-card-badge{box-shadow:0 8px 18px -8px rgba(201,143,14,.6)}
 
   /* ---- Upload status: padding / surface / radius come from styles.css.
          Add only line-height + a darkened light-theme text so the green/red
@@ -256,9 +256,9 @@
          wash out on white). ---- */
   .upload-status.ok,.upload-status.err{line-height:1.55}
   [data-theme="light"] .upload-status.ok{color:#047857;
-    background:rgba(16,185,129,.10);border-color:rgba(16,185,129,.35)}
+    background:rgba(15,161,113,.10);border-color:rgba(15,161,113,.35)}
   [data-theme="light"] .upload-status.err{color:#b91c1c;
-    background:rgba(239,68,68,.09);border-color:rgba(239,68,68,.32)}
+    background:rgba(226,85,76,.09);border-color:rgba(226,85,76,.32)}
 
   /* ---- Uploaded Files panel ---- */
   #uploadsBody .upload-file-row{
@@ -269,8 +269,8 @@
     box-shadow:var(--shadow-sm)}
   #uploadsBody .icon-trash{transition:color .18s ease,border-color .18s ease,background .18s ease}
   #uploadsBody .icon-trash:hover{
-    color:var(--red-light)!important;border-color:var(--red,#ef4444)!important;
-    background:rgba(239,68,68,.08)!important}
+    color:var(--red-light)!important;border-color:var(--red,#e2554c)!important;
+    background:rgba(226,85,76,.08)!important}
   #uploadsBody .icon-trash:focus-visible{outline:none;
     box-shadow:0 0 0 3px var(--ring)}
   .uploads-season + .uploads-season{padding-top:18px;
@@ -293,17 +293,17 @@
   .chip:hover{box-shadow:var(--shadow-sm)}
   .chip-x{transition:color .18s ease,background .18s ease}
   .chip-x:focus-visible{outline:none;box-shadow:0 0 0 3px var(--ring)}
-  .input-invalid{border-color:var(--red,#ef4444)!important;
-    box-shadow:0 0 0 3px rgba(239,68,68,.18)!important}
+  .input-invalid{border-color:var(--red,#e2554c)!important;
+    box-shadow:0 0 0 3px rgba(226,85,76,.18)!important}
 
   /* ---- Maintenance buttons: a calm always-on danger affordance for the
          non-solid clear actions; the solid .btn.danger is reserved for
          Reset. ---- */
   .maintenance-btn{transition:transform .18s ease,border-color .18s ease,background .18s ease}
   .maintenance-btn:hover{transform:translateY(-1px)}
-  #clearRosterBtn,#clearTimesBtn{border-color:rgba(239,68,68,.32);color:var(--red-light)}
+  #clearRosterBtn,#clearTimesBtn{border-color:rgba(226,85,76,.32);color:var(--red-light)}
   #clearRosterBtn:hover,#clearTimesBtn:hover{
-    border-color:var(--red,#ef4444);background:rgba(239,68,68,.08)}
+    border-color:var(--red,#e2554c);background:rgba(226,85,76,.08)}
   #clearRosterBtn svg,#clearTimesBtn svg{color:var(--red-light);opacity:.9}
 
   /* ---- Focus rings for bare <summary> disclosure rows in the cards ---- */
@@ -325,12 +325,12 @@
   }
   .login-choice-ic svg{width:21px;height:21px;color:#fff}
   .login-choice:hover .login-choice-ic svg{color:#fff}  /* keep tile icon white on hover */
-  .ic-admin{background:linear-gradient(135deg,#fbbf24,#f59e0b);
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 8px 18px -10px rgba(245,158,11,.7)}
-  .ic-head{background:linear-gradient(135deg,var(--brand-500,#3b82f6),var(--brand-700,#1d4ed8));
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 8px 18px -10px var(--brand-600,#2563eb)}
-  .ic-assistant{background:linear-gradient(135deg,#38bdf8,#0ea5e9);
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 8px 18px -10px #0ea5e9}
+  .ic-admin{background:linear-gradient(135deg,#e2ac2d,#c98f0e);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 8px 18px -10px rgba(201,143,14,.7)}
+  .ic-head{background:linear-gradient(135deg,var(--brand-500,#3a8ce3),var(--brand-700,#1c59a8));
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 8px 18px -10px var(--brand-600,#2470ce)}
+  .ic-assistant{background:linear-gradient(135deg,#45d0e4,#17b8d4);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 8px 18px -10px #17b8d4}
   .login-choice-text{display:flex;flex-direction:column;gap:2px;min-width:0;text-align:left}
   .login-choice-label{font-weight:700;font-size:15.5px;color:var(--text);line-height:1.2}
   .login-choice-sub{font-size:12.5px;font-weight:500;color:var(--text-muted);line-height:1.3}
@@ -1030,9 +1030,9 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
       <p class="lead">Click <strong>Edit</strong> next to any swimmer to manage their emails, parents, age, or group. Families look up their swimmer using the swimmer's name + an email on this list.</p>
       <!-- Legacy mixed-age banner: shown only when swimmers uploaded before
            the per-season feature still have one frozen age across seasons. -->
-      <div id="seasonMigrateBanner" style="display:none;border:1px solid rgba(245,158,11,.55);background:rgba(245,158,11,.08);border-radius:var(--radius-md);padding:16px 20px;margin-bottom:16px">
+      <div id="seasonMigrateBanner" style="display:none;border:1px solid rgba(201,143,14,.55);background:rgba(201,143,14,.08);border-radius:var(--radius-md);padding:16px 20px;margin-bottom:16px">
         <div style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#c98f0e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
           <div style="flex:1;min-width:260px">
             <strong style="color:var(--text);font-size:14.5px"><span id="migrateCount">0</span> swimmer(s) have one age applied to every season</strong>
             <div style="margin-top:4px;font-size:13px;color:var(--text-muted)">
@@ -1137,7 +1137,7 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
   </div>
 </div>
 
-<script src="assets/data.js?v=28"></script>
+<script src="assets/data.js?v=29"></script>
 <script>
   HHST.initTheme();
 
@@ -1455,7 +1455,7 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
         setStatus('err', `Pick a season first (e.g. "2025 Summer") above the drop zone, then upload again. Every ${mode === 'roster' ? 'swimmer in the roster' : 'race in the file'} will be tagged with that season.`);
         if(seasonInput){
           seasonInput.focus();
-          seasonInput.style.borderColor = 'var(--red, #ef4444)';
+          seasonInput.style.borderColor = 'var(--red, #e2554c)';
           setTimeout(() => { seasonInput.style.borderColor = ''; }, 1800);
         }
         // Clear the file input so the same files can be re-selected after the season is filled in
@@ -1991,14 +1991,14 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
   // Re-entrant: destroys any prior Chart.js instance so refreshAll() can run
   // repeatedly (after uploads, edits, deletes) without leaking canvases.
   const STROKE_COLORS = {
-    Freestyle:    '#3b82f6', // blue
+    Freestyle:    '#3a8ce3', // blue
     Backstroke:   '#22d3ee', // cyan
     Breaststroke: '#a855f7', // purple
     Butterfly:    '#ec4899', // pink
-    IM:           '#10b981', // green
+    IM:           '#0fa171', // green
     Other:        '#64748b'  // slate
   };
-  const PR_LINE_COLOR = '#fbbf24'; // gold — pops over every stroke color
+  const PR_LINE_COLOR = '#e2ac2d'; // gold — pops over every stroke color
 
   function renderAdminChart(swimmers){
     const host = document.querySelector('#adminChartCard .chart-host');
@@ -2074,7 +2074,7 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
     if(empty) empty.style.display = 'none';
 
     const tickColor = 'rgba(178,197,224,.5)';
-    const gridColor = 'rgba(96,165,250,.12)';
+    const gridColor = 'rgba(95,169,236,.12)';
     const ctx = canvas.getContext('2d');
     const h = host.clientHeight || 280;
 
@@ -2105,8 +2105,8 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
     const datasets = strokeDatasets.slice();
     if(hasPRs){
       const prGrad = ctx.createLinearGradient(0, 0, 0, h);
-      prGrad.addColorStop(0, 'rgba(251,191,36,.30)');
-      prGrad.addColorStop(1, 'rgba(251,191,36,0)');
+      prGrad.addColorStop(0, 'rgba(226,172,45,.30)');
+      prGrad.addColorStop(1, 'rgba(226,172,45,0)');
       datasets.push({
         type: 'line',
         label: 'Personal bests',
@@ -2140,7 +2140,7 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
             labels:{ color:tickColor, usePointStyle:true, pointStyleWidth:10, boxHeight:7, padding:14, font:{ size:12 } }
           },
           tooltip:{
-            backgroundColor:'rgba(11,29,58,.95)', borderColor:'rgba(96,165,250,.3)', borderWidth:1, padding:12,
+            backgroundColor:'rgba(11,29,58,.95)', borderColor:'rgba(95,169,236,.3)', borderWidth:1, padding:12,
             titleColor:'#e5edf9', bodyColor:'#b2c5e0',
             callbacks:{
               footer: items => {
@@ -2282,8 +2282,8 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
       ? '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>'
       : '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>';
     const typeChip = isRoster
-      ? '<span class="training-chip" style="background:rgba(59,130,246,.16);color:#3b82f6;border-color:rgba(59,130,246,.32)">Roster</span>'
-      : '<span class="training-chip" style="background:rgba(245,158,11,.16);color:#f59e0b;border-color:rgba(245,158,11,.32)">Meet</span>';
+      ? '<span class="training-chip" style="background:rgba(58,140,227,.16);color:#3a8ce3;border-color:rgba(58,140,227,.32)">Roster</span>'
+      : '<span class="training-chip" style="background:rgba(201,143,14,.16);color:#c98f0e;border-color:rgba(201,143,14,.32)">Meet</span>';
     const when = (function(){
       const t = u.uploadedAt;
       let d = null;
@@ -2548,7 +2548,7 @@ Boys 11-12,50,Freestyle,7,1:00.74Y,6074,1:00.74Y,Roman,Luke,11,HHST,Highcroft Hu
           ? `<span class="training-chip" title="Training group">${escapeHtml(info.group)}</span>`
           : '';
         const genderChip = info.gender === 'M'
-          ? '<span class="training-chip" title="Boys" style="background:rgba(59,130,246,.18);color:#3b82f6;border-color:rgba(59,130,246,.35)">♂ Boy</span>'
+          ? '<span class="training-chip" title="Boys" style="background:rgba(58,140,227,.18);color:#3a8ce3;border-color:rgba(58,140,227,.35)">♂ Boy</span>'
           : info.gender === 'F'
           ? '<span class="training-chip" title="Girls" style="background:rgba(236,72,153,.18);color:#ec4899;border-color:rgba(236,72,153,.35)">♀ Girl</span>'
           : '';

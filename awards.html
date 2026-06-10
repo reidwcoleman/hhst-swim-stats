@@ -3,20 +3,20 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
-<meta name="theme-color" content="#0b1d3a"/>
+<meta name="theme-color" content="#f4f8fb"/>
 <title>Fastest Five Awards — Highcroft Hurricanes</title>
 <meta name="robots" content="noindex,nofollow"/>
 <link rel="icon" type="image/svg+xml" href="assets/favicon.svg"/>
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png"/>
 
 <!-- Set the saved theme before first paint to avoid a flash -->
-<script>(function(){try{var t=localStorage.getItem('hhst.theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+<script>(function(){try{var t=localStorage.getItem('hhst.theme')||'light';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,75..125,400..900;1,75..125,400..900&family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=IBM+Plex+Mono:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="assets/styles.css?v=27"/>
+<link rel="stylesheet" href="assets/styles.css?v=28"/>
 <style>
   /* Hide everything until auth check completes — admins only. */
   body:not(.auth-ready) > *{visibility:hidden}
@@ -58,7 +58,7 @@
     font-size:11px;color:var(--text-subtle);
   }
   .aw-badge .aw-badge-val{
-    font-family:'Fraunces',serif;font-weight:700;font-size:13px;
+    font-family:var(--font-display);font-weight:700;font-size:13px;
     color:var(--text);font-variant-numeric:tabular-nums;
   }
   .aw-badge.aw-badge-count svg{color:var(--amber-300)}
@@ -200,7 +200,7 @@
   }
   .aw-empty .aw-empty-icon svg{width:28px;height:28px}
   .aw-empty h2{
-    font-family:'Fraunces',serif;font-weight:800;font-size:22px;line-height:1.2;
+    font-family:var(--font-display);font-weight:800;font-size:22px;line-height:1.2;
     color:var(--text);letter-spacing:-.01em;margin:0;
   }
   .aw-empty .lead{max-width:420px;margin:2px auto 0}
@@ -517,7 +517,7 @@
   Highcroft Hurricanes Swim Team · <a href="leaderboards.html">Season Stats</a> · <a href="admin.html">Admin</a>
 </footer>
 
-<script src="assets/data.js?v=28"></script>
+<script src="assets/data.js?v=29"></script>
 <script>
   HHST.initTheme();
   document.getElementById('themeToggle').addEventListener('click', HHST.toggleTheme);
@@ -596,7 +596,7 @@
     return full;
   }
   function medalColor(i){
-    return i === 0 ? '#fbbf24' : i === 1 ? '#cbd5e1' : i === 2 ? '#d97706' : '';
+    return i === 0 ? '#e2ac2d' : i === 1 ? '#cbd5e1' : i === 2 ? '#d97706' : '';
   }
   // Coaches read "9-10" / "11-12" with a plural "s" out loud ("the nine-tens",
   // "the eleven-twelves"), so the posters should match that. "6 & Under" is
@@ -690,12 +690,12 @@
       return `<article class="award-card" data-group="${escapeHtml(bracket)}">
         <div class="award-bubble-bg" aria-hidden="true"></div>
         <svg class="award-wave-top" viewBox="0 0 1200 80" preserveAspectRatio="none" aria-hidden="true">
-          <path d="M0,40 C150,10 300,70 450,40 C600,10 750,70 900,40 C1050,10 1200,70 1200,40 L1200,80 L0,80 Z" fill="rgba(96,165,250,.22)"/>
-          <path d="M0,55 C150,25 300,75 450,55 C600,25 750,75 900,55 C1050,25 1200,75 1200,55 L1200,80 L0,80 Z" fill="rgba(125,211,252,.32)"/>
+          <path d="M0,40 C150,10 300,70 450,40 C600,10 750,70 900,40 C1050,10 1200,70 1200,40 L1200,80 L0,80 Z" fill="rgba(95,169,236,.22)"/>
+          <path d="M0,55 C150,25 300,75 450,55 C600,25 750,75 900,55 C1050,25 1200,75 1200,55 L1200,80 L0,80 Z" fill="rgba(127,227,239,.32)"/>
         </svg>
         <svg class="award-wave-bottom" viewBox="0 0 1200 80" preserveAspectRatio="none" aria-hidden="true">
-          <path d="M0,40 C150,70 300,10 450,40 C600,70 750,10 900,40 C1050,70 1200,10 1200,40 L1200,0 L0,0 Z" fill="rgba(96,165,250,.22)"/>
-          <path d="M0,25 C150,55 300,-5 450,25 C600,55 750,-5 900,25 C1050,55 1200,-5 1200,25 L1200,0 L0,0 Z" fill="rgba(125,211,252,.32)"/>
+          <path d="M0,40 C150,70 300,10 450,40 C600,70 750,10 900,40 C1050,70 1200,10 1200,40 L1200,0 L0,0 Z" fill="rgba(95,169,236,.22)"/>
+          <path d="M0,25 C150,55 300,-5 450,25 C600,55 750,-5 900,25 C1050,55 1200,-5 1200,25 L1200,0 L0,0 Z" fill="rgba(127,227,239,.32)"/>
         </svg>
         <div class="award-lane lane-left" aria-hidden="true"></div>
         <div class="award-lane lane-right" aria-hidden="true"></div>
@@ -924,11 +924,11 @@
         <div class="award-bubble-bg" aria-hidden="true"></div>
         <svg class="award-wave-top" viewBox="0 0 1200 80" preserveAspectRatio="none" aria-hidden="true">
           <path d="M0,40 C150,10 300,70 450,40 C600,10 750,70 900,40 C1050,10 1200,70 1200,40 L1200,80 L0,80 Z" fill="rgba(52,211,153,.22)"/>
-          <path d="M0,55 C150,25 300,75 450,55 C600,25 750,75 900,55 C1050,25 1200,75 1200,55 L1200,80 L0,80 Z" fill="rgba(125,211,252,.32)"/>
+          <path d="M0,55 C150,25 300,75 450,55 C600,25 750,75 900,55 C1050,25 1200,75 1200,55 L1200,80 L0,80 Z" fill="rgba(127,227,239,.32)"/>
         </svg>
         <svg class="award-wave-bottom" viewBox="0 0 1200 80" preserveAspectRatio="none" aria-hidden="true">
           <path d="M0,40 C150,70 300,10 450,40 C600,70 750,10 900,40 C1050,70 1200,10 1200,40 L1200,0 L0,0 Z" fill="rgba(52,211,153,.22)"/>
-          <path d="M0,25 C150,55 300,-5 450,25 C600,55 750,-5 900,25 C1050,55 1200,-5 1200,25 L1200,0 L0,0 Z" fill="rgba(125,211,252,.32)"/>
+          <path d="M0,25 C150,55 300,-5 450,25 C600,55 750,-5 900,25 C1050,55 1200,-5 1200,25 L1200,0 L0,0 Z" fill="rgba(127,227,239,.32)"/>
         </svg>
         <div class="award-lane lane-left" aria-hidden="true"></div>
         <div class="award-lane lane-right" aria-hidden="true"></div>

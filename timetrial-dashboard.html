@@ -3,20 +3,20 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
-<meta name="theme-color" content="#0b1d3a"/>
+<meta name="theme-color" content="#f4f8fb"/>
 <title>Time Trial Dashboard — Highcroft Hurricanes</title>
 <meta name="robots" content="noindex,nofollow"/>
 <link rel="icon" type="image/svg+xml" href="assets/favicon.svg"/>
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png"/>
 
 <!-- Set the saved theme before first paint to avoid a flash -->
-<script>(function(){try{var t=localStorage.getItem('hhst.theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+<script>(function(){try{var t=localStorage.getItem('hhst.theme')||'light';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,75..125,400..900;1,75..125,400..900&family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=IBM+Plex+Mono:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="assets/styles.css?v=27"/>
+<link rel="stylesheet" href="assets/styles.css?v=28"/>
 <style>
   /* ---- Time Trial Dashboard (page-scoped) ----
      Reuses the shared component tokens; only the bits unique to this page
@@ -37,7 +37,7 @@
 
   /* Hero kicker: reuse the shared leaderboard-hero ice recipe */
   .dash-hero .kicker{
-    color:var(--ice-300);background:rgba(125,211,252,.1);border:1px solid rgba(125,211,252,.22);
+    color:var(--ice-300);background:rgba(127,227,239,.1);border:1px solid rgba(127,227,239,.22);
   }
 
   /* Back pill: mirrors the shared .dash-hero-back recipe */
@@ -74,9 +74,9 @@
   .tt-lb-row:hover{border-color:var(--accent);transform:translateY(-1px);box-shadow:var(--shadow-md)}
   .tt-lb-row:active{transform:translateY(0)}
   .tt-lb-row:focus-visible{outline:none;box-shadow:0 0 0 3px var(--ring);border-color:var(--accent)}
-  .tt-lb-1{border-color:rgba(251,191,36,.42);background:linear-gradient(90deg,rgba(251,191,36,.08),var(--surface) 62%)}
-  .tt-lb-1:hover{border-color:rgba(251,191,36,.6)}
-  .tt-lb-rank{font-family:'Fraunces',serif;font-weight:800;font-size:17px;color:var(--text-subtle);text-align:center;font-variant-numeric:tabular-nums}
+  .tt-lb-1{border-color:rgba(226,172,45,.42);background:linear-gradient(90deg,rgba(226,172,45,.08),var(--surface) 62%)}
+  .tt-lb-1:hover{border-color:rgba(226,172,45,.6)}
+  .tt-lb-rank{font-family:var(--font-display);font-weight:800;font-size:17px;color:var(--text-subtle);text-align:center;font-variant-numeric:tabular-nums}
   .tt-lb-1 .tt-lb-rank{color:var(--amber-400)}
   [data-theme=light] .tt-lb-1 .tt-lb-rank{color:#b45309}
   .tt-lb-name{font-weight:600;font-size:15px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -84,8 +84,8 @@
   .tt-lb-bar{height:8px;border-radius:999px;background:var(--bg-alt);overflow:hidden;border:1px solid var(--border)}
   .tt-lb-bar span{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--brand-500),var(--ice-400));
     transition:width .4s cubic-bezier(.16,1,.3,1)}
-  .tt-lb-1 .tt-lb-bar span{background:linear-gradient(90deg,#f59e0b,#fbbf24)}
-  .tt-lb-time{font-family:'Fraunces',serif;font-weight:700;color:var(--accent);
+  .tt-lb-1 .tt-lb-bar span{background:linear-gradient(90deg,#c98f0e,#e2ac2d)}
+  .tt-lb-time{font-family:var(--font-display);font-weight:700;color:var(--accent);
     font-variant-numeric:tabular-nums;white-space:nowrap;font-size:15px;text-align:right}
   /* Numeric gap fallback shown only when the bar is hidden (≤480) */
   .tt-lb-gap{display:none;font-size:11px;font-weight:600;color:var(--text-subtle);
@@ -120,14 +120,14 @@
   .tt-name-link:active{transform:translateY(0)}
 
   .tt-info-note{display:flex;gap:12px;align-items:flex-start;padding:16px 20px;border-radius:var(--radius-md);
-    background:rgba(96,165,250,.07);border:1px solid var(--border-strong);border-left:3px solid var(--accent);
+    background:rgba(95,169,236,.07);border:1px solid var(--border-strong);border-left:3px solid var(--accent);
     color:var(--text-muted);font-size:13px;line-height:1.55;margin-bottom:24px}
   .tt-info-note strong{color:var(--text);font-weight:600}
   .tt-info-note svg{width:20px;height:20px;color:var(--accent);flex:none;margin-top:1px}
-  [data-theme=light] .tt-info-note{background:rgba(37,99,235,.06);border-left:3px solid var(--accent)}
+  [data-theme=light] .tt-info-note{background:rgba(36,112,206,.06);border-left:3px solid var(--accent)}
 
   /* Shared empty-state heading (no per-element Fraunces overrides in markup) */
-  .empty h3{font-family:'Fraunces',serif;color:var(--text);margin:6px 0 4px;font-size:18px;font-weight:700;line-height:1.3}
+  .empty h3{font-family:var(--font-display);color:var(--text);margin:6px 0 4px;font-size:18px;font-weight:700;line-height:1.3}
   /* Inline empties inside cards/tables — dashed, centered, on-brand */
   .tt-inline-empty{display:flex;flex-direction:column;align-items:center;gap:6px;
     padding:32px 24px;border-radius:var(--radius-md);
@@ -366,7 +366,7 @@
   <a href="admin.html">Admin</a>
 </footer>
 
-<script src="assets/data.js?v=28"></script>
+<script src="assets/data.js?v=29"></script>
 <script>
 (function(){
   HHST.initTheme();
@@ -389,7 +389,7 @@
     if(sec >= 60){ var m = Math.floor(sec/60); return m + ':' + (sec - m*60).toFixed(2).padStart(5,'0'); }
     return sec.toFixed(2) + 's';
   }
-  var STROKE_COLORS = {Freestyle:'#60a5fa',Backstroke:'#34d399',Breaststroke:'#fbbf24',Butterfly:'#f472b6',IM:'#a78bfa',Other:'#94a3b8'};
+  var STROKE_COLORS = {Freestyle:'#5fa9ec',Backstroke:'#34c796',Breaststroke:'#e2ac2d',Butterfly:'#f472b6',IM:'#a18bea',Other:'#94a3b8'};
   function strokeClass(s){ return 'stroke-' + (String(s||'').toLowerCase().replace(/[^a-z]/g,'') || 'other'); }
   function ttRes(sw){ return (sw.results||[]).filter(function(r){ return r && r.timeTrial && isFinite(r.seconds); }); }
   function setText(id, v){ var el = document.getElementById(id); if(el) el.textContent = v; }
@@ -602,10 +602,10 @@
     if(typeof Chart === 'undefined') return;
     var muted = cssVar('--text-muted') || '#8aa2c2';
     var grid = cssVar('--border') || 'rgba(255,255,255,.12)';
-    var accent = cssVar('--accent') || '#60a5fa';
+    var accent = cssVar('--accent') || '#5fa9ec';
     progressChart = new Chart(canvas, {
       type:'line',
-      data:{ labels:labels, datasets:[{ data:data, borderColor:accent, backgroundColor:'rgba(96,165,250,.15)', fill:true, tension:.3, pointRadius:4, pointHoverRadius:6, pointBackgroundColor:accent }] },
+      data:{ labels:labels, datasets:[{ data:data, borderColor:accent, backgroundColor:'rgba(95,169,236,.15)', fill:true, tension:.3, pointRadius:4, pointHoverRadius:6, pointBackgroundColor:accent }] },
       options:{ responsive:true, maintainAspectRatio:false,
         plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:function(c){ return HHST.fmtTime(c.parsed.y); } } } },
         scales:{
