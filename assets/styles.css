@@ -8,8 +8,8 @@
    every component retints automatically.
    ============================================================= */
 :root{
-  --font-display:'Archivo','Instrument Sans',system-ui,sans-serif;
-  --font-body:'Instrument Sans',system-ui,-apple-system,sans-serif;
+  --font-display:'Bricolage Grotesque','Figtree',system-ui,sans-serif;
+  --font-body:'Figtree',system-ui,-apple-system,sans-serif;
   --font-mono:'IBM Plex Mono',ui-monospace,'SF Mono',monospace;
 
   /* Marine-azure ramp (was Tailwind blue) */
@@ -104,11 +104,10 @@ a{color:var(--accent);text-decoration:none}
 .wrap{max-width:1180px;margin:0 auto;padding:0 24px}
 ::selection{background:var(--brand-500);color:#fff}
 
-/* Archivo display type runs expanded for the athletic, jersey-number feel.
-   Wider stretch on the biggest type, subtler on card titles. */
-.hero h1{font-stretch:122%}
-.section-head h2,.swimmer-name,.admin-page-head h1,.login-card h1{font-stretch:114%}
-.brand,.card h2,.lookup-card h2,.modal-card h2{font-stretch:108%}
+/* Bricolage Grotesque carries optical sizing (opsz 12-96): big headings
+   automatically render the display cut. Tracking stays gentle - the face
+   already tightens optically at large sizes. */
+.hero h1,.section-head h2{font-optical-sizing:auto}
 
 /* Swim times read like a timing board: tabular mono digits everywhere
    a time appears. Sizes stay whatever each recipe sets. */
@@ -141,7 +140,8 @@ nav{display:flex;align-items:center;justify-content:space-between;max-width:1180
   flex-shrink:0;
 }
 .brand-mark svg{width:22px;height:22px;color:#fff}
-.brand em{font-style:italic;font-weight:500;color:var(--accent)}
+/* Bricolage has no italic - the wordmark accent is weight + color contrast */
+.brand em{font-style:normal;font-weight:500;color:var(--accent)}
 .nav-links{display:flex;align-items:center;gap:6px;list-style:none}
 .nav-links a{
   color:var(--text-muted);font-weight:500;font-size:14px;
@@ -247,11 +247,11 @@ nav{display:flex;align-items:center;justify-content:space-between;max-width:1180
 }
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
 .hero h1{
-  font-family:var(--font-display);font-weight:850;
+  font-family:var(--font-display);font-weight:800;
   font-size:clamp(34px,5vw,58px);line-height:1.05;
   letter-spacing:-.02em;margin-bottom:22px;
 }
-.hero h1 em{font-style:italic;font-weight:500;background:linear-gradient(135deg,#96c8f4,#7fe3ef);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero h1 em{font-style:normal;font-weight:400;white-space:nowrap;background:linear-gradient(135deg,#96c8f4,#7fe3ef);-webkit-background-clip:text;background-clip:text;color:transparent}
 .hero-sub{
   font-size:clamp(16px,1.6vw,19px);color:var(--hero-muted);
   max-width:620px;margin:0 auto 36px;line-height:1.6;
@@ -356,7 +356,7 @@ section{padding:96px max(24px,env(safe-area-inset-right)) 96px max(24px,env(safe
 .section-head h2{
   font-family:var(--font-display);font-weight:800;
   font-size:clamp(32px,4vw,46px);
-  letter-spacing:-.03em;line-height:1.05;
+  letter-spacing:-.02em;line-height:1.05;
   margin-bottom:14px;color:var(--text);
 }
 .section-head p{color:var(--text-muted);font-size:17px}
@@ -413,7 +413,7 @@ footer a:hover{color:var(--accent)}
   box-shadow:var(--shadow);
 }
 .topbar .brand{
-  font-family:var(--font-display);font-weight:900;font-size:20px;color:#fff;
+  font-family:var(--font-display);font-weight:800;font-size:20px;color:#fff;
 }
 .topbar .brand em{color:var(--ice-300)}
 .admin-pill{
@@ -943,7 +943,7 @@ table tr:hover td{background:rgba(95,169,236,.05)}
 }
 .swimmer-name{
   font-family:var(--font-display);font-weight:800;
-  font-size:clamp(28px,4vw,40px);letter-spacing:-.03em;line-height:1;
+  font-size:clamp(28px,4vw,40px);letter-spacing:-.02em;line-height:1;
   margin-bottom:6px;
 }
 .swimmer-meta{
@@ -988,7 +988,7 @@ table tr:hover td{background:rgba(95,169,236,.05)}
 .stat-card .value{
   font-family:var(--font-display);font-weight:800;
   font-size:28px;color:var(--text);
-  letter-spacing:-.03em;margin-top:6px;line-height:1;
+  letter-spacing:-.02em;margin-top:6px;line-height:1;
 }
 .stat-card .sub{font-size:12px;color:var(--text-subtle);margin-top:4px}
 .stat-card .accent{
@@ -1589,7 +1589,7 @@ tr.row-dq td{background:rgba(226,85,76,.04)}
 .lb-col{padding:12px 16px 10px;min-width:0}
 .lb-card-cols-2 .lb-col + .lb-col{border-left:1px solid var(--border)}
 .lb-col-head{
-  font-family:var(--font-body);font-weight:900;font-size:11.5px;
+  font-family:var(--font-body);font-weight:800;font-size:11.5px;
   text-transform:uppercase;letter-spacing:.22em;
   color:var(--text-muted);
   padding:2px 0 8px;margin:0 0 6px;
@@ -1855,8 +1855,8 @@ tr.row-dq td{background:rgba(226,85,76,.04)}
   margin-bottom:4px;
 }
 .award-title{
-  font-family:var(--font-display);font-weight:900;
-  font-size:50px;letter-spacing:-.025em;line-height:1;
+  font-family:var(--font-display);font-weight:800;
+  font-size:50px;letter-spacing:-.02em;line-height:1;
   margin:0;
   background:linear-gradient(135deg,#1b3e6f 0%,#2470ce 35%,#17b8d4 70%,#06b6d4 100%);
   -webkit-background-clip:text;background-clip:text;
@@ -1925,7 +1925,7 @@ tr.row-dq td{background:rgba(226,85,76,.04)}
   margin-top:42px;color:#94a3b8;font-style:italic;font-size:13px;
 }
 .award-col-head{
-  font-family:var(--font-body);font-weight:900;font-size:13.5px;
+  font-family:var(--font-body);font-weight:800;font-size:13.5px;
   text-transform:uppercase;letter-spacing:.24em;
   padding:6px 0 10px;margin:-4px 0 10px;
   border-bottom:2.5px solid rgba(30,64,175,.18);
@@ -1968,7 +1968,7 @@ tr.row-dq td{background:rgba(226,85,76,.04)}
 .award-medal{
   display:inline-grid;place-items:center;
   width:30px;height:30px;border-radius:50%;
-  color:#fff;font-weight:900;font-size:14px;
+  color:#fff;font-weight:800;font-size:14px;
   box-shadow:
     0 4px 10px rgba(0,0,0,.22),
     inset 0 2px 2px rgba(255,255,255,.55),
@@ -2007,7 +2007,7 @@ tr.row-dq td{background:rgba(226,85,76,.04)}
   color:#475569;letter-spacing:.08em;text-transform:uppercase;
   font-weight:700;position:relative;z-index:2;
 }
-.award-team{font-weight:900;color:#1b4a88;letter-spacing:.12em}
+.award-team{font-weight:800;color:#1b4a88;letter-spacing:.12em}
 .award-print-one{
   position:absolute;top:14px;right:14px;
   width:36px;height:36px;border-radius:var(--radius);
@@ -2564,7 +2564,7 @@ details[open].collapsible-card > summary{
   .wrap{padding:0 14px}
   section{padding:56px max(14px,env(safe-area-inset-right)) 56px max(14px,env(safe-area-inset-left))}
   .hero{padding:48px max(14px,env(safe-area-inset-right)) 60px max(14px,env(safe-area-inset-left))}
-  .hero h1{font-size:34px;letter-spacing:-.03em}
+  .hero h1{font-size:34px;letter-spacing:-.02em}
   .hero-sub{font-size:15px}
   .kicker{font-size:10px;letter-spacing:.22em;padding:7px 13px}
 
@@ -2887,7 +2887,7 @@ table:not(.roster-table) td, table:not(.roster-table) th{word-break:break-word}
 .lb-board-title{flex:1;min-width:0}
 .lb-board-title h2{
   font-family:var(--font-display);font-weight:800;
-  font-size:30px;letter-spacing:-.025em;color:var(--text);
+  font-size:30px;letter-spacing:-.02em;color:var(--text);
   margin:0;line-height:1.05;
 }
 .lb-board-title p{
@@ -3189,7 +3189,7 @@ a.lb-entry-name:hover{color:var(--accent)!important;text-decoration:underline;te
   background:linear-gradient(90deg, rgba(226,172,45,.10) 0%, transparent 75%);
 }
 .lb-col tbody tr:first-child .lb-rank{
-  color:#e2ac2d;font-weight:900;
+  color:#e2ac2d;font-weight:800;
   text-shadow:0 0 8px rgba(226,172,45,.35);
 }
 .lb-col tbody tr:nth-child(2) td{
@@ -3223,7 +3223,7 @@ a.lb-entry-name:hover{color:var(--accent)!important;text-decoration:underline;te
   background:linear-gradient(90deg, var(--accent), var(--ice-400));
   border-radius:3px;
 }
-.lb-age-head h2{font-size:32px;letter-spacing:-.025em}
+.lb-age-head h2{font-size:32px;letter-spacing:-.02em}
 .lb-age-head p{font-size:14px;color:var(--text-muted);margin-top:2px}
 .bracket-pill-lg{
   font-size:15px;padding:8px 16px;

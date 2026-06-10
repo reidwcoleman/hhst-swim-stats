@@ -216,7 +216,7 @@
 }
 .gf-stroke-head h2{
   font-family:var(--font-display);font-weight:800;font-size:clamp(25px,3.4vw,34px);
-  line-height:1.08;letter-spacing:-.025em;color:var(--text);margin:0 0 5px;
+  line-height:1.08;letter-spacing:-.02em;color:var(--text);margin:0 0 5px;
 }
 .gf-stroke-head .gf-tagline{font-size:15.5px;line-height:1.5;color:var(--text-muted);margin:0;max-width:62ch}
 .gf-how{font-size:15.5px;line-height:1.7;color:var(--text);margin:0 0 6px}
