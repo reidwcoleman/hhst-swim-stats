@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Figtree:ital,wght@0,300..900;1,300..900&family=IBM+Plex+Mono:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="assets/styles.css?v=31"/>
+<link rel="stylesheet" href="assets/styles.css?v=32"/>
 <style>
   /* Hide everything until auth check completes — admins only. */
   body:not(.auth-ready) > *{visibility:hidden}
@@ -824,13 +824,21 @@
         ? `<span class="award-medal" style="background:${color}">${i+1}</span>`
         : `<span class="award-rank">${i+1}</span>`;
       const eventCount = e.eventCount || (e.eventsDropped ? e.eventsDropped.length : 0);
-      const evlist = (e.eventsDropped || []).slice()
-        .sort((a,b)=> b.drop - a.drop)
-        .map(ev => `<div class="improved-evline">
+      // Print shows only the top PRINT_EV_LINES drops per swimmer (plus a
+      // "+N more" summary) so five full breakdowns can NEVER outgrow the
+      // one-page poster. On screen every line stays visible — the .iev-extra
+      // lines are only hidden inside @media print (styles.css).
+      const PRINT_EV_LINES = 3;
+      const sortedEvents = (e.eventsDropped || []).slice().sort((a,b)=> b.drop - a.drop);
+      const evlist = sortedEvents
+        .map((ev, j) => `<div class="improved-evline${j >= PRINT_EV_LINES ? ' iev-extra' : ''}">
           <span class="iev-name">${escapeHtml(ev.event)}</span>
           <span class="iev-times">${escapeHtml(prettyTime(ev.fromTime))}<span class="iev-arrow">→</span>${escapeHtml(prettyTime(ev.toTime))}</span>
           <span class="iev-drop">−${ev.drop.toFixed(2)}</span>
-        </div>`).join('');
+        </div>`).join('')
+        + (sortedEvents.length > PRINT_EV_LINES
+          ? `<div class="improved-evmore">+ ${sortedEvents.length - PRINT_EV_LINES} more event${sortedEvents.length - PRINT_EV_LINES === 1 ? '' : 's'} counted in the total</div>`
+          : '');
       return `<tr>
         <td class="award-rank-cell">${rankCell}</td>
         <td class="award-name-cell">

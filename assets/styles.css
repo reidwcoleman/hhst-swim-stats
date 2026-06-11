@@ -1987,7 +1987,10 @@ tr.row-dq td{background:rgba(226,85,76,.04)}
 .award-card .award-name-cell{
   text-align:left;font-weight:700;color:#0c2237 !important;
   font-size:18px;letter-spacing:-.01em;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  /* Long names WRAP instead of truncating — a name cut off with "…" reads
+     as a mistake on an award. max-width still bounds the column; extra-long
+     names take a second line. (Print has its own wrap rules in @media print.) */
+  white-space:normal;overflow:visible;overflow-wrap:break-word;
   max-width:150px;
 }
 .award-card .award-time-cell{
@@ -2839,6 +2842,10 @@ table:not(.roster-table) td, table:not(.roster-table) th{word-break:break-word}
 .improved-evline .iev-times{font-variant-numeric:tabular-nums;color:#334155;font-weight:600}
 .improved-evline .iev-arrow{color:#94a3b8;margin:0 4px}
 .improved-evline .iev-drop{font-weight:800;color:#047857;margin-left:auto}
+/* "+N more events" summary — print-only companion to the capped breakdown.
+   On screen every event line is shown, so this line stays hidden here and is
+   revealed inside @media print (where lines past the cap are hidden). */
+.improved-evmore{display:none}
 
 /* Most Improved medal #1 glows green instead of gold */
 .award-card-improved .award-table tr:first-child .award-medal{
@@ -3464,29 +3471,83 @@ a.lb-entry-name:hover{color:var(--accent)!important;text-decoration:underline;te
   .award-cols-single{ max-width:7.5in !important; }
   .award-col{ padding:14px 14px 12px !important; }
   .award-col-head{ font-size:20px !important; letter-spacing:.18em !important; padding:4px 0 10px !important; margin-bottom:9px !important; }
-  /* The swimmer NAMES are the whole point — make them big but keep them FULLY
-     READABLE (no truncation for normal first+last names). So: a narrow rank
-     chip + a tight-but-ample time column leave the name column the most room,
-     and the name size is tuned so a typical "First Last" fits without ellipsis
-     (only a genuinely huge name clips, inside its fixed cell). */
+  /* The swimmer NAMES are the whole point — make them big and NEVER cut one
+     off. Names wrap to a second line instead of clipping; the size is tuned
+     so even a poster where every single name wraps still fits the sheet
+     (verified by print-emulation measurement with 28-char names in all ten
+     slots). A narrow rank chip + tight time column give the name the room. */
   .award-card .award-table{ table-layout:fixed !important; }
-  .award-card .award-table td{ padding:13px 5px !important; }
+  .award-card .award-table td{ padding:11px 5px !important; }
   .award-rank-cell{ width:44px !important; }
   .award-rank{ width:38px !important; height:38px !important; font-size:19px !important; }
   .award-medal{ width:40px !important; height:40px !important; font-size:20px !important; }
   .award-card .award-name-cell{
-    font-size:27px !important;
-    line-height:1.15 !important;
+    font-size:24px !important;
+    line-height:1.12 !important;
     max-width:none !important;
-    white-space:nowrap !important;
-    overflow:hidden !important;
-    text-overflow:ellipsis !important;
+    white-space:normal !important;
+    overflow:visible !important;
+    text-overflow:clip !important;
+    overflow-wrap:break-word !important;
   }
   .award-card .award-time-cell{ font-size:27px !important; width:1.05in !important; }
   .award-card .improved-drop{ font-size:26px !important; }
   .improved-events-sub{ font-size:13px !important; margin-top:3px !important; }
   .award-col-empty-msg{ font-size:18px !important; }
   .award-footer{ font-size:14px !important; padding-top:14px !important; }
+
+  /* ---- Most Improved: guaranteed one-page fit -------------------------
+     The Fastest Five scale-up above sizes rows for ONE line per swimmer.
+     Most Improved rows also carry the events-improved sub-line and a
+     per-event breakdown, so at 27px/nowrap five rows ran to ~15in tall —
+     the bottom ranks and the footer were CLIPPED off the 8.5in sheet and
+     long names were ellipsis-truncated. This block re-sizes ONLY the
+     improved posters: names wrap instead of clipping, the breakdown is
+     capped to the top 3 drops (+ "N more" line, .iev-extra hidden — markup
+     in awards.html marks lines past the cap), and every vertical step is
+     tightened so the WORST CASE (5 swimmers × max events, long names)
+     measures ~1.5in under the page edge. Verified via print-emulation
+     measurement at 8+ events per swimmer across all six age groups. */
+  .award-card-improved{ padding:0.35in 0.65in !important; }
+  .award-card-improved .award-header{ margin-bottom:0 !important; }
+  .award-card-improved .award-logo-frame{ width:72px !important; height:72px !important; }
+  .award-card-improved .award-logo-frame .award-logo,
+  .award-card-improved .award-logo{ width:64px !important; height:64px !important; }
+  .award-card-improved .award-title{ font-size:38px !important; }
+  .award-card-improved .award-headline{ margin:0 0 6px !important; }
+  .award-card-improved .award-group{ font-size:26px !important; }
+  .award-card-improved .award-cols{ gap:0.35in !important; }
+  .award-card-improved .award-col{ padding:8px 12px 6px !important; }
+  .award-card-improved .award-col-head{ font-size:16px !important; padding:2px 0 7px !important; margin-bottom:6px !important; }
+  .award-card-improved .award-table td{ padding:5px 5px !important; }
+  .award-card-improved .award-rank-cell{ width:38px !important; }
+  .award-card-improved .award-rank{ width:32px !important; height:32px !important; font-size:16px !important; }
+  .award-card-improved .award-medal{ width:34px !important; height:34px !important; font-size:17px !important; }
+  /* Names WRAP on the improved posters (no ellipsis) — they share the row
+     with a breakdown, so a second line costs little and chops nobody. */
+  .award-card-improved .award-name-cell{
+    font-size:18px !important;
+    line-height:1.18 !important;
+    white-space:normal !important;
+    overflow:visible !important;
+    text-overflow:clip !important;
+  }
+  .award-card-improved .award-time-cell{ width:0.95in !important; }
+  .award-card-improved .improved-drop{ font-size:21px !important; }
+  /* The events-improved sub-line is redundant on paper — the breakdown
+     lines + the "+N more" summary carry the same information — and hiding
+     it buys the height that keeps five full rows on one sheet. */
+  .award-card-improved .improved-events-sub{ display:none !important; }
+  .award-card-improved .improved-evlist{ margin-top:3px !important; gap:2px !important; }
+  .award-card-improved .improved-evline{ font-size:10.5px !important; line-height:1.2 !important; }
+  .award-card-improved .improved-evline.iev-extra{ display:none !important; }
+  .award-card-improved .improved-evmore{
+    display:block !important;
+    font-size:10.5px !important; font-weight:700 !important;
+    color:#64748b !important; margin-top:2px !important;
+    font-family:var(--font-body) !important;
+  }
+  .award-card-improved .award-footer{ padding-top:8px !important; }
 }
 
 /* ============================================================
