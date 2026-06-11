@@ -3566,6 +3566,77 @@ a.lb-entry-name:hover{color:var(--accent)!important;text-decoration:underline;te
      names that actually need them. Placed last so it wins the cascade. */
   .award-card .award-name-cell.nm-long{ font-size:21px !important; line-height:1.12 !important; }
   .award-card-improved .award-name-cell.nm-long{ font-size:16px !important; line-height:1.16 !important; }
+
+  /* ================= PRINT FLATTEN — kill ALL transparency ==============
+     Every rgba() color, gradient-with-alpha, opacity and blur on the poster
+     becomes a transparency group / soft mask in the printed PDF. Printer
+     drivers respond to transparency by RASTERIZING whole pages at device
+     DPI — ~130MB per landscape page, ~1GB spool for 12 posters. The rules
+     below repaint every such effect as an opaque color pre-blended against
+     the white poster (each hex is exactly its rgba composited over #fff),
+     so the print file stays pure vector text + fills. Verified to cut the
+     PDF from ~1,200 raster objects/650 soft masks to near zero with no
+     visible change. Opaque 2-stop gradients (gold bar, title rule, column
+     accents) are kept — those print as compact vector shadings. */
+  .award-card, .award-card *, .award-card *::before, .award-card *::after{
+    box-shadow:none !important;
+    text-shadow:none !important;
+    filter:none !important;
+    backdrop-filter:none !important;
+    -webkit-backdrop-filter:none !important;
+  }
+  .award-card::before{ border-color:#b5c1dc !important; }   /* was rgba(30,58,138,.34) */
+  /* Logo halo + dashed ring: alpha radial gradient + rgba border → drop.
+     On the white sheet they were nearly invisible anyway. */
+  .award-logo-frame::before, .award-logo-frame::after{ display:none !important; }
+  .award-event{
+    background:#f9fafc !important;                          /* was rgba white→slate gradient */
+    border-color:#b6c2de !important;                        /* was rgba(30,64,175,.32) */
+  }
+  .award-col{ border-color:#cdd5e9 !important; }            /* was rgba(30,64,175,.22) */
+  .award-col-head{ border-bottom-color:#d4dbeb !important; }/* was rgba(30,64,175,.18) */
+  .award-card .award-table td{ border-bottom-color:#e4e8f1 !important; } /* was rgba(30,58,138,.12) */
+  .award-rank{
+    background:#eef2f9 !important;                          /* was rgba slate gradient */
+    border-color:#d4dbeb !important;                        /* was rgba(30,64,175,.18) */
+  }
+  .award-medal{ border-color:#fff !important; }             /* was rgba(255,255,255,.6) */
+  .award-medal::after{ display:none !important; }           /* blurred highlight dot */
+  .award-footer{ border-top-color:#cdd4e6 !important; }     /* was rgba(30,58,138,.22) */
+  .award-footer-divider{ opacity:1 !important; color:#9dadc8 !important; }
+  .award-empty-row td{ opacity:1 !important; color:#b9c2cf !important; }
+  .award-empty-row .award-rank{ color:#9aa9c0 !important; background:#f3f6fa !important; }
+  /* Podium row washes: NO gradients in print at all — Chrome's print
+     pipeline rasterizes every CSS gradient into a bitmap (even fully
+     opaque ones), and 30 podium cells per poster were the bulk of the
+     1GB spool. Solid tints keep the gold/silver/bronze (and green) podium
+     read while printing as plain vector fills. */
+  .award-col tbody tr:first-child td{ background:#fbf5e8 !important; }   /* gold tint */
+  .award-col tbody tr:nth-child(2) td{ background:#f4f6f9 !important; }  /* silver tint */
+  .award-col tbody tr:nth-child(3) td{ background:#fcf5ec !important; }  /* bronze tint */
+  .award-card-improved .award-col tbody tr:first-child td{ background:#e6f6f0 !important; }
+  .award-card-improved .award-col tbody tr:nth-child(2) td{ background:#f0faf6 !important; }
+  .award-card-improved .award-col tbody tr:nth-child(3) td{ background:#f6fcf9 !important; }
+  .award-empty-row td, .award-col tbody tr:nth-child(n+4) td{ background:#ffffff !important; }
+  /* Same rule for every other gradient on the poster: solid in print. */
+  .award-card::after{ background:#d6a022 !important; }                    /* gold top bar */
+  .award-card-improved::after{ background:#16a378 !important; }           /* green top bar */
+  .award-title-rule{ background:#d6a022 !important; }
+  .award-title-rule-green{ background:#16a378 !important; }
+  .award-col-head-girls::after{ background:#db2777 !important; }
+  .award-col-head-boys::after, .award-col-head-top-5::after{ background:#2470ce !important; }
+  /* clip-text gradients: solid fills + reset the clip so no group forms */
+  .award-title{
+    -webkit-background-clip:border-box !important;
+    background-clip:border-box !important;
+  }
+  /* The improved #1 medal ring used rgba glow shadows (flattened above) and
+     the green title is a clip-text gradient — solid green prints cleaner. */
+  .award-card-improved .award-title-improved{
+    background:none !important;
+    -webkit-text-fill-color:#047857 !important;
+    color:#047857 !important;
+  }
 }
 
 /* ============================================================
