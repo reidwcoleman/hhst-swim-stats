@@ -3490,14 +3490,17 @@ a.lb-entry-name:hover{color:var(--accent)!important;text-decoration:underline;te
   .award-rank-cell{ width:52px !important; }
   .award-rank{ width:44px !important; height:44px !important; font-size:22px !important; }
   .award-medal{ width:46px !important; height:46px !important; font-size:23px !important; }
+  /* One size per poster: --print-name-size is computed per card by
+     fitPrintNames() in awards.html so the card's LONGEST name fits its
+     column on a single line — every name on a card shares that size, so
+     nothing wraps and nothing is truncated. */
   .award-card .award-name-cell{
-    font-size:30px !important;
-    line-height:1.12 !important;
+    font-size:var(--print-name-size, 30px) !important;
+    line-height:1.15 !important;
     max-width:none !important;
-    white-space:normal !important;
+    white-space:nowrap !important;
     overflow:visible !important;
     text-overflow:clip !important;
-    overflow-wrap:break-word !important;
   }
   .award-card .award-time-cell{ font-size:32px !important; width:1.3in !important; }
   .award-card .improved-drop{ font-size:26px !important; }
@@ -3535,12 +3538,16 @@ a.lb-entry-name:hover{color:var(--accent)!important;text-decoration:underline;te
   /* Names WRAP on the improved posters (no ellipsis) — they share the row
      with a breakdown, so a second line costs little and chops nobody. */
   .award-card-improved .award-name-cell{
-    font-size:21px !important;
-    line-height:1.18 !important;
-    white-space:normal !important;
+    font-size:var(--print-name-size, 21px) !important;
+    line-height:1.2 !important;
     overflow:visible !important;
     text-overflow:clip !important;
   }
+  /* The name itself stays on one line at the fitted size; the breakdown
+     below it keeps its own fixed sizing. */
+  .award-card-improved .improved-name{ white-space:nowrap !important; display:inline-block; }
+  .award-card-improved .improved-evline,
+  .award-card-improved .improved-evmore{ white-space:nowrap !important; }
   .award-card-improved .award-time-cell{ width:0.95in !important; }
   .award-card-improved .improved-drop{ font-size:25px !important; }
   /* The events-improved sub-line is redundant on paper — the breakdown
@@ -3564,9 +3571,6 @@ a.lb-entry-name:hover{color:var(--accent)!important;text-decoration:underline;te
      the full-size type. This is the trade that lets the poster fonts run
      at maximum size: the page only has to absorb big wrapped rows for the
      names that actually need them. Placed last so it wins the cascade. */
-  .award-card .award-name-cell.nm-long{ font-size:21px !important; line-height:1.12 !important; }
-  .award-card-improved .award-name-cell.nm-long{ font-size:16px !important; line-height:1.16 !important; }
-
   /* ================= PRINT FLATTEN — kill ALL transparency ==============
      Every rgba() color, gradient-with-alpha, opacity and blur on the poster
      becomes a transparency group / soft mask in the printed PDF. Printer
