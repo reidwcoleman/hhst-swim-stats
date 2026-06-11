@@ -3460,38 +3460,38 @@ a.lb-entry-name:hover{color:var(--accent)!important;text-decoration:underline;te
   .award-logo-frame{ width:88px !important; height:88px !important; }
   .award-logo-frame .award-logo,
   .award-logo{ width:78px !important; height:78px !important; }
-  .award-kicker{ font-size:13px !important; letter-spacing:.34em !important; margin-bottom:3px !important; }
-  .award-title{ font-size:46px !important; }
-  .award-title-rule{ width:70px !important; height:4px !important; }
+  .award-kicker{ font-size:15px !important; letter-spacing:.34em !important; margin-bottom:3px !important; }
+  .award-title{ font-size:58px !important; }
+  .award-title-rule{ width:90px !important; height:5px !important; }
   /* Age group + event + meet on ONE compact, centered line so the boards below
      get the room. align-self:center keeps the line hugging its text while the
      boards + footer still stretch full width. */
   .award-headline{ display:flex !important;flex-wrap:wrap;align-items:center;
     justify-content:center;gap:6px 16px !important;align-self:center !important;
-    margin:2px 0 12px !important; }
+    margin:2px 0 8px !important; }
   .award-headline .award-group::before,
   .award-headline .award-group::after{ display:none !important; }
-  .award-group{ font-size:30px !important; margin-bottom:0 !important; }
-  .award-event{ font-size:15px !important; padding:6px 18px !important; margin-bottom:0 !important; align-self:auto !important; }
-  .award-event-meet{ font-size:13px !important; margin-top:0 !important; margin-bottom:0 !important; padding:5px 16px !important; align-self:auto !important; }
+  .award-group{ font-size:34px !important; margin-bottom:0 !important; }
+  .award-event{ font-size:17px !important; padding:7px 20px !important; margin-bottom:0 !important; align-self:auto !important; }
+  .award-event-meet{ font-size:15px !important; margin-top:0 !important; margin-bottom:0 !important; padding:6px 18px !important; align-self:auto !important; }
 
   /* Boards: roomier cells, much larger name + time text. */
   .award-cols{ gap:0.4in !important; margin-bottom:4px !important; }
   .award-cols-single{ max-width:7.5in !important; }
-  .award-col{ padding:14px 14px 12px !important; }
-  .award-col-head{ font-size:20px !important; letter-spacing:.18em !important; padding:4px 0 10px !important; margin-bottom:9px !important; }
+  .award-col{ padding:11px 14px 9px !important; }
+  .award-col-head{ font-size:22px !important; letter-spacing:.18em !important; padding:3px 0 8px !important; margin-bottom:7px !important; }
   /* The swimmer NAMES are the whole point — make them big and NEVER cut one
      off. Names wrap to a second line instead of clipping; the size is tuned
      so even a poster where every single name wraps still fits the sheet
      (verified by print-emulation measurement with 28-char names in all ten
      slots). A narrow rank chip + tight time column give the name the room. */
   .award-card .award-table{ table-layout:fixed !important; }
-  .award-card .award-table td{ padding:11px 5px !important; }
-  .award-rank-cell{ width:44px !important; }
-  .award-rank{ width:38px !important; height:38px !important; font-size:19px !important; }
-  .award-medal{ width:40px !important; height:40px !important; font-size:20px !important; }
+  .award-card .award-table td{ padding:9px 5px !important; }
+  .award-rank-cell{ width:52px !important; }
+  .award-rank{ width:44px !important; height:44px !important; font-size:22px !important; }
+  .award-medal{ width:46px !important; height:46px !important; font-size:23px !important; }
   .award-card .award-name-cell{
-    font-size:24px !important;
+    font-size:30px !important;
     line-height:1.12 !important;
     max-width:none !important;
     white-space:normal !important;
@@ -3499,11 +3499,11 @@ a.lb-entry-name:hover{color:var(--accent)!important;text-decoration:underline;te
     text-overflow:clip !important;
     overflow-wrap:break-word !important;
   }
-  .award-card .award-time-cell{ font-size:27px !important; width:1.05in !important; }
+  .award-card .award-time-cell{ font-size:32px !important; width:1.3in !important; }
   .award-card .improved-drop{ font-size:26px !important; }
   .improved-events-sub{ font-size:13px !important; margin-top:3px !important; }
   .award-col-empty-msg{ font-size:18px !important; }
-  .award-footer{ font-size:14px !important; padding-top:14px !important; }
+  .award-footer{ font-size:14px !important; padding-top:10px !important; }
 
   /* ---- Most Improved: guaranteed one-page fit -------------------------
      The Fastest Five scale-up above sizes rows for ONE line per swimmer.
@@ -3517,46 +3517,55 @@ a.lb-entry-name:hover{color:var(--accent)!important;text-decoration:underline;te
      tightened so the WORST CASE (5 swimmers × max events, long names)
      measures ~1.5in under the page edge. Verified via print-emulation
      measurement at 8+ events per swimmer across all six age groups. */
-  .award-card-improved{ padding:0.3in 0.6in !important; }
+  .award-card-improved{ padding:0.25in 0.6in !important; }
   .award-card-improved .award-header{ margin-bottom:0 !important; }
-  .award-card-improved .award-logo-frame{ width:64px !important; height:64px !important; }
+  .award-card-improved .award-logo-frame{ width:68px !important; height:68px !important; }
   .award-card-improved .award-logo-frame .award-logo,
-  .award-card-improved .award-logo{ width:56px !important; height:56px !important; }
-  .award-card-improved .award-title{ font-size:34px !important; }
-  .award-card-improved .award-headline{ margin:0 0 6px !important; }
-  .award-card-improved .award-group{ font-size:26px !important; }
+  .award-card-improved .award-logo{ width:60px !important; height:60px !important; }
+  .award-card-improved .award-title{ font-size:40px !important; }
+  .award-card-improved .award-headline{ margin:0 0 4px !important; }
+  .award-card-improved .award-group{ font-size:30px !important; }
   .award-card-improved .award-cols{ gap:0.35in !important; }
-  .award-card-improved .award-col{ padding:7px 12px 5px !important; }
-  .award-card-improved .award-col-head{ font-size:15px !important; padding:2px 0 6px !important; margin-bottom:5px !important; }
-  .award-card-improved .award-table td{ padding:4px 5px !important; }
-  .award-card-improved .award-rank-cell{ width:38px !important; }
-  .award-card-improved .award-rank{ width:32px !important; height:32px !important; font-size:16px !important; }
-  .award-card-improved .award-medal{ width:34px !important; height:34px !important; font-size:17px !important; }
+  .award-card-improved .award-col{ padding:6px 12px 4px !important; }
+  .award-card-improved .award-col-head{ font-size:16px !important; padding:2px 0 5px !important; margin-bottom:4px !important; }
+  .award-card-improved .award-table td{ padding:3px 5px !important; }
+  .award-card-improved .award-rank-cell{ width:44px !important; }
+  .award-card-improved .award-rank{ width:38px !important; height:38px !important; font-size:19px !important; }
+  .award-card-improved .award-medal{ width:40px !important; height:40px !important; font-size:20px !important; }
   /* Names WRAP on the improved posters (no ellipsis) — they share the row
      with a breakdown, so a second line costs little and chops nobody. */
   .award-card-improved .award-name-cell{
-    font-size:17px !important;
+    font-size:21px !important;
     line-height:1.18 !important;
     white-space:normal !important;
     overflow:visible !important;
     text-overflow:clip !important;
   }
   .award-card-improved .award-time-cell{ width:0.95in !important; }
-  .award-card-improved .improved-drop{ font-size:21px !important; }
+  .award-card-improved .improved-drop{ font-size:25px !important; }
   /* The events-improved sub-line is redundant on paper — the breakdown
      lines + the "+N more" summary carry the same information — and hiding
      it buys the height that keeps five full rows on one sheet. */
   .award-card-improved .improved-events-sub{ display:none !important; }
   .award-card-improved .improved-evlist{ margin-top:2px !important; gap:2px !important; }
-  .award-card-improved .improved-evline{ font-size:10.5px !important; line-height:1.2 !important; }
+  .award-card-improved .improved-evline{ font-size:11px !important; line-height:1.22 !important; }
   .award-card-improved .improved-evline.iev-extra{ display:none !important; }
   .award-card-improved .improved-evmore{
     display:block !important;
-    font-size:10.5px !important; font-weight:700 !important;
+    font-size:11px !important; font-weight:700 !important;
     color:#64748b !important; margin-top:2px !important;
     font-family:var(--font-body) !important;
   }
   .award-card-improved .award-footer{ padding-top:8px !important; }
+
+  /* ---- Long-name tier (both poster types) -----------------------------
+     Markup tags any name over 16 characters with .nm-long. Those step down
+     one type size so they wrap to a compact two lines; everyone else gets
+     the full-size type. This is the trade that lets the poster fonts run
+     at maximum size: the page only has to absorb big wrapped rows for the
+     names that actually need them. Placed last so it wins the cascade. */
+  .award-card .award-name-cell.nm-long{ font-size:21px !important; line-height:1.12 !important; }
+  .award-card-improved .award-name-cell.nm-long{ font-size:16px !important; line-height:1.16 !important; }
 }
 
 /* ============================================================
