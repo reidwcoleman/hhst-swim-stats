@@ -3468,7 +3468,7 @@ a.lb-entry-name:hover{color:var(--accent)!important;text-decoration:underline;te
      boards + footer still stretch full width. */
   .award-headline{ display:flex !important;flex-wrap:wrap;align-items:center;
     justify-content:center;gap:6px 16px !important;align-self:center !important;
-    margin:2px 0 8px !important; }
+    margin:2px 0 6px !important; }
   .award-headline .award-group::before,
   .award-headline .award-group::after{ display:none !important; }
   .award-group{ font-size:34px !important; margin-bottom:0 !important; }
@@ -3478,35 +3478,36 @@ a.lb-entry-name:hover{color:var(--accent)!important;text-decoration:underline;te
   /* Boards: roomier cells, much larger name + time text. */
   .award-cols{ gap:0.4in !important; margin-bottom:4px !important; }
   .award-cols-single{ max-width:7.5in !important; }
-  .award-col{ padding:11px 14px 9px !important; }
-  .award-col-head{ font-size:22px !important; letter-spacing:.18em !important; padding:3px 0 8px !important; margin-bottom:7px !important; }
+  .award-col{ padding:9px 14px 7px !important; }
+  .award-col-head{ font-size:22px !important; letter-spacing:.18em !important; padding:3px 0 6px !important; margin-bottom:5px !important; }
   /* The swimmer NAMES are the whole point — make them big and NEVER cut one
      off. Names wrap to a second line instead of clipping; the size is tuned
      so even a poster where every single name wraps still fits the sheet
      (verified by print-emulation measurement with 28-char names in all ten
      slots). A narrow rank chip + tight time column give the name the room. */
   .award-card .award-table{ table-layout:fixed !important; }
-  .award-card .award-table td{ padding:9px 5px !important; }
+  .award-card .award-table td{ padding:7px 5px !important; }
   .award-rank-cell{ width:52px !important; }
   .award-rank{ width:44px !important; height:44px !important; font-size:22px !important; }
   .award-medal{ width:46px !important; height:46px !important; font-size:23px !important; }
-  /* One size per poster: --print-name-size is computed per card by
-     fitPrintNames() in awards.html so the card's LONGEST name fits its
-     column on a single line — every name on a card shares that size, so
-     nothing wraps and nothing is truncated. */
+  /* ONE fixed name size on every poster — consistent and big. Long names
+     simply wrap to a second line; the size below is the largest where a
+     worst-case board (every name 28+ characters, all ten wrapping) still
+     fits the one-page sheet, verified by print-emulation measurement. */
   .award-card .award-name-cell{
-    font-size:var(--print-name-size, 30px) !important;
-    line-height:1.15 !important;
+    font-size:25px !important;
+    line-height:1.1 !important;
     max-width:none !important;
-    white-space:nowrap !important;
+    white-space:normal !important;
     overflow:visible !important;
     text-overflow:clip !important;
+    overflow-wrap:break-word !important;
   }
   .award-card .award-time-cell{ font-size:32px !important; width:1.3in !important; }
   .award-card .improved-drop{ font-size:26px !important; }
   .improved-events-sub{ font-size:13px !important; margin-top:3px !important; }
   .award-col-empty-msg{ font-size:18px !important; }
-  .award-footer{ font-size:14px !important; padding-top:10px !important; }
+  .award-footer{ font-size:14px !important; padding-top:8px !important; }
 
   /* ---- Most Improved: guaranteed one-page fit -------------------------
      The Fastest Five scale-up above sizes rows for ONE line per swimmer.
@@ -3538,16 +3539,13 @@ a.lb-entry-name:hover{color:var(--accent)!important;text-decoration:underline;te
   /* Names WRAP on the improved posters (no ellipsis) — they share the row
      with a breakdown, so a second line costs little and chops nobody. */
   .award-card-improved .award-name-cell{
-    font-size:var(--print-name-size, 21px) !important;
-    line-height:1.2 !important;
+    font-size:18px !important;
+    line-height:1.18 !important;
+    white-space:normal !important;
     overflow:visible !important;
     text-overflow:clip !important;
+    overflow-wrap:break-word !important;
   }
-  /* The name itself stays on one line at the fitted size; the breakdown
-     below it keeps its own fixed sizing. */
-  .award-card-improved .improved-name{ white-space:nowrap !important; display:inline-block; }
-  .award-card-improved .improved-evline,
-  .award-card-improved .improved-evmore{ white-space:nowrap !important; }
   .award-card-improved .award-time-cell{ width:0.95in !important; }
   .award-card-improved .improved-drop{ font-size:25px !important; }
   /* The events-improved sub-line is redundant on paper — the breakdown

@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Figtree:ital,wght@0,300..900;1,300..900&family=IBM+Plex+Mono:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="assets/styles.css?v=36"/>
+<link rel="stylesheet" href="assets/styles.css?v=37"/>
 <style>
   /* Hide everything until auth check completes — admins only. */
   body:not(.auth-ready) > *{visibility:hidden}
@@ -741,7 +741,6 @@
       return;
     }
     awardsHost.innerHTML = cards;
-    fitPrintNames(awardsHost, 'fastest');
     fastestSectionHead.style.display = '';
     setFastestCount(awardsHost.querySelectorAll('.award-card').length);
     updateStickyPrint();
@@ -969,7 +968,6 @@
     }).filter(Boolean).join('');
 
     improvedHost.innerHTML = cards;
-    fitPrintNames(improvedHost, 'improved');
     if(improvedSectionHead) improvedSectionHead.style.display = '';
     setImprovedCount(improvedHost.querySelectorAll('.award-card').length);
     updateStickyPrint();
@@ -998,43 +996,6 @@
   document.getElementById('stickyPrintAll')?.addEventListener('click', () => {
     printAllAwards?.click();
   });
-
-  // ============ Per-poster print name sizing ============
-  // Every name on a poster prints at ONE size — chosen per card so the card's
-  // longest name still fits its print column on a single line. The print
-  // column widths are deterministic (the @media print layout is fixed-inch),
-  // so the size can be computed up front with a canvas text measurement and
-  // handed to the print CSS via a custom property on the card.
-  const PRINT_NAME_FIT = {
-    fastest:  { base: 30, cellPx: 210 },  // 2-col board name-cell text width
-    improved: { base: 21, cellPx: 253 }
-  };
-  const __measureCtx = document.createElement('canvas').getContext('2d');
-  function fitPrintNames(host, kind){
-    if(!host) return;
-    const { base, cellPx } = PRINT_NAME_FIT[kind];
-    host.querySelectorAll('.award-card').forEach(card => {
-      let widest = 0;
-      __measureCtx.font = `700 ${base}px Figtree, system-ui, sans-serif`;
-      card.querySelectorAll('tr:not(.award-empty-row) .award-name-cell').forEach(td => {
-        const span = td.querySelector('.improved-name');
-        const name = (span ? span.textContent : td.textContent).trim();
-        if(name && name !== '—') widest = Math.max(widest, __measureCtx.measureText(name).width);
-      });
-      // 0.97 = small safety margin for letter-spacing / font fallback drift
-      const size = widest > 0
-        ? Math.max(13, Math.min(base, Math.floor(base * (cellPx * 0.97) / widest)))
-        : base;
-      card.style.setProperty('--print-name-size', size + 'px');
-    });
-  }
-  // Re-fit once the real webfont arrives (metrics differ from the fallback).
-  if(document.fonts && document.fonts.ready){
-    document.fonts.ready.then(() => {
-      fitPrintNames(awardsHost, 'fastest');
-      fitPrintNames(improvedHost, 'improved');
-    });
-  }
 
   // ============ safePrint() — bulletproof print flow ============
   // Centralized print helper that owns ALL scope-class management,
