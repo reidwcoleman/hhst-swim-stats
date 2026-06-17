@@ -3499,9 +3499,9 @@ a.lb-entry-name:hover{color:var(--accent)!important;text-decoration:underline;te
   .award-logo-frame{ width:50px !important; height:50px !important; }
   .award-logo-frame .award-logo,
   .award-logo{ width:52px !important; height:52px !important; }
-  .award-kicker{ font-size:13px !important; letter-spacing:.32em !important; margin-bottom:2px !important; }
-  .award-title{ font-size:30px !important; }
-  .award-title-rule{ width:64px !important; height:3px !important; margin-top:4px !important; }
+  .award-kicker{ font-size:12px !important; letter-spacing:.32em !important; margin-bottom:2px !important; }
+  .award-title{ font-size:26px !important; }
+  .award-title-rule{ width:58px !important; height:3px !important; margin-top:4px !important; }
   /* Age group + event + meet on ONE compact, centered line so the boards below
      get the room. align-self:center keeps the line hugging its text while the
      boards + footer still stretch full width. */
@@ -3510,32 +3510,33 @@ a.lb-entry-name:hover{color:var(--accent)!important;text-decoration:underline;te
     margin:0 0 2px !important; }
   .award-headline .award-group::before,
   .award-headline .award-group::after{ display:none !important; }
-  .award-group{ font-size:24px !important; margin-bottom:0 !important; }
-  .award-event{ font-size:14px !important; padding:5px 15px !important; margin-bottom:0 !important; align-self:auto !important; }
-  .award-event-meet{ font-size:13px !important; margin-top:0 !important; margin-bottom:0 !important; padding:4px 14px !important; align-self:auto !important; }
+  .award-group{ font-size:22px !important; margin-bottom:0 !important; }
+  .award-event{ font-size:13px !important; padding:5px 15px !important; margin-bottom:0 !important; align-self:auto !important; }
+  .award-event-meet{ font-size:12px !important; margin-top:0 !important; margin-bottom:0 !important; padding:4px 14px !important; align-self:auto !important; }
 
-  /* Boards: roomier cells, much larger name + time text. */
-  .award-cols{ gap:0.2in !important; margin-bottom:2px !important; }
+  /* Boards: roomier cells, clean balanced name + time text. */
+  .award-cols{ gap:0.3in !important; margin-bottom:2px !important; }
   .award-cols-single{ max-width:7.5in !important; }
-  .award-col{ padding:4px 14px 3px !important; }
-  .award-col-head{ font-size:16px !important; letter-spacing:.18em !important; padding:1px 0 4px !important; margin-bottom:3px !important; }
+  .award-col{ padding:8px 18px 6px !important; }
+  .award-col-head{ font-size:15px !important; letter-spacing:.16em !important; padding:2px 0 6px !important; margin-bottom:6px !important; }
   /* The swimmer NAMES are the whole point — make them big and NEVER cut one
      off. Names wrap to a second line instead of clipping; the size is tuned
      so even a poster where every single name wraps still fits the sheet
      (verified by print-emulation measurement with 28-char names in all ten
      slots). A narrow rank chip + tight time column give the name the room. */
   .award-card .award-table{ table-layout:fixed !important; }
-  .award-card .award-table td{ padding:4px 5px !important; }
-  .award-rank-cell{ width:48px !important; }
-  .award-rank{ width:42px !important; height:42px !important; font-size:22px !important; }
-  .award-medal{ width:44px !important; height:44px !important; font-size:23px !important; }
-  /* ONE fixed name size on every poster — consistent and big. Long names
-     simply wrap to a second line; the size below is the largest where a
-     worst-case board (every name 28+ characters, all ten wrapping) still
-     fits the one-page sheet, verified by print-emulation measurement. */
+  .award-card .award-table td{ padding:7px 6px !important; }
+  .award-rank-cell{ width:44px !important; }
+  .award-rank{ width:34px !important; height:34px !important; font-size:16px !important; }
+  .award-medal{ width:36px !important; height:36px !important; font-size:18px !important; }
+  /* ONE fixed name size on every poster — consistent and clean. Names sit on
+     one line where they fit and wrap to a second line otherwise; 30px keeps
+     full names ("Charlotte Rademacher", "Oliver Kowalczyk") readable without
+     mid-word clipping, and a worst-case board (every name 28+ chars, all ten
+     wrapping) still fits the one-page sheet, verified by print emulation. */
   .award-card .award-name-cell{
-    font-size:46px !important;
-    line-height:0.97 !important;
+    font-size:30px !important;
+    line-height:1.08 !important;
     max-width:none !important;
     white-space:normal !important;
     overflow:visible !important;
@@ -3563,10 +3564,10 @@ a.lb-entry-name:hover{color:var(--accent)!important;text-decoration:underline;te
   /* line-height:1 keeps the (single-line) time compact so its big font never
      inflates the row height — the two-line name is the row's floor, so the
      time can be huge "for free" up to the name's height. */
-  .award-card .award-time-cell{ font-size:60px !important; width:1.85in !important; line-height:1 !important; }
-  /* Minute-format times ("1:02.18", 7 glyphs) overflow the cell at 68px —
+  .award-card .award-time-cell{ font-size:40px !important; width:1.7in !important; line-height:1 !important; }
+  /* Minute-format times ("1:02.18", 7 glyphs) overflow the cell at 40px —
      step those down so the longest possible time still fits the column. */
-  .award-card .award-time-cell.t-min{ font-size:50px !important; }
+  .award-card .award-time-cell.t-min{ font-size:33px !important; }
   .award-card .improved-drop{ font-size:26px !important; }
   .improved-events-sub{ font-size:13px !important; margin-top:3px !important; }
   .award-col-empty-msg{ font-size:18px !important; }
