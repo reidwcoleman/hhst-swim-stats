@@ -88,12 +88,6 @@
 
   /* ===== Inline validation + helper text ===== */
   .idx-input-wrap{position:relative;display:block}
-  /* The only reading copy in the card — keep it legible, never the smallest
-     type. 13px / lh 1.5, muted via the shared subtle token. */
-  .idx-hint{
-    font-size:13px;line-height:1.5;color:var(--text-subtle);
-    margin-top:6px;transition:color .18s ease;
-  }
   .idx-form .field.idx-valid input{
     border-color:rgba(52,211,153,.55);
   }
@@ -103,7 +97,6 @@
   .idx-form .field.idx-invalid input:not(:focus){
     border-color:rgba(248,113,113,.55);
   }
-  .idx-form .field.idx-invalid .idx-hint{color:var(--red-light)}
   /* A small check that fades in once a field looks good — anchored to the
      input via its own wrapper so the helper line below doesn't shift it. */
   .idx-check{
@@ -438,114 +431,14 @@
   }
   @media (max-width:640px){.idx-ray{filter:blur(16px)}}
 
-  /* ===== Lookup card in 3-D =====
-     The card leans toward the cursor (JS sets the perspective/rotate inline);
-     its children sit at different translateZ depths so the tilt reads as real
-     parallax — the lane, fields, and button float above the card surface. A
-     glare highlight tracks the pointer. Desktop pointers only. */
-  .lookup-card.idx-lift{transform-style:preserve-3d;will-change:transform}
-  .lookup-card.is-tilting{transition:box-shadow .22s ease} /* JS owns transform while tilting */
-  .idx-form{transform-style:preserve-3d}
-  .idx-form .field{transform:translateZ(14px)}
-  .lookup-card > h2{transform:translateZ(26px)}
-  .lookup-card > .sub{transform:translateZ(14px)}
-  .lookup-card > .idx-lane{transform:translateZ(32px)}
-  .idx-form .btn.lg.block{transform:translateZ(38px)}
-  .idx-form .idx-privacy{transform:translateZ(10px)}
-  .idx-glare{
-    position:absolute;inset:0;border-radius:inherit;pointer-events:none;
-    background:radial-gradient(440px circle at var(--gx,50%) var(--gy,30%),rgba(255,255,255,.17),transparent 62%);
-    opacity:0;transition:opacity .3s ease;
-    transform:translateZ(36px);
-  }
-  /* Entrance: the card surfaces with a 3-D pitch instead of a flat slide. */
+  /* Entrance: a subtle 3-D pitch as the card surfaces. */
   .hero-inner > .lookup-card{animation-name:idx-heroIn3d}
   @keyframes idx-heroIn3d{
     from{opacity:0;transform:perspective(950px) translateY(32px) rotateX(10deg)}
     to{opacity:1;transform:perspective(950px) translateY(0) rotateX(0deg)}
   }
-  .lookup-card.is-tilting .idx-glare{opacity:1}
-  /* Touch + reduced motion: everything stays flat (the tilt JS never runs,
-     but the Z-depths are harmless either way). */
-  @media (prefers-reduced-motion: reduce){
-    .idx-form .field,.lookup-card > h2,.lookup-card > .sub,
-    .lookup-card > .idx-lane,.idx-form .btn.lg.block,.idx-form .idx-privacy{transform:none}
-  }
-
-  /* ===== Lookup card: swim-lane progress meter =====
-     A little swimmer dot advances down a lane as each of the three fields
-     validates; at 3-of-3 it reaches the backstroke flags and the card says
-     "Ready to dive!". Pure delight — the hints below still carry the info. */
-  .idx-lane{
-    position:relative;height:38px;margin:16px 0 18px;
-    border-radius:999px;overflow:hidden;
-    background:linear-gradient(180deg,rgba(36,112,206,.09),rgba(127,227,239,.05));
-    border:1px solid var(--border);
-    transition:border-color .3s ease,box-shadow .3s ease;
-  }
-  .idx-lane::before{ /* lane rope */
-    content:'';position:absolute;left:14px;right:158px;top:50%;height:2px;margin-top:-1px;
-    background:repeating-linear-gradient(90deg,rgba(95,169,236,.38) 0 10px,transparent 10px 19px);
-    border-radius:2px;
-  }
-  .idx-lane-swim{
-    position:absolute;top:50%;left:calc(12px + (100% - 200px) * var(--p,0));
-    transform:translateY(-50%);
-    display:flex;align-items:center;gap:5px;
-    transition:left .65s cubic-bezier(.22,1.35,.36,1);
-  }
-  .idx-lane-trail{
-    width:20px;height:2px;border-radius:2px;
-    background:linear-gradient(90deg,transparent,rgba(95,169,236,.8));
-    opacity:0;transition:opacity .25s ease;
-  }
-  .idx-lane-dot{
-    width:14px;height:14px;border-radius:50%;flex:none;
-    background:radial-gradient(circle at 32% 30%,#bfe7ff,#2470ce);
-    box-shadow:0 0 0 3px rgba(95,169,236,.22),0 2px 6px rgba(13,42,82,.3);
-    animation:idx-lane-bob 1.7s ease-in-out infinite;
-  }
-  @keyframes idx-lane-bob{0%,100%{transform:translateY(-1.5px)}50%{transform:translateY(1.5px)}}
-  .idx-lane.is-swimming .idx-lane-dot{animation-duration:.45s}
-  .idx-lane.is-swimming .idx-lane-trail{opacity:1}
-  .idx-lane-flags{position:absolute;right:124px;top:5px;width:26px;height:13px;color:var(--accent);opacity:.75}
-  .idx-lane-label{
-    position:absolute;right:13px;top:50%;transform:translateY(-50%);
-    font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
-    color:var(--text-subtle);font-variant-numeric:tabular-nums;
-    transition:color .3s ease;
-  }
-  .idx-lane.is-ready{
-    border-color:rgba(226,172,45,.5);
-    box-shadow:0 0 0 3px rgba(226,172,45,.12),inset 0 0 18px rgba(226,172,45,.06);
-  }
-  .idx-lane.is-ready .idx-lane-label{color:#c98f0e}
-  .idx-lane.is-ready .idx-lane-dot{
-    background:radial-gradient(circle at 32% 30%,#fde68a,#e2ac2d);
-    box-shadow:0 0 0 3px rgba(226,172,45,.3),0 0 12px rgba(226,172,45,.55);
-    animation:idx-lane-pop .55s cubic-bezier(.22,1.6,.36,1);
-  }
-  @keyframes idx-lane-pop{0%{transform:scale(1)}45%{transform:scale(1.5)}100%{transform:scale(1)}}
-  .idx-lane.is-ready .idx-lane-flags{color:#e2ac2d;opacity:1;animation:idx-flag-wave .8s ease-in-out 2}
-  @keyframes idx-flag-wave{0%,100%{transform:rotate(0)}50%{transform:rotate(-7deg)}}
-  /* All three matched → the submit button breathes until they dive in. */
-  .idx-form.idx-ready .btn.lg.block{animation:idx-btn-glow 1.8s ease-in-out infinite}
-  @keyframes idx-btn-glow{
-    0%,100%{box-shadow:0 0 0 0 rgba(95,169,236,.45)}
-    55%{box-shadow:0 0 0 9px rgba(95,169,236,0)}
-  }
   /* Bad lookup → the card shakes (reuses the shared shake keyframes). */
   .lookup-card.idx-shake{animation:shake .4s}
-  @media (max-width:480px){
-    .idx-lane{height:34px;margin:14px 0 16px}
-    .idx-lane::before{right:142px}
-    .idx-lane-swim{left:calc(10px + (100% - 178px) * var(--p,0))}
-    .idx-lane-flags{right:110px;top:4px}
-  }
-  @media (prefers-reduced-motion: reduce){
-    .idx-lane-swim{transition:none}
-    .idx-form.idx-ready .btn.lg.block{animation:none}
-  }
 </style>
 
 <!-- Firebase compat SDK -->
@@ -624,21 +517,7 @@
 
     <div class="lookup-card idx-lift">
       <h2>Find your swimmer</h2>
-      <p class="sub">All three fields must match what we have on file. Names can be in either "First Last" or "Last, First" order.</p>
-
-      <!-- Swim-lane progress: the dot swims toward the flags as each field
-           checks out. Decorative — the per-field hints carry the real info. -->
-      <div class="idx-lane" id="idxLane" aria-hidden="true" style="--p:0">
-        <div class="idx-lane-swim">
-          <span class="idx-lane-trail"></span>
-          <span class="idx-lane-dot"></span>
-        </div>
-        <svg class="idx-lane-flags" viewBox="0 0 26 13" fill="currentColor" aria-hidden="true">
-          <path d="M0 1.2 L26 1.2" stroke="currentColor" stroke-width="1.6" fill="none"/>
-          <path d="M3 2 l4 0 -2 6 z"/><path d="M11 2 l4 0 -2 6 z"/><path d="M19 2 l4 0 -2 6 z"/>
-        </svg>
-        <span class="idx-lane-label" id="idxLaneLabel">0 of 3</span>
-      </div>
+      <p class="sub">Enter all three to open your swimmer's dashboard. Name can be "First Last" or "Last, First".</p>
 
       <form id="lookupForm" class="idx-form" autocomplete="off">
         <div class="field">
@@ -650,7 +529,6 @@
             <input type="text" id="swName" name="swName" placeholder="e.g. Riley Carter" required autocomplete="off" spellcheck="false"/>
             <svg class="idx-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
           </span>
-          <p class="idx-hint" id="hintName">First and last name, as registered with the team.</p>
         </div>
         <div class="field">
           <label for="swEmail">
@@ -661,7 +539,6 @@
             <input type="email" id="swEmail" name="swEmail" placeholder="e.g. jordan@example.com" required autocomplete="email"/>
             <svg class="idx-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
           </span>
-          <p class="idx-hint" id="hintEmail">The email your family used to sign up.</p>
         </div>
         <div class="field">
           <label for="swParent">
@@ -672,7 +549,6 @@
             <input type="text" id="swParent" name="swParent" placeholder="e.g. Jordan Carter" required autocomplete="off"/>
             <svg class="idx-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
           </span>
-          <p class="idx-hint" id="hintParent">Any parent or guardian on the swimmer's account.</p>
         </div>
         <div class="error-msg" id="errMsg"></div>
         <button class="btn lg block" type="submit" id="submitBtn">
@@ -977,69 +853,11 @@
     }
   })();
 
-  // 3-D tilt on the lookup card (desktop pointers only): the card leans
-  // toward the cursor with a moving glare, and its translateZ-staggered
-  // children parallax against the surface. Reduced motion / touch: flat.
-  (function(){
-    const card = document.querySelector('.lookup-card');
-    if(!card) return;
-    if(window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    if(!window.matchMedia('(pointer: fine)').matches) return;
-    // The hero entrance animation FILLS its final transform forever, which
-    // would override our inline tilt — hand control to JS once it finishes
-    // (with a timer fallback in case animationend never fires).
-    let entranceDone = false;
-    function takeOver(){
-      if(entranceDone) return;
-      entranceDone = true;
-      card.style.opacity = '1';
-      card.style.animation = 'none';
-    }
-    card.addEventListener('animationend', e => { if(e.target === card) takeOver(); });
-    setTimeout(takeOver, 2600);
-
-    const glare = document.createElement('div');
-    glare.className = 'idx-glare';
-    glare.setAttribute('aria-hidden', 'true');
-    card.appendChild(glare);
-
-    const MAX = 6.5; // degrees of lean at the card's edges
-    let tx = 0, ty = 0, cx = 0, cy = 0, raf = 0, active = false;
-    function frame(){
-      raf = 0;
-      cx += (tx - cx) * .14; cy += (ty - cy) * .14;
-      if(entranceDone){
-        card.style.transform =
-          `perspective(950px) rotateX(${(-cy*MAX).toFixed(2)}deg) rotateY(${(cx*MAX).toFixed(2)}deg)`
-          + (active ? ' translateY(-2px)' : '');
-      }
-      if(active || Math.abs(cx) + Math.abs(cy) > .004) raf = requestAnimationFrame(frame);
-      else if(entranceDone) card.style.transform = ''; // settled flat — release
-    }
-    card.addEventListener('pointermove', e => {
-      const r = card.getBoundingClientRect();
-      const px = (e.clientX - r.left) / r.width;
-      const py = (e.clientY - r.top) / r.height;
-      tx = (px - .5) * 2; ty = (py - .5) * 2;
-      card.style.setProperty('--gx', (px*100).toFixed(1) + '%');
-      card.style.setProperty('--gy', (py*100).toFixed(1) + '%');
-      active = true;
-      card.classList.add('is-tilting');
-      if(!raf) raf = requestAnimationFrame(frame);
-    }, { passive:true });
-    card.addEventListener('pointerleave', () => {
-      active = false; tx = 0; ty = 0;
-      card.classList.remove('is-tilting');
-      if(!raf) raf = requestAnimationFrame(frame);
-    });
-  })();
-
   // Lookup form
   const form = document.getElementById('lookupForm');
   const errEl = document.getElementById('errMsg');
   const submitBtn = document.getElementById('submitBtn');
   const btnLabel = submitBtn.querySelector('.btn-label');
-  const laneEl = document.getElementById('idxLane');
   const lookupCard = document.querySelector('.lookup-card');
   // Bad lookup → shake the card (restart-safe: clear, reflow, re-add).
   function shakeCard(){
@@ -1054,7 +872,6 @@
     submitBtn.disabled = true;
     submitBtn.classList.add('is-loading');
     btnLabel.textContent = 'Looking up…';
-    if(laneEl) laneEl.classList.add('is-swimming'); // the lane dot sprints while we search
     try {
       const name = document.getElementById('swName').value;
       const email = document.getElementById('swEmail').value;
@@ -1077,7 +894,6 @@
       submitBtn.disabled = false;
       submitBtn.classList.remove('is-loading');
       btnLabel.textContent = 'Open Dashboard';
-      if(laneEl) laneEl.classList.remove('is-swimming');
     }
   });
 
@@ -1097,39 +913,21 @@
       swEmail:  v => emailRe.test(v.trim()),
       swParent: v => looksLikeName(v),
     };
-    // Swim-lane progress: count valid fields, advance the dot, flip the lane
-    // (and submit button) into the "ready" state at 3 of 3.
-    const lane = document.getElementById('idxLane');
-    const laneLabel = document.getElementById('idxLaneLabel');
-    const formEl = document.getElementById('lookupForm');
-    function updateLane(){
-      if(!lane) return;
-      const n = [nameEl, emailEl, parentEl].filter(el => {
-        const f = el.closest('.field');
-        return f && f.classList.contains('idx-valid');
-      }).length;
-      lane.style.setProperty('--p', (n/3).toFixed(3));
-      const ready = n === 3;
-      lane.classList.toggle('is-ready', ready);
-      if(formEl) formEl.classList.toggle('idx-ready', ready);
-      if(laneLabel) laneLabel.textContent = ready ? 'Ready to dive!' : `${n} of 3`;
-    }
     function grade(el){
       const field = el.closest('.field');
       const v = el.value;
-      if(!v.trim()){ field.classList.remove('idx-valid','idx-invalid'); updateLane(); return; }
+      if(!v.trim()){ field.classList.remove('idx-valid','idx-invalid'); return; }
       const ok = checks[el.id](v);
       field.classList.toggle('idx-valid', ok);
       // Only flag as invalid once the user has moved on (on blur), so we don't
       // nag mid-typing.
       field.classList.toggle('idx-invalid', !ok && el.dataset.touched === '1');
-      updateLane();
     }
     [nameEl, emailEl, parentEl].forEach(el => {
       el.addEventListener('input', () => grade(el));
       el.addEventListener('blur', () => { el.dataset.touched = '1'; grade(el); });
     });
-    // Grade once on load so browser autofill advances the lane immediately.
+    // Grade once on load so browser autofill reflects validity immediately.
     [nameEl, emailEl, parentEl].forEach(el => { if(el.value) grade(el); });
   })();
 
