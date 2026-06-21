@@ -1321,13 +1321,16 @@
     const t = Date.parse(str);
     return isFinite(t) ? t : NaN;
   }
-  // A "practice meet" / preseason best-times session is NOT an actual
-  // competition, so its times must never count as a real meet — not for Fastest
-  // Five targeting and not for Most Improved. Detected by name (case-insensitive
-  // "practice"), e.g. "Practice Meet", "Intrasquad Practice". Time trials are
-  // flagged separately via r.timeTrial and excluded too.
+  // Team decision (2026): practice meets ARE real competition for our stats.
+  // A "Practice Meet vs. ..." is a scored dual/scrimmage with real race times,
+  // so those times now count EVERYWHERE — Fastest Five, every swimmer's profile,
+  // leaderboards, Most Improved, records and the meet recap — exactly like any
+  // other meet. This single chokepoint is what every surface routes through, so
+  // returning false here promotes practice-meet times to full meet status site
+  // wide. Informal practice swims are still excluded, but via the separate
+  // r.timeTrial flag (time trials), not by meet name.
   function isPracticeMeet(meet){
-    return /practice/i.test((meet || '').toString());
+    return false;
   }
 
   // Distinct ACTUAL meets within a season (practice meets + time trials

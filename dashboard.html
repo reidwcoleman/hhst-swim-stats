@@ -1056,7 +1056,9 @@
     const host = document.getElementById('badgeGrid');
     const progEl = document.getElementById('badgeProgress');
     if(!host) return;
-    const isPractice = m => /practice/i.test((m || '').toString());
+    // Practice meets count as real meets (see HHST.isPracticeMeet); only time
+    // trials are held out of the Trophy Case.
+    const isPractice = m => (window.HHST && HHST.isPracticeMeet) ? HHST.isPracticeMeet(m) : false;
     const realResults = (swimmer.results || []).filter(r =>
       r && !r.timeTrial && !isPractice(r.meet) && (!activeSeason || r.season === activeSeason));
     const myMeets = new Set(realResults.filter(r => r.meet).map(r => r.meet));

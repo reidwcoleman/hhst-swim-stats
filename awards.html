@@ -687,13 +687,11 @@
     // meet they were swum at. A PR set at the most recent meet naturally shows
     // up here; an older but still-faster time also holds its place.
 
-    // Practice-meet grace period: until the season has TWO real meets on record,
-    // practice swims count toward the board so it isn't empty at season start
-    // (when the only times on file are from a practice meet). Once a second real
-    // meet lands, practice swims drop off and real competition stands alone.
-    const realMeetCount = HHST.meetsInSeason(allSwimmers, season).length;
-    const includePractice = realMeetCount < 2;
-    setFastestPracticeNote(includePractice, realMeetCount);
+    // Practice meets now count as real competition everywhere (see
+    // HHST.isPracticeMeet), so their times always feed the board — no grace
+    // period to manage and no "drops off at the 2nd meet" caveat.
+    const includePractice = true;
+    setFastestPracticeNote(false);
 
     const cards = brackets.map(bracket => {
       const dist = DIST_FOR_BRACKET[bracket];
