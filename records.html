@@ -127,37 +127,45 @@
   .rec-col-boys .rec-evt{ background:#2c4a6e; }
   .rec-col-boys .rec-time{ color:#243f5e; }
 
-  /* Relay rows: each of the 4 swimmers gets its own line (a clean relay
-     lineup) so nothing breaks mid-word; chip stacks "MEDLEY / Relay". */
-  .rec-row-relay{ align-items:flex-start; }
-  .rec-evt-relay{
-    flex-direction:column;line-height:1.04;min-width:78px;padding:8px 12px;
-    font-size:11.5px;
+  /* Relay rows are stacked: a top line with the relay-type chip + the big
+     time, then the 4-swimmer lineup beneath at full column width (so the
+     names get room to be large and never collide with the time). */
+  .rec-row-relay{ flex-direction:column;align-items:stretch;gap:9px; }
+  .rec-relay-head{ display:flex;align-items:center;justify-content:space-between;gap:12px; }
+  .rec-relay-chip{
+    display:inline-flex;align-items:center;white-space:nowrap;
+    padding:6px 13px;border-radius:8px;
+    font-family:var(--font-body);font-weight:800;font-size:12px;letter-spacing:.08em;
+    text-transform:uppercase;color:#fff;background:#2c4a6e;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.16);
   }
-  .rec-evt-relay small{
-    display:block;font-size:8.5px;font-weight:700;letter-spacing:.06em;
-    opacity:.92;margin-top:2px;
+  .rec-relay-time{
+    font-family:var(--font-display);font-weight:800;font-size:25px;
+    font-variant-numeric:tabular-nums;letter-spacing:-.015em;color:#2c4a6e;white-space:nowrap;
   }
-  .rec-name-relay{
-    display:flex;flex-direction:column;gap:3px;padding-top:1px;font-weight:600;
-  }
-  .rec-swimmer{ font-size:15px;line-height:1.22;color:#0c2237;overflow-wrap:break-word; }
-  .rec-time-relay{ font-size:21px;padding-top:1px; }
+  .rec-relay-names{ display:flex;flex-direction:column;gap:4px; }
+  .rec-swimmer{ font-size:18px;font-weight:600;line-height:1.25;color:#16273d;overflow-wrap:break-word; }
+
+  /* Relay chip + time pick up the gender accent. */
+  .rec-col-girls .rec-relay-chip{ background:#8f3a5c; }
+  .rec-col-girls .rec-relay-time{ color:#7d2f52; }
+  .rec-col-boys .rec-relay-chip{ background:#2c4a6e; }
+  .rec-col-boys .rec-relay-time{ color:#243f5e; }
 
   /* ---- Poster heading: big brand title + prominent record-type line ----
      "Highcroft Hurricanes" is the headline; the record type
      ("Individual Records" / "Relay Records") sits right under it, large and
      colored, so it's the clear second read (it used to be a tiny pill that
      was barely visible). The age group follows below. ---- */
-  .award-card .award-title{ font-size:48px;line-height:1;color:#1b3354; }
+  .award-card .award-title{ font-size:55px;line-height:1;color:#1b3354; }
   .rec-records-type{
     font-family:var(--font-display);font-weight:800;
-    font-size:32px;line-height:1.04;letter-spacing:.04em;
-    text-transform:uppercase;color:#2c4a6e;margin-top:6px;
+    font-size:38px;line-height:1.04;letter-spacing:.04em;
+    text-transform:uppercase;color:#2c4a6e;margin-top:7px;
   }
   .rec-type-relay{ color:#0f6e63; }
-  .award-card .award-headline{ margin-top:10px; }
-  .award-card .award-headline .award-group{ font-size:36px;color:#2c4a6e; }
+  .award-card .award-headline{ margin-top:12px; }
+  .award-card .award-headline .award-group{ font-size:44px;color:#2c4a6e; }
 
   /* On-screen only: soften the corner brackets (full strength in print). */
   @media screen{
@@ -175,8 +183,9 @@
   @media (max-width:600px){
     .rec-name{ font-size:15px; }
     .rec-time{ font-size:17px; }
-    .rec-evt{ font-size:11.5px;padding-right:8px; }
-    .rec-name-relay{ font-size:13px; }
+    .rec-evt{ font-size:11.5px; }
+    .rec-swimmer{ font-size:15px; }
+    .rec-relay-time{ font-size:21px; }
   }
 
   /* ====================================================================
@@ -211,12 +220,14 @@
     .rec-name{ font-size:30px !important;line-height:1.1 !important; }
     .rec-time{ font-size:35px !important; }
 
-    /* Relays: one swimmer per line, big + legible, no mid-word breaks. */
-    .rec-evt-relay{ min-width:1in !important;padding:10px 14px !important;font-size:14.5px !important; }
-    .rec-evt-relay small{ font-size:10.5px !important; }
-    .rec-name-relay{ gap:0.05in !important; }
-    .rec-swimmer{ font-size:19px !important;line-height:1.2 !important; }
-    .rec-time-relay{ font-size:28px !important; }
+    /* Relays: big boxes — type chip + big time on top, then the 4-swimmer
+       lineup at full column width below. Sized so both 2-row columns clear the
+       sheet (4 names + a header line per box × 2 boxes is the tall case). */
+    .rec-row-relay{ padding:0.15in 0.26in !important;gap:0.09in !important; }
+    .rec-relay-chip{ font-size:14px !important;padding:8px 15px !important; }
+    .rec-relay-time{ font-size:33px !important; }
+    .rec-relay-names{ gap:0.055in !important; }
+    .rec-swimmer{ font-size:22px !important;line-height:1.18 !important; }
 
     .award-cols{ align-self:stretch !important;width:100% !important; }
 
@@ -232,15 +243,15 @@
        Hurricanes" brand, a large colored record-type line (was a tiny pill),
        then a big age group right above the table. Solid colors (not gradients)
        so they print reliably; the global block forces .award-title solid. */
-    .award-card .award-title{ font-size:39px !important; }
+    .award-card .award-title{ font-size:46px !important; }
     .rec-records-type{
-      font-size:31px !important;line-height:1.04 !important;margin-top:6px !important;
+      font-size:37px !important;line-height:1.03 !important;margin-top:7px !important;
       color:#2c4a6e !important;-webkit-text-fill-color:#2c4a6e !important;
     }
     .rec-type-relay{ color:#0f6e63 !important;-webkit-text-fill-color:#0f6e63 !important; }
-    .award-card .award-title-rule{ width:88px !important;height:4px !important;margin-top:8px !important; }
+    .award-card .award-title-rule{ width:100px !important;height:5px !important;margin-top:9px !important; }
     .award-card .award-headline{ margin:0 !important; }
-    .award-card .award-group{ font-size:33px !important;color:#2c4a6e !important; }
+    .award-card .award-group{ font-size:41px !important;color:#2c4a6e !important; }
   }
 </style>
 </head>
@@ -515,7 +526,6 @@
   // certificates so they all print identically. `kind` is 'individual' or
   // 'relay' (drives the data-group key + a teal accent on relay posters).
   function posterCard({ kind, group, eventLabel, innerCols }){
-    const today = new Date().toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'});
     const isRelay = kind === 'relay';
     const extraClass = isRelay ? ' award-card-relay' : '';
     const typeClass = isRelay ? 'rec-records-type rec-type-relay' : 'rec-records-type';
@@ -538,11 +548,6 @@
         <span class="award-group">${escapeHtml(bracketLabel(group))}</span>
       </div>
       ${innerCols}
-      <div class="award-footer">
-        <span class="award-team">Hurricanes Swim Team</span>
-        <span class="award-footer-divider" aria-hidden="true">◆</span>
-        <span class="award-date">${today}</span>
-      </div>
       <button class="award-print-one no-print" data-print="${escapeHtml(kind)}-${escapeHtml(group)}" title="Print just this poster" aria-label="Print this poster">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
       </button>
@@ -580,22 +585,17 @@
   function relayColumnHtml(entries, gender){
     const cls = gender.toLowerCase();
     const rows = entries.map(e => {
-      // Split "Medley Relay" -> "Medley" + small "Relay" so the chip stacks
-      // neatly beside the wrapped roster.
-      const parts = e.type.split(' ');
-      const tail = parts.length > 1 ? parts.pop() : '';
-      const head = parts.join(' ');
-      const chip = tail
-        ? `<span class="rec-evt rec-evt-relay">${escapeHtml(head)}<small>${escapeHtml(tail)}</small></span>`
-        : `<span class="rec-evt rec-evt-relay">${escapeHtml(e.type)}</span>`;
       // One swimmer per line — reads like a relay lineup and never breaks a
-      // surname mid-word the way a comma string in a narrow column would.
+      // surname mid-word. Names sit at full column width below the type+time
+      // header line, so they get room to be large without crowding the time.
       const lineup = e.team.split(',').map(s => s.trim()).filter(Boolean)
         .map(s => `<span class="rec-swimmer">${escapeHtml(s)}</span>`).join('');
       return `<div class="rec-row rec-row-relay">
-        ${chip}
-        <span class="rec-name rec-name-relay">${lineup}</span>
-        <span class="rec-time rec-time-relay">${escapeHtml(e.time)}</span>
+        <div class="rec-relay-head">
+          <span class="rec-relay-chip">${escapeHtml(e.type)}</span>
+          <span class="rec-relay-time">${escapeHtml(e.time)}</span>
+        </div>
+        <div class="rec-relay-names">${lineup}</div>
       </div>`;
     }).join('');
     return `<div class="award-col rec-col rec-col-${cls}">
