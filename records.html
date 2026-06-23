@@ -145,17 +145,20 @@
   .rec-swimmer{ font-size:15px;line-height:1.22;color:#0c2237;overflow-wrap:break-word; }
   .rec-time-relay{ font-size:21px;padding-top:1px; }
 
-  /* ---- The headline event pills get a filled gradient (was outlined). ---- */
-  .award-event-records{
-    color:#fff !important;border:none !important;
-    background:linear-gradient(135deg,#2470ce,#17b8d4) !important;
-    box-shadow:0 4px 12px -4px rgba(23,184,212,.55),inset 0 1px 0 rgba(255,255,255,.35) !important;
+  /* ---- Poster heading: big brand title + prominent record-type line ----
+     "Highcroft Hurricanes" is the headline; the record type
+     ("Individual Records" / "Relay Records") sits right under it, large and
+     colored, so it's the clear second read (it used to be a tiny pill that
+     was barely visible). The age group follows below. ---- */
+  .award-card .award-title{ font-size:46px;line-height:1; }
+  .rec-records-type{
+    font-family:var(--font-display);font-weight:800;
+    font-size:29px;line-height:1.04;letter-spacing:.02em;
+    text-transform:uppercase;color:#1b6fcf;margin-top:5px;
   }
-  .award-event-records::before{ display:none !important; }
-  .award-card-relay .award-event-records{
-    background:linear-gradient(135deg,#0e7490,#14b8a6) !important;
-    box-shadow:0 4px 12px -4px rgba(20,184,166,.55),inset 0 1px 0 rgba(255,255,255,.35) !important;
-  }
+  .rec-type-relay{ color:#0e9488; }
+  .award-card .award-headline{ margin-top:6px; }
+  .award-card .award-headline .award-group{ font-size:32px;color:#1b4a88; }
 
   /* On-screen only: soften the corner brackets (full strength in print). */
   @media screen{
@@ -219,6 +222,20 @@
     /* Boards stretch the full card width; the global space-between pins the
        footer to the bottom for a balanced certificate. */
     .award-cols{ align-self:stretch !important;width:100% !important; }
+
+    /* Heading scaled up for the full sheet: big "Highcroft Hurricanes" brand,
+       a large colored record-type line (was a tiny pill), then the age group.
+       Solid colors (not gradients) so they print reliably. The global print
+       block forces .award-title solid #1b4a88 — we only resize it here. */
+    .award-card .award-title{ font-size:34px !important; }
+    .rec-records-type{
+      font-size:27px !important;line-height:1.05 !important;margin-top:5px !important;
+      color:#1b6fcf !important;-webkit-text-fill-color:#1b6fcf !important;
+    }
+    .rec-type-relay{ color:#0e9488 !important;-webkit-text-fill-color:#0e9488 !important; }
+    .award-card .award-title-rule{ width:78px !important;height:4px !important;margin-top:7px !important; }
+    .award-card .award-headline{ margin:2px 0 0 !important; }
+    .award-card .award-group{ font-size:26px !important; }
   }
 </style>
 </head>
@@ -496,7 +513,7 @@
     const today = new Date().toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'});
     const isRelay = kind === 'relay';
     const extraClass = isRelay ? ' award-card-relay' : '';
-    const eventClass = isRelay ? 'award-event award-event-records' : 'award-event award-event-records';
+    const typeClass = isRelay ? 'rec-records-type rec-type-relay' : 'rec-records-type';
     return `<article class="award-card${extraClass}" data-group="${escapeHtml(kind)}-${escapeHtml(group)}">
       <div class="award-corner tl"></div>
       <div class="award-corner tr"></div>
@@ -507,14 +524,13 @@
           <img class="award-logo" src="assets/logo-flat.jpg" alt="Highcroft Hurricanes" />
         </div>
         <div class="award-header-text">
-          <div class="award-kicker">Highcroft Hurricanes</div>
-          <h2 class="award-title">Team Records</h2>
+          <h2 class="award-title">Highcroft Hurricanes</h2>
+          <div class="${typeClass}">${escapeHtml(eventLabel)}</div>
           <div class="award-title-rule" aria-hidden="true"></div>
         </div>
       </div>
       <div class="award-headline">
         <span class="award-group">${escapeHtml(bracketLabel(group))}</span>
-        <span class="${eventClass}">${escapeHtml(eventLabel)}</span>
       </div>
       ${innerCols}
       <div class="award-footer">
