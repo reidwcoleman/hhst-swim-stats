@@ -143,8 +143,9 @@
     font-family:var(--font-display);font-weight:800;font-size:25px;
     font-variant-numeric:tabular-nums;letter-spacing:-.015em;color:#2c4a6e;white-space:nowrap;
   }
-  .rec-relay-names{ display:flex;flex-direction:column;gap:5px; }
-  .rec-swimmer{ font-size:21px;font-weight:600;line-height:1.22;color:#16273d;overflow-wrap:break-word; }
+  /* Two swimmers per line (2×2 grid) so each name can be larger + bolder. */
+  .rec-relay-names{ display:grid;grid-template-columns:1fr 1fr;gap:6px 18px; }
+  .rec-swimmer{ font-size:23px;font-weight:700;line-height:1.2;color:#16273d;text-align:center;overflow-wrap:break-word; }
 
   /* Relay chip + time pick up the gender accent. */
   .rec-col-girls .rec-relay-chip{ background:#8f3a5c; }
@@ -223,13 +224,13 @@
     .rec-name{ font-size:32px !important;line-height:1.08 !important; }
     .rec-time{ font-size:38px !important; }
 
-    /* Relays: type chip + big time on top, then the 4-swimmer lineup at full
-       column width below, now noticeably bigger. */
-    .rec-row-relay{ padding:0.16in 0.26in !important;gap:0.1in !important; }
+    /* Relays: type chip + big time on top; the 4-swimmer lineup runs two names
+       per line (2×2 grid) below, which lets each name be large + bold. */
+    .rec-row-relay{ padding:0.18in 0.17in !important;gap:0.12in !important; }
     .rec-relay-chip{ font-size:14px !important;padding:8px 15px !important; }
     .rec-relay-time{ font-size:36px !important; }
-    .rec-relay-names{ gap:0.06in !important; }
-    .rec-swimmer{ font-size:27px !important;line-height:1.16 !important; }
+    .rec-relay-names{ grid-template-columns:1fr 1fr !important;gap:0.12in 0.16in !important; }
+    .rec-swimmer{ font-size:30px !important;font-weight:700 !important;line-height:1.14 !important; }
 
     .award-cols{ align-self:stretch !important;width:100% !important; }
 
