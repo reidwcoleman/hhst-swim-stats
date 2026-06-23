@@ -85,48 +85,47 @@
 
   .rec-row{
     display:flex;align-items:center;gap:15px;
-    padding:13px 17px;border-radius:15px;
-    border:1px solid rgba(30,58,138,.14);
-    border-left:6px solid #2470ce;
-    background:#f4f9ff;
-    box-shadow:0 2px 6px -3px rgba(15,23,42,.16),inset 0 1px 0 rgba(255,255,255,.9);
+    padding:13px 17px;border-radius:13px;
+    border:1px solid rgba(30,58,138,.12);
+    border-left:5px solid #2c4a6e;
+    background:#f4f7fb;
+    box-shadow:0 1px 3px -1px rgba(15,23,42,.1),inset 0 1px 0 rgba(255,255,255,.7);
   }
 
   .rec-evt{
     flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;
-    min-width:68px;padding:7px 14px;border-radius:999px;
+    min-width:68px;padding:7px 14px;border-radius:8px;
     font-family:var(--font-body);font-weight:800;font-size:12px;
-    letter-spacing:.07em;text-transform:uppercase;color:#fff;
-    background:linear-gradient(135deg,#3a8ce3,#1b4a88);
-    box-shadow:0 3px 8px -3px rgba(27,74,136,.55),inset 0 1px 0 rgba(255,255,255,.3);
+    letter-spacing:.08em;text-transform:uppercase;color:#fff;
+    background:#2c4a6e;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.16);
   }
   .rec-name{
     flex:1 1 auto;min-width:0;text-align:left;
-    font-weight:700;font-size:20px;line-height:1.18;color:#0c2237;
+    font-weight:700;font-size:20px;line-height:1.18;color:#16273d;
     letter-spacing:-.01em;overflow-wrap:break-word;
   }
   .rec-time{
     flex:0 0 auto;text-align:right;white-space:nowrap;padding-left:6px;
     font-family:var(--font-display);font-weight:800;font-size:24px;
-    font-variant-numeric:tabular-nums;letter-spacing:-.015em;color:#1b4a88;
+    font-variant-numeric:tabular-nums;letter-spacing:-.015em;color:#2c4a6e;
   }
 
-  /* Girls = rose */
+  /* Girls = muted wine/mauve (refined, not bubblegum) */
   .rec-col-girls .rec-row{
-    background:linear-gradient(135deg,#fff5f9,#fdedf4);
-    border-color:rgba(219,39,119,.18);border-left-color:#ec4899;
+    background:#faf3f6;
+    border-color:rgba(125,47,82,.16);border-left-color:#9d3d63;
   }
-  .rec-col-girls .rec-evt{ background:linear-gradient(135deg,#f472b6,#db2777);
-    box-shadow:0 3px 8px -3px rgba(219,39,119,.5),inset 0 1px 0 rgba(255,255,255,.3); }
-  .rec-col-girls .rec-time{ color:#be185d; }
+  .rec-col-girls .rec-evt{ background:#8f3a5c; }
+  .rec-col-girls .rec-time{ color:#7d2f52; }
 
-  /* Boys = blue (default rule above already sets this; named for symmetry) */
+  /* Boys = deep slate navy */
   .rec-col-boys .rec-row{
-    background:linear-gradient(135deg,#f1f7ff,#e6f0fd);
-    border-color:rgba(36,112,206,.18);border-left-color:#2470ce;
+    background:#f2f6fb;
+    border-color:rgba(40,68,102,.16);border-left-color:#2c4a6e;
   }
-  .rec-col-boys .rec-evt{ background:linear-gradient(135deg,#3a8ce3,#1b4a88); }
-  .rec-col-boys .rec-time{ color:#1b4a88; }
+  .rec-col-boys .rec-evt{ background:#2c4a6e; }
+  .rec-col-boys .rec-time{ color:#243f5e; }
 
   /* Relay rows: each of the 4 swimmers gets its own line (a clean relay
      lineup) so nothing breaks mid-word; chip stacks "MEDLEY / Relay". */
@@ -150,15 +149,15 @@
      ("Individual Records" / "Relay Records") sits right under it, large and
      colored, so it's the clear second read (it used to be a tiny pill that
      was barely visible). The age group follows below. ---- */
-  .award-card .award-title{ font-size:46px;line-height:1; }
+  .award-card .award-title{ font-size:48px;line-height:1;color:#1b3354; }
   .rec-records-type{
     font-family:var(--font-display);font-weight:800;
-    font-size:29px;line-height:1.04;letter-spacing:.02em;
-    text-transform:uppercase;color:#1b6fcf;margin-top:5px;
+    font-size:32px;line-height:1.04;letter-spacing:.04em;
+    text-transform:uppercase;color:#2c4a6e;margin-top:6px;
   }
-  .rec-type-relay{ color:#0e9488; }
-  .award-card .award-headline{ margin-top:6px; }
-  .award-card .award-headline .award-group{ font-size:32px;color:#1b4a88; }
+  .rec-type-relay{ color:#0f6e63; }
+  .award-card .award-headline{ margin-top:10px; }
+  .award-card .award-headline .award-group{ font-size:36px;color:#2c4a6e; }
 
   /* On-screen only: soften the corner brackets (full strength in print). */
   @media screen{
@@ -219,23 +218,29 @@
     .rec-swimmer{ font-size:19px !important;line-height:1.2 !important; }
     .rec-time-relay{ font-size:28px !important; }
 
-    /* Boards stretch the full card width; the global space-between pins the
-       footer to the bottom for a balanced certificate. */
     .award-cols{ align-self:stretch !important;width:100% !important; }
 
-    /* Heading scaled up for the full sheet: big "Highcroft Hurricanes" brand,
-       a large colored record-type line (was a tiny pill), then the age group.
-       Solid colors (not gradients) so they print reliably. The global print
-       block forces .award-title solid #1b4a88 — we only resize it here. */
-    .award-card .award-title{ font-size:34px !important; }
+    /* LAYOUT: the global print rule spreads the 4 blocks across the whole 8in
+       sheet (justify-content:space-between), which left the heading marooned
+       at the very top with a big void above the table. Center the whole stack
+       instead, with a tight gap, so the brand + record type + age group read
+       as ONE group sitting right above the names/times table. */
+    .award-card{ justify-content:center !important;gap:0.17in !important; }
+    .award-header{ margin-bottom:0 !important; }
+
+    /* Heading scaled up + grouped for the full sheet: big "Highcroft
+       Hurricanes" brand, a large colored record-type line (was a tiny pill),
+       then a big age group right above the table. Solid colors (not gradients)
+       so they print reliably; the global block forces .award-title solid. */
+    .award-card .award-title{ font-size:39px !important; }
     .rec-records-type{
-      font-size:27px !important;line-height:1.05 !important;margin-top:5px !important;
-      color:#1b6fcf !important;-webkit-text-fill-color:#1b6fcf !important;
+      font-size:31px !important;line-height:1.04 !important;margin-top:6px !important;
+      color:#2c4a6e !important;-webkit-text-fill-color:#2c4a6e !important;
     }
-    .rec-type-relay{ color:#0e9488 !important;-webkit-text-fill-color:#0e9488 !important; }
-    .award-card .award-title-rule{ width:78px !important;height:4px !important;margin-top:7px !important; }
-    .award-card .award-headline{ margin:2px 0 0 !important; }
-    .award-card .award-group{ font-size:26px !important; }
+    .rec-type-relay{ color:#0f6e63 !important;-webkit-text-fill-color:#0f6e63 !important; }
+    .award-card .award-title-rule{ width:88px !important;height:4px !important;margin-top:8px !important; }
+    .award-card .award-headline{ margin:0 !important; }
+    .award-card .award-group{ font-size:33px !important;color:#2c4a6e !important; }
   }
 </style>
 </head>
