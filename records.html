@@ -73,54 +73,88 @@
   .award-print-one:focus-visible{ outline:none; box-shadow:0 0 0 3px var(--ring); }
 
   /* ====================================================================
-     THE RECORD TABLE — event label | holder name | time.
-     Replaces the rank/medal ladder of the Fastest Five poster. Colors are
-     fixed (the poster is always white) to match the other award posters.
+     THE RECORD BOARD — each record is its own colored box:
+       [ event chip ]  Holder name              Time
+     Girls boards are rose-tinted, Boys boards blue-tinted, with a bold
+     colored left rail + filled accent chip so the poster reads with real
+     color (not a flat white table). Div-based (not a <table>) so the global
+     gold/silver/bronze "rank wash" on .award-col tbody rows can't bleed in —
+     these rows are strokes, not 1st/2nd/3rd places.
      ==================================================================== */
-  .rec-table{ width:100%;border-collapse:collapse;margin-top:2px; }
-  .rec-table tr{ background:transparent; }
-  .rec-table tr:hover td{ background:transparent; }
-  .rec-row td{
-    padding:11px 8px;border-bottom:1px solid rgba(30,58,138,.14);
-    vertical-align:middle;
+  .rec-board{ display:flex;flex-direction:column;gap:11px;margin-top:12px; }
+
+  .rec-row{
+    display:flex;align-items:center;gap:15px;
+    padding:13px 17px;border-radius:15px;
+    border:1px solid rgba(30,58,138,.14);
+    border-left:6px solid #2470ce;
+    background:#f4f9ff;
+    box-shadow:0 2px 6px -3px rgba(15,23,42,.16),inset 0 1px 0 rgba(255,255,255,.9);
   }
-  .rec-row:last-child td{ border-bottom:none; }
 
   .rec-evt{
-    text-align:left;font-family:var(--font-body);font-weight:800;
-    font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;
-    color:#1b4a88;white-space:nowrap;width:1%;padding-right:14px;
+    flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;
+    min-width:68px;padding:7px 14px;border-radius:999px;
+    font-family:var(--font-body);font-weight:800;font-size:12px;
+    letter-spacing:.07em;text-transform:uppercase;color:#fff;
+    background:linear-gradient(135deg,#3a8ce3,#1b4a88);
+    box-shadow:0 3px 8px -3px rgba(27,74,136,.55),inset 0 1px 0 rgba(255,255,255,.3);
   }
   .rec-name{
-    text-align:left;font-weight:600;font-size:16.5px;color:#0c2237;
-    line-height:1.2;overflow-wrap:anywhere;
+    flex:1 1 auto;min-width:0;text-align:left;
+    font-weight:700;font-size:20px;line-height:1.18;color:#0c2237;
+    letter-spacing:-.01em;overflow-wrap:break-word;
   }
   .rec-time{
-    text-align:right;font-family:var(--font-display);font-weight:800;
-    font-size:19px;font-variant-numeric:tabular-nums;color:#0c2237;
-    white-space:nowrap;padding-left:10px;
+    flex:0 0 auto;text-align:right;white-space:nowrap;padding-left:6px;
+    font-family:var(--font-display);font-weight:800;font-size:24px;
+    font-variant-numeric:tabular-nums;letter-spacing:-.015em;color:#1b4a88;
   }
 
-  /* Relay rows: the 4-swimmer roster wraps under a top-aligned label. */
-  .rec-row-relay td{ vertical-align:top;padding:13px 8px; }
-  .rec-evt-relay{ padding-top:1px; }
+  /* Girls = rose */
+  .rec-col-girls .rec-row{
+    background:linear-gradient(135deg,#fff5f9,#fdedf4);
+    border-color:rgba(219,39,119,.18);border-left-color:#ec4899;
+  }
+  .rec-col-girls .rec-evt{ background:linear-gradient(135deg,#f472b6,#db2777);
+    box-shadow:0 3px 8px -3px rgba(219,39,119,.5),inset 0 1px 0 rgba(255,255,255,.3); }
+  .rec-col-girls .rec-time{ color:#be185d; }
+
+  /* Boys = blue (default rule above already sets this; named for symmetry) */
+  .rec-col-boys .rec-row{
+    background:linear-gradient(135deg,#f1f7ff,#e6f0fd);
+    border-color:rgba(36,112,206,.18);border-left-color:#2470ce;
+  }
+  .rec-col-boys .rec-evt{ background:linear-gradient(135deg,#3a8ce3,#1b4a88); }
+  .rec-col-boys .rec-time{ color:#1b4a88; }
+
+  /* Relay rows: each of the 4 swimmers gets its own line (a clean relay
+     lineup) so nothing breaks mid-word; chip stacks "MEDLEY / Relay". */
+  .rec-row-relay{ align-items:flex-start; }
+  .rec-evt-relay{
+    flex-direction:column;line-height:1.04;min-width:78px;padding:8px 12px;
+    font-size:11.5px;
+  }
+  .rec-evt-relay small{
+    display:block;font-size:8.5px;font-weight:700;letter-spacing:.06em;
+    opacity:.92;margin-top:2px;
+  }
   .rec-name-relay{
-    font-weight:600;font-size:14px;line-height:1.45;color:#0c2237;
-    overflow-wrap:anywhere;
+    display:flex;flex-direction:column;gap:3px;padding-top:1px;font-weight:600;
   }
-  .rec-relay-type{
-    display:block;font-weight:800;font-size:12.5px;letter-spacing:.05em;
-    text-transform:uppercase;color:#1b4a88;
-  }
-  .rec-relay-type small{
-    display:block;font-size:10.5px;font-weight:700;letter-spacing:.04em;
-    color:#3b5bb5;text-transform:none;margin-top:1px;
-  }
-  .rec-time-relay{ padding-top:1px; }
+  .rec-swimmer{ font-size:15px;line-height:1.22;color:#0c2237;overflow-wrap:break-word; }
+  .rec-time-relay{ font-size:21px;padding-top:1px; }
 
-  /* Distinguish the relay posters with a teal event pill + title accent. */
+  /* ---- The headline event pills get a filled gradient (was outlined). ---- */
+  .award-event-records{
+    color:#fff !important;border:none !important;
+    background:linear-gradient(135deg,#2470ce,#17b8d4) !important;
+    box-shadow:0 4px 12px -4px rgba(23,184,212,.55),inset 0 1px 0 rgba(255,255,255,.35) !important;
+  }
+  .award-event-records::before{ display:none !important; }
   .award-card-relay .award-event-records{
-    color:#0e7490;border-color:rgba(14,116,144,.34);
+    background:linear-gradient(135deg,#0e7490,#14b8a6) !important;
+    box-shadow:0 4px 12px -4px rgba(20,184,166,.55),inset 0 1px 0 rgba(255,255,255,.35) !important;
   }
 
   /* On-screen only: soften the corner brackets (full strength in print). */
@@ -157,25 +191,34 @@
     body.printing-records-ind   #relayHost{ display:none !important; }
     body.printing-records-relay #individualHost{ display:none !important; }
 
-    /* Record rows scale up to read across a room, same as the award names. */
-    .rec-row td{ padding:9px 8px !important;border-bottom-color:rgba(30,58,138,.22) !important; }
-    .rec-evt{ font-size:18px !important;padding-right:16px !important; }
-    .rec-name{ font-size:27px !important;line-height:1.12 !important; }
-    .rec-time{ font-size:31px !important; }
-    .rec-time.t-min{ font-size:25px !important; }
+    /* Bigger boxes + bigger names/times for the full landscape sheet. These
+       are sized so the tallest board (4 individual rows, or 2 relay rows with
+       the roster wrapping to 3 lines) still clears the 8in card — verified by
+       print emulation. The colored chips + tinted boxes print via the global
+       print-color-adjust:exact rule. */
+    .rec-board{ gap:0.17in !important;margin-top:0.14in !important; }
+    .rec-row{
+      padding:0.17in 0.24in !important;border-radius:16px !important;
+      border-left-width:8px !important;box-shadow:none !important;
+      page-break-inside:avoid !important;break-inside:avoid !important;
+    }
+    .rec-evt{
+      font-size:16px !important;min-width:0.82in !important;padding:9px 13px !important;
+      box-shadow:none !important;
+    }
+    .rec-name{ font-size:30px !important;line-height:1.1 !important; }
+    .rec-time{ font-size:35px !important; }
 
-    /* Relays: 4 names per cell, so a touch smaller + tighter, still legible. */
-    .rec-row-relay td{ padding:10px 8px !important; }
-    .rec-relay-type{ font-size:17px !important; }
-    .rec-relay-type small{ font-size:13px !important; }
-    .rec-name-relay{ font-size:19px !important;line-height:1.4 !important; }
-    .rec-time-relay{ font-size:27px !important; }
+    /* Relays: one swimmer per line, big + legible, no mid-word breaks. */
+    .rec-evt-relay{ min-width:1in !important;padding:10px 14px !important;font-size:14.5px !important; }
+    .rec-evt-relay small{ font-size:10.5px !important; }
+    .rec-name-relay{ gap:0.05in !important; }
+    .rec-swimmer{ font-size:19px !important;line-height:1.2 !important; }
+    .rec-time-relay{ font-size:28px !important; }
 
-    /* The award boards in the relay/individual posters are shorter than the
-       Fastest Five ladder; the global space-between keeps the footer pinned to
-       the bottom for a balanced certificate. A little breathing room around the
-       boards so the (few) rows don't float oddly. */
-    .award-cols{ align-self:center !important;width:100% !important; }
+    /* Boards stretch the full card width; the global space-between pins the
+       footer to the bottom for a balanced certificate. */
+    .award-cols{ align-self:stretch !important;width:100% !important; }
   }
 </style>
 </head>
@@ -487,14 +530,15 @@
 
   // ============ Individual records ============
   function individualColumnHtml(entries, gender){
-    const rows = entries.map(e => `<tr class="rec-row">
-      <td class="rec-evt">${escapeHtml(e.evt)}</td>
-      <td class="rec-name">${escapeHtml(e.name)}</td>
-      <td class="rec-time${timeCellClass(e.time)}">${escapeHtml(e.time)}</td>
-    </tr>`).join('');
-    return `<div class="award-col">
-      <div class="award-col-head award-col-head-${gender.toLowerCase()}">${gender}</div>
-      <table class="rec-table"><tbody>${rows}</tbody></table>
+    const cls = gender.toLowerCase();
+    const rows = entries.map(e => `<div class="rec-row">
+      <span class="rec-evt">${escapeHtml(e.evt)}</span>
+      <span class="rec-name">${escapeHtml(e.name)}</span>
+      <span class="rec-time${timeCellClass(e.time)}">${escapeHtml(e.time)}</span>
+    </div>`).join('');
+    return `<div class="award-col rec-col rec-col-${cls}">
+      <div class="award-col-head award-col-head-${cls}">${gender}</div>
+      <div class="rec-board">${rows}</div>
     </div>`;
   }
 
@@ -513,24 +557,29 @@
 
   // ============ Relay records ============
   function relayColumnHtml(entries, gender){
+    const cls = gender.toLowerCase();
     const rows = entries.map(e => {
-      // Split "Medley Relay" -> "Medley" + small "Relay" so the label stacks
-      // neatly above the wrapped roster.
+      // Split "Medley Relay" -> "Medley" + small "Relay" so the chip stacks
+      // neatly beside the wrapped roster.
       const parts = e.type.split(' ');
       const tail = parts.length > 1 ? parts.pop() : '';
       const head = parts.join(' ');
-      const label = tail
-        ? `<span class="rec-relay-type">${escapeHtml(head)}<small>${escapeHtml(tail)}</small></span>`
-        : `<span class="rec-relay-type">${escapeHtml(e.type)}</span>`;
-      return `<tr class="rec-row rec-row-relay">
-        <td class="rec-evt rec-evt-relay">${label}</td>
-        <td class="rec-name rec-name-relay">${escapeHtml(e.team)}</td>
-        <td class="rec-time rec-time-relay${timeCellClass(e.time)}">${escapeHtml(e.time)}</td>
-      </tr>`;
+      const chip = tail
+        ? `<span class="rec-evt rec-evt-relay">${escapeHtml(head)}<small>${escapeHtml(tail)}</small></span>`
+        : `<span class="rec-evt rec-evt-relay">${escapeHtml(e.type)}</span>`;
+      // One swimmer per line — reads like a relay lineup and never breaks a
+      // surname mid-word the way a comma string in a narrow column would.
+      const lineup = e.team.split(',').map(s => s.trim()).filter(Boolean)
+        .map(s => `<span class="rec-swimmer">${escapeHtml(s)}</span>`).join('');
+      return `<div class="rec-row rec-row-relay">
+        ${chip}
+        <span class="rec-name rec-name-relay">${lineup}</span>
+        <span class="rec-time rec-time-relay">${escapeHtml(e.time)}</span>
+      </div>`;
     }).join('');
-    return `<div class="award-col">
-      <div class="award-col-head award-col-head-${gender.toLowerCase()}">${gender}</div>
-      <table class="rec-table"><tbody>${rows}</tbody></table>
+    return `<div class="award-col rec-col rec-col-${cls}">
+      <div class="award-col-head award-col-head-${cls}">${gender}</div>
+      <div class="rec-board">${rows}</div>
     </div>`;
   }
 
