@@ -84,10 +84,10 @@
   .rec-board{ display:flex;flex-direction:column;gap:11px;margin-top:12px; }
 
   .rec-row{
-    display:flex;align-items:center;gap:15px;
-    padding:13px 17px;border-radius:13px;
+    display:flex;align-items:center;gap:16px;
+    padding:15px 19px;border-radius:13px;
     border:1px solid rgba(30,58,138,.12);
-    border-left:5px solid #2c4a6e;
+    border-left:6px solid #2c4a6e;
     background:#f4f7fb;
     box-shadow:0 1px 3px -1px rgba(15,23,42,.1),inset 0 1px 0 rgba(255,255,255,.7);
   }
@@ -102,12 +102,12 @@
   }
   .rec-name{
     flex:1 1 auto;min-width:0;text-align:left;
-    font-weight:700;font-size:20px;line-height:1.18;color:#16273d;
+    font-weight:700;font-size:22px;line-height:1.16;color:#16273d;
     letter-spacing:-.01em;overflow-wrap:break-word;
   }
   .rec-time{
     flex:0 0 auto;text-align:right;white-space:nowrap;padding-left:6px;
-    font-family:var(--font-display);font-weight:800;font-size:24px;
+    font-family:var(--font-display);font-weight:800;font-size:27px;
     font-variant-numeric:tabular-nums;letter-spacing:-.015em;color:#2c4a6e;
   }
 
@@ -143,8 +143,8 @@
     font-family:var(--font-display);font-weight:800;font-size:25px;
     font-variant-numeric:tabular-nums;letter-spacing:-.015em;color:#2c4a6e;white-space:nowrap;
   }
-  .rec-relay-names{ display:flex;flex-direction:column;gap:4px; }
-  .rec-swimmer{ font-size:18px;font-weight:600;line-height:1.25;color:#16273d;overflow-wrap:break-word; }
+  .rec-relay-names{ display:flex;flex-direction:column;gap:5px; }
+  .rec-swimmer{ font-size:21px;font-weight:600;line-height:1.22;color:#16273d;overflow-wrap:break-word; }
 
   /* Relay chip + time pick up the gender accent. */
   .rec-col-girls .rec-relay-chip{ background:#8f3a5c; }
@@ -157,15 +157,19 @@
      ("Individual Records" / "Relay Records") sits right under it, large and
      colored, so it's the clear second read (it used to be a tiny pill that
      was barely visible). The age group follows below. ---- */
-  .award-card .award-title{ font-size:55px;line-height:1;color:#1b3354; }
+  .award-card .award-title{ font-size:57px;line-height:1;color:#1b3354; }
+  /* Record type + age group on ONE line ("Individual Records · 9-10") to save
+     a whole vertical line for bigger boards below. */
   .rec-records-type{
-    font-family:var(--font-display);font-weight:800;
-    font-size:38px;line-height:1.04;letter-spacing:.04em;
-    text-transform:uppercase;color:#2c4a6e;margin-top:7px;
+    display:flex;align-items:baseline;justify-content:center;flex-wrap:wrap;
+    column-gap:.32em;row-gap:2px;margin-top:8px;
+    font-family:var(--font-display);font-weight:800;line-height:1.02;
+    letter-spacing:.03em;text-transform:uppercase;
   }
-  .rec-type-relay{ color:#0f6e63; }
-  .award-card .award-headline{ margin-top:12px; }
-  .award-card .award-headline .award-group{ font-size:44px;color:#2c4a6e; }
+  .rec-rt-label{ font-size:40px;color:#2c4a6e; }
+  .rec-rt-sep{ font-size:33px;color:#9aa7b6;font-weight:700; }
+  .rec-rt-age{ font-size:46px;color:#1b3354; }
+  .rec-type-relay .rec-rt-label{ color:#0f6e63; }
 
   /* On-screen only: soften the corner brackets (full strength in print). */
   @media screen{
@@ -202,14 +206,13 @@
     body.printing-records-ind   #relayHost{ display:none !important; }
     body.printing-records-relay #individualHost{ display:none !important; }
 
-    /* Bigger boxes + bigger names/times for the full landscape sheet. These
-       are sized so the tallest board (4 individual rows, or 2 relay rows with
-       the roster wrapping to 3 lines) still clears the 8in card — verified by
-       print emulation. The colored chips + tinted boxes print via the global
-       print-color-adjust:exact rule. */
-    .rec-board{ gap:0.17in !important;margin-top:0.14in !important; }
+    /* Bigger boxes + bigger names/times for the full landscape sheet. Folding
+       the age group into the record-type line freed a whole vertical line, so
+       the boards get larger. Sized so the tallest board (4 individual rows, or
+       the 2 relay boxes with 4 names each) still clears the 8in card. */
+    .rec-board{ gap:0.17in !important;margin-top:0.16in !important; }
     .rec-row{
-      padding:0.17in 0.24in !important;border-radius:16px !important;
+      padding:0.19in 0.26in !important;border-radius:16px !important;
       border-left-width:8px !important;box-shadow:none !important;
       page-break-inside:avoid !important;break-inside:avoid !important;
     }
@@ -217,41 +220,37 @@
       font-size:16px !important;min-width:0.82in !important;padding:9px 13px !important;
       box-shadow:none !important;
     }
-    .rec-name{ font-size:30px !important;line-height:1.1 !important; }
-    .rec-time{ font-size:35px !important; }
+    .rec-name{ font-size:32px !important;line-height:1.08 !important; }
+    .rec-time{ font-size:38px !important; }
 
-    /* Relays: big boxes — type chip + big time on top, then the 4-swimmer
-       lineup at full column width below. Sized so both 2-row columns clear the
-       sheet (4 names + a header line per box × 2 boxes is the tall case). */
-    .rec-row-relay{ padding:0.15in 0.26in !important;gap:0.09in !important; }
+    /* Relays: type chip + big time on top, then the 4-swimmer lineup at full
+       column width below, now noticeably bigger. */
+    .rec-row-relay{ padding:0.16in 0.26in !important;gap:0.1in !important; }
     .rec-relay-chip{ font-size:14px !important;padding:8px 15px !important; }
-    .rec-relay-time{ font-size:33px !important; }
-    .rec-relay-names{ gap:0.055in !important; }
-    .rec-swimmer{ font-size:22px !important;line-height:1.18 !important; }
+    .rec-relay-time{ font-size:36px !important; }
+    .rec-relay-names{ gap:0.06in !important; }
+    .rec-swimmer{ font-size:27px !important;line-height:1.16 !important; }
 
     .award-cols{ align-self:stretch !important;width:100% !important; }
 
-    /* LAYOUT: the global print rule spreads the 4 blocks across the whole 8in
-       sheet (justify-content:space-between), which left the heading marooned
-       at the very top with a big void above the table. Center the whole stack
-       instead, with a tight gap, so the brand + record type + age group read
-       as ONE group sitting right above the names/times table. */
-    .award-card{ justify-content:center !important;gap:0.17in !important; }
+    /* LAYOUT: the global print rule spreads blocks across the whole 8in sheet
+       (justify-content:space-between). Center the stack instead so the brand +
+       "record type · age group" line read as one group right above the table. */
+    .award-card{ justify-content:center !important;gap:0.19in !important; }
     .award-header{ margin-bottom:0 !important; }
 
-    /* Heading scaled up + grouped for the full sheet: big "Highcroft
-       Hurricanes" brand, a large colored record-type line (was a tiny pill),
-       then a big age group right above the table. Solid colors (not gradients)
-       so they print reliably; the global block forces .award-title solid. */
-    .award-card .award-title{ font-size:46px !important; }
+    /* Heading scaled up; record type + age group share ONE centered line.
+       Solid colors (not gradients) so they print reliably. */
+    .award-card .award-title{ font-size:48px !important;color:#1b3354 !important;-webkit-text-fill-color:#1b3354 !important; }
     .rec-records-type{
-      font-size:37px !important;line-height:1.03 !important;margin-top:7px !important;
-      color:#2c4a6e !important;-webkit-text-fill-color:#2c4a6e !important;
+      display:flex !important;align-items:baseline;justify-content:center;flex-wrap:wrap;
+      column-gap:.32em;margin-top:8px !important;line-height:1.02 !important;
     }
-    .rec-type-relay{ color:#0f6e63 !important;-webkit-text-fill-color:#0f6e63 !important; }
-    .award-card .award-title-rule{ width:100px !important;height:5px !important;margin-top:9px !important; }
-    .award-card .award-headline{ margin:0 !important; }
-    .award-card .award-group{ font-size:41px !important;color:#2c4a6e !important; }
+    .rec-rt-label{ font-size:39px !important;color:#2c4a6e !important;-webkit-text-fill-color:#2c4a6e !important; }
+    .rec-type-relay .rec-rt-label{ color:#0f6e63 !important;-webkit-text-fill-color:#0f6e63 !important; }
+    .rec-rt-sep{ font-size:32px !important;color:#9aa7b6 !important;-webkit-text-fill-color:#9aa7b6 !important; }
+    .rec-rt-age{ font-size:45px !important;color:#1b3354 !important;-webkit-text-fill-color:#1b3354 !important; }
+    .award-card .award-title-rule{ width:104px !important;height:5px !important;margin-top:9px !important; }
   }
 </style>
 </head>
@@ -540,12 +539,13 @@
         </div>
         <div class="award-header-text">
           <h2 class="award-title">Highcroft Hurricanes</h2>
-          <div class="${typeClass}">${escapeHtml(eventLabel)}</div>
+          <div class="${typeClass}">
+            <span class="rec-rt-label">${escapeHtml(eventLabel)}</span>
+            <span class="rec-rt-sep" aria-hidden="true">·</span>
+            <span class="rec-rt-age">${escapeHtml(group)}</span>
+          </div>
           <div class="award-title-rule" aria-hidden="true"></div>
         </div>
-      </div>
-      <div class="award-headline">
-        <span class="award-group">${escapeHtml(bracketLabel(group))}</span>
       </div>
       ${innerCols}
       <button class="award-print-one no-print" data-print="${escapeHtml(kind)}-${escapeHtml(group)}" title="Print just this poster" aria-label="Print this poster">
