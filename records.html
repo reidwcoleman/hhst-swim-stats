@@ -146,6 +146,10 @@
   /* Two swimmers per line (2×2 grid) so each name can be larger + bolder. */
   .rec-relay-names{ display:grid;grid-template-columns:1fr 1fr;gap:6px 18px; }
   .rec-swimmer{ font-size:23px;font-weight:700;line-height:1.2;color:#16273d;text-align:center;overflow-wrap:break-word; }
+  /* Longer names step down a size so they fit one line in their half cell. */
+  .rec-swimmer.rec-sw-2{ font-size:20px; }
+  .rec-swimmer.rec-sw-3{ font-size:17px; }
+  .rec-swimmer.rec-sw-4{ font-size:14px; }
 
   /* Relay chip + time pick up the gender accent. */
   .rec-col-girls .rec-relay-chip{ background:#8f3a5c; }
@@ -231,6 +235,10 @@
     .rec-relay-time{ font-size:36px !important; }
     .rec-relay-names{ grid-template-columns:1fr 1fr !important;gap:0.12in 0.16in !important; }
     .rec-swimmer{ font-size:30px !important;font-weight:700 !important;line-height:1.14 !important; }
+    /* Longer names step down so they fit one line in their half cell. */
+    .rec-swimmer.rec-sw-2{ font-size:26px !important; }
+    .rec-swimmer.rec-sw-3{ font-size:22px !important; }
+    .rec-swimmer.rec-sw-4{ font-size:18px !important; }
 
     .award-cols{ align-self:stretch !important;width:100% !important; }
 
@@ -583,14 +591,23 @@
   }
 
   // ============ Relay records ============
+  // Step a relay swimmer name down a size tier by total length so it fits one
+  // line in its half-width grid cell. No tier (short names) stay full size.
+  function swimmerTier(name){
+    const L = (name || '').length;
+    if(L >= 16) return ' rec-sw-4';
+    if(L >= 13) return ' rec-sw-3';
+    if(L >= 11) return ' rec-sw-2';
+    return '';
+  }
   function relayColumnHtml(entries, gender){
     const cls = gender.toLowerCase();
     const rows = entries.map(e => {
-      // One swimmer per line — reads like a relay lineup and never breaks a
-      // surname mid-word. Names sit at full column width below the type+time
-      // header line, so they get room to be large without crowding the time.
+      // Two swimmers per line (2×2 grid). Each name's font steps down by length
+      // so a longer name shrinks just enough to stay on one line in its half
+      // cell instead of wrapping; short names stay big.
       const lineup = e.team.split(',').map(s => s.trim()).filter(Boolean)
-        .map(s => `<span class="rec-swimmer">${escapeHtml(s)}</span>`).join('');
+        .map(s => `<span class="rec-swimmer${swimmerTier(s)}">${escapeHtml(s)}</span>`).join('');
       return `<div class="rec-row rec-row-relay">
         <div class="rec-relay-head">
           <span class="rec-relay-chip">${escapeHtml(e.type)}</span>
