@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<meta name="theme-color" content="#f4f8fb"/>
+<title>Team Records — Highcroft Hurricanes</title>
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg"/>
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png"/>
+
+<!-- Set the saved theme before first paint to avoid a flash -->
+<script>(function(){try{var t=localStorage.getItem('hhst.theme')||'light';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Figtree:ital,wght@0,300..900;1,300..900&family=IBM+Plex+Mono:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="assets/styles.css?v=43"/>
+<style>
+  /* ====================================================================
+     records.html page-specific styling (prefixed `rec-`). The poster shell
+     reuses the global .award-card / .award-cols / .award-col chrome so the
+     printable posters share the exact look + @media print pagination of the
+     Fastest Five and Most Improved certificates. Only the inner record-row
+     table (.rec-table) and a few page-meta bits are defined here. The records
+     are hardcoded on this page only — nothing here reads or writes swimmer
+     profiles, rosters, or meet times.
+     ==================================================================== */
+
+  .records-shell{ padding-bottom:80px; }
+  footer{ padding-bottom:calc(36px + 80px + env(safe-area-inset-bottom)); }
+
+  /* --- Section header above each poster group (mirrors awards.html) --- */
+  .rec-section-head{
+    display:flex;align-items:center;gap:12px;
+    margin:34px 2px 2px;scroll-margin-top:80px;flex-wrap:wrap;
+  }
+  .rec-section-head .rec-section-eyebrow{
+    display:inline-flex;align-items:center;gap:8px;
+    font-size:11px;font-weight:700;text-transform:uppercase;
+    letter-spacing:.14em;color:var(--text-subtle);white-space:nowrap;
+  }
+  .rec-section-head .rec-section-eyebrow::before{
+    content:"";width:6px;height:6px;border-radius:999px;
+    background:var(--accent);flex-shrink:0;
+  }
+  .rec-section-head .rec-section-rule{
+    flex:1;height:1px;min-width:40px;
+    background:linear-gradient(90deg,var(--border-strong),transparent);
+  }
+  .rec-section-print{
+    display:inline-flex;align-items:center;gap:7px;
+    padding:8px 15px;font-size:12.5px;font-weight:700;
+  }
+  .rec-section-print svg{width:15px;height:15px;flex-shrink:0;}
+
+  /* --- Intro controls column (matches awards.html rhythm) --- */
+  .records-controls-col{
+    display:flex;flex-direction:column;align-items:flex-end;gap:6px;
+  }
+  .records-controls-note{
+    font-size:13px;color:var(--text-muted);
+    text-align:right;max-width:300px;line-height:1.5;
+  }
+  #printAllRecords{
+    padding:11px 22px;border-radius:var(--radius);font-size:14px;
+    box-shadow:var(--shadow-blue);
+  }
+  #printAllRecords:hover{ box-shadow:var(--shadow-blue); }
+  #printAllRecords:focus-visible{ outline:none; box-shadow:0 0 0 3px var(--ring),var(--shadow-blue); }
+  #printAllRecords:active{ transform:translateY(0) scale(.98); }
+
+  .award-print-one:focus-visible{ outline:none; box-shadow:0 0 0 3px var(--ring); }
+
+  /* ====================================================================
+     THE RECORD TABLE — event label | holder name | time.
+     Replaces the rank/medal ladder of the Fastest Five poster. Colors are
+     fixed (the poster is always white) to match the other award posters.
+     ==================================================================== */
+  .rec-table{ width:100%;border-collapse:collapse;margin-top:2px; }
+  .rec-table tr{ background:transparent; }
+  .rec-table tr:hover td{ background:transparent; }
+  .rec-row td{
+    padding:11px 8px;border-bottom:1px solid rgba(30,58,138,.14);
+    vertical-align:middle;
+  }
+  .rec-row:last-child td{ border-bottom:none; }
+
+  .rec-evt{
+    text-align:left;font-family:var(--font-body);font-weight:800;
+    font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;
+    color:#1b4a88;white-space:nowrap;width:1%;padding-right:14px;
+  }
+  .rec-name{
+    text-align:left;font-weight:600;font-size:16.5px;color:#0c2237;
+    line-height:1.2;overflow-wrap:anywhere;
+  }
+  .rec-time{
+    text-align:right;font-family:var(--font-display);font-weight:800;
+    font-size:19px;font-variant-numeric:tabular-nums;color:#0c2237;
+    white-space:nowrap;padding-left:10px;
+  }
+
+  /* Relay rows: the 4-swimmer roster wraps under a top-aligned label. */
+  .rec-row-relay td{ vertical-align:top;padding:13px 8px; }
+  .rec-evt-relay{ padding-top:1px; }
+  .rec-name-relay{
+    font-weight:600;font-size:14px;line-height:1.45;color:#0c2237;
+    overflow-wrap:anywhere;
+  }
+  .rec-relay-type{
+    display:block;font-weight:800;font-size:12.5px;letter-spacing:.05em;
+    text-transform:uppercase;color:#1b4a88;
+  }
+  .rec-relay-type small{
+    display:block;font-size:10.5px;font-weight:700;letter-spacing:.04em;
+    color:#3b5bb5;text-transform:none;margin-top:1px;
+  }
+  .rec-time-relay{ padding-top:1px; }
+
+  /* Distinguish the relay posters with a teal event pill + title accent. */
+  .award-card-relay .award-event-records{
+    color:#0e7490;border-color:rgba(14,116,144,.34);
+  }
+
+  /* On-screen only: soften the corner brackets (full strength in print). */
+  @media screen{
+    .award-card .award-corner{ opacity:.5; }
+  }
+  .awards-host{ scroll-margin-top:80px; }
+
+  /* ---- Phone polish (screen-only; print uses the global @media print) ---- */
+  @media (max-width:768px){
+    .records-intro-head .records-controls-col{ align-items:stretch;width:100%; }
+    .records-controls-note{ max-width:none;text-align:left; }
+    #printAllRecords{ width:100%;justify-content:center; }
+    .rec-section-head{ margin-left:0;margin-right:0; }
+  }
+  @media (max-width:600px){
+    .rec-name{ font-size:15px; }
+    .rec-time{ font-size:17px; }
+    .rec-evt{ font-size:11.5px;padding-right:8px; }
+    .rec-name-relay{ font-size:13px; }
+  }
+
+  /* ====================================================================
+     PRINT — the global @media print block in styles.css already handles the
+     .award-card landscape pagination, white ink-saver background, hidden
+     decorations, header/footer scale-up, and per-card (.printing-one) +
+     hide-the-other-host scoping. These rules only size the records-specific
+     .rec-table cells up for the full landscape sheet and add the
+     Individual/Relay section scopes. Nothing here touches the Fastest Five
+     or Most Improved posters (different page, different classes).
+     ==================================================================== */
+  @media print{
+    /* Section scopes for the per-section "Print these" buttons. */
+    body.printing-records-ind   #relayHost{ display:none !important; }
+    body.printing-records-relay #individualHost{ display:none !important; }
+
+    /* Record rows scale up to read across a room, same as the award names. */
+    .rec-row td{ padding:9px 8px !important;border-bottom-color:rgba(30,58,138,.22) !important; }
+    .rec-evt{ font-size:18px !important;padding-right:16px !important; }
+    .rec-name{ font-size:27px !important;line-height:1.12 !important; }
+    .rec-time{ font-size:31px !important; }
+    .rec-time.t-min{ font-size:25px !important; }
+
+    /* Relays: 4 names per cell, so a touch smaller + tighter, still legible. */
+    .rec-row-relay td{ padding:10px 8px !important; }
+    .rec-relay-type{ font-size:17px !important; }
+    .rec-relay-type small{ font-size:13px !important; }
+    .rec-name-relay{ font-size:19px !important;line-height:1.4 !important; }
+    .rec-time-relay{ font-size:27px !important; }
+
+    /* The award boards in the relay/individual posters are shorter than the
+       Fastest Five ladder; the global space-between keeps the footer pinned to
+       the bottom for a balanced certificate. A little breathing room around the
+       boards so the (few) rows don't float oddly. */
+    .award-cols{ align-self:center !important;width:100% !important; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <nav>
+    <a class="brand" href="index.html">
+      <span class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2 12c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/>
+          <path d="M2 17c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/>
+          <path d="M2 7c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/>
+        </svg>
+      </span>
+      Highcroft <em>Hurricanes</em>
+    </a>
+    <ul class="nav-links">
+      <li><a href="leaderboards.html">Season Stats</a></li>
+      <li><a href="meet-recap.html">Meet Recap</a></li>
+      <li><a href="records.html" class="active">Records</a></li>
+      <li><a href="get-faster.html">Get Faster</a></li>
+      <li><a href="admin.html" class="btn">Admin</a></li>
+      <li>
+        <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+          <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+          <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+      </li>
+    </ul>
+  </nav>
+</header>
+
+<section class="dash-hero leaderboard-hero">
+  <div class="dash-hero-inner">
+    <div class="leaderboard-hero-content">
+      <div class="kicker"><span class="pulse"></span> Team Hall of Records</div>
+      <h1>Team Records</h1>
+      <p class="lb-sub">The fastest swims in Highcroft Hurricanes history — individual records by age group and stroke, plus relay records. These are kept here as a standalone record book and don't affect any swimmer profile, roster, or meet results. Print any board as a poster.</p>
+    </div>
+  </div>
+</section>
+
+<main class="admin-shell records-shell">
+
+  <div class="card no-print awards-intro">
+    <div class="awards-intro-head records-intro-head">
+      <div>
+        <h2>Print &amp; Hang</h2>
+        <p class="lead">Every age group gets a poster: Girls and Boys records side-by-side. Save the whole set as one PDF, or print a single board from its corner button. Posters print one-per-page on landscape US&nbsp;Letter — ink-saver white, ready for the trophy wall.</p>
+      </div>
+      <div class="awards-controls records-controls-col">
+        <button class="btn btn-gradient" id="printAllRecords">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          Print all records · Save as PDF
+        </button>
+        <span class="records-controls-note">
+          Prints <strong>both</strong> Individual <strong>and</strong> Relay record posters for every age group, one per page.
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ INDIVIDUAL RECORDS ============ -->
+  <div class="rec-section-head no-print" id="individualSectionHead">
+    <span class="rec-section-eyebrow">Individual Team Records</span>
+    <span class="rec-section-rule" aria-hidden="true"></span>
+    <button class="btn ghost rec-section-print" id="printIndividual" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      Print individual posters
+    </button>
+  </div>
+  <section id="individualHost" class="awards-host"></section>
+
+  <!-- ============ RELAY RECORDS ============ -->
+  <div class="rec-section-head no-print" id="relaySectionHead">
+    <span class="rec-section-eyebrow">Relay Team Records</span>
+    <span class="rec-section-rule" aria-hidden="true"></span>
+    <button class="btn ghost rec-section-print" id="printRelay" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      Print relay posters
+    </button>
+  </div>
+  <section id="relayHost" class="awards-host"></section>
+
+</main>
+
+<footer>
+  Highcroft Hurricanes Swim Team · <a href="leaderboards.html">Season Stats</a> · <a href="meet-recap.html">Meet Recap</a> · <a href="records.html">Records</a>
+</footer>
+
+<script>
+  // ============ Theme (inline — this page needs no Firebase/data.js) ============
+  (function(){
+    function initTheme(){
+      var saved = localStorage.getItem('hhst.theme') || 'light';
+      document.documentElement.setAttribute('data-theme', saved);
+    }
+    function toggleTheme(){
+      var cur = document.documentElement.getAttribute('data-theme');
+      var next = cur === 'light' ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', next);
+      try { localStorage.setItem('hhst.theme', next); } catch(e){}
+    }
+    initTheme();
+    var btn = document.getElementById('themeToggle');
+    if(btn) btn.addEventListener('click', toggleTheme);
+  })();
+
+  // ============ RECORD DATA (hardcoded — page-only, never touches Firestore) ============
+  // Each age group has Girls + Boys columns. Order follows the team's age
+  // brackets. Times are stored exactly as on the official record board.
+  const INDIVIDUAL_RECORDS = [
+    { group:'6 & Under',
+      girls:[
+        { evt:'Free',   name:'J. Fishburn', time:'11.00' },
+        { evt:'Back',   name:'J. Fishburn', time:'13.06' },
+        { evt:'Breast', name:'S. Dixon',    time:'14.78' },
+      ],
+      boys:[
+        { evt:'Free',   name:'T. Salvitti',  time:'9.46'  },
+        { evt:'Back',   name:'D. Georges',   time:'11.72' },
+        { evt:'Breast', name:'Justin Clark', time:'14.00' },
+      ],
+    },
+    { group:'7-8',
+      girls:[
+        { evt:'Free',   name:'J. Fishburn', time:'16.40' },
+        { evt:'Back',   name:'K. Harmon',   time:'19.78' },
+        { evt:'Breast', name:'S. Dixon',    time:'21.32' },
+        { evt:'Fly',    name:'A. Eklund',   time:'19.53' },
+      ],
+      boys:[
+        { evt:'Free',   name:'Tristan Talwar', time:'14.60' },
+        { evt:'Back',   name:'Tristan Talwar', time:'17.10' },
+        { evt:'Breast', name:'Tristan Talwar', time:'19.11' },
+        { evt:'Fly',    name:'Tristan Talwar', time:'15.72' },
+      ],
+    },
+    { group:'9-10',
+      girls:[
+        { evt:'Free',   name:'Tara Talwar', time:'13.70' },
+        { evt:'Back',   name:'S. Dixon',    time:'16.82' },
+        { evt:'Breast', name:'Tara Talwar', time:'18.42' },
+        { evt:'Fly',    name:'Tara Talwar', time:'14.50' },
+      ],
+      boys:[
+        { evt:'Free',   name:'Tristan Talwar', time:'13.17' },
+        { evt:'Back',   name:'Tristan Talwar', time:'15.31' },
+        { evt:'Breast', name:'Tristan Talwar', time:'17.93' },
+        { evt:'Fly',    name:'Tristan Talwar', time:'14.35' },
+      ],
+    },
+    { group:'11-12',
+      girls:[
+        { evt:'Free',   name:'P. Fishburn', time:'27.79' },
+        { evt:'Back',   name:'Tara Talwar', time:'32.63' },
+        { evt:'Breast', name:'Tara Talwar', time:'35.00' },
+        { evt:'Fly',    name:'Tara Talwar', time:'29.28' },
+      ],
+      boys:[
+        { evt:'Free',   name:'Isaac Salvitti', time:'27.62' },
+        { evt:'Back',   name:'Tristan Talwar', time:'31.47' },
+        { evt:'Breast', name:'Tristan Talwar', time:'36.25' },
+        { evt:'Fly',    name:'Tristan Talwar', time:'29.64' },
+      ],
+    },
+    { group:'13-14',
+      girls:[
+        { evt:'Free',   name:'Tara Talwar', time:'26.25' },
+        { evt:'Back',   name:'Tara Talwar', time:'28.85' },
+        { evt:'Breast', name:'Tara Talwar', time:'33.34' },
+        { evt:'Fly',    name:'Tara Talwar', time:'27.13' },
+      ],
+      boys:[
+        { evt:'Free',   name:'Colton Wade',   time:'24.41' },
+        { evt:'Back',   name:'A. Chinchilla', time:'30.16' },
+        { evt:'Breast', name:'S. Ankolkar',   time:'32.53' },
+        { evt:'Fly',    name:'S. Ankolkar',   time:'26.97' },
+      ],
+    },
+    { group:'15-18',
+      girls:[
+        { evt:'Free',   name:'Lauren Soleo', time:'25.94' },
+        { evt:'Back',   name:'Tara Talwar',  time:'29.22' },
+        { evt:'Breast', name:'Tara Talwar',  time:'35.05' },
+        { evt:'Fly',    name:'Tara Talwar',  time:'27.20' },
+      ],
+      boys:[
+        { evt:'Free',   name:'Colton Wade', time:'21.66' },
+        { evt:'Back',   name:'Colton Wade', time:'25.52' },
+        { evt:'Breast', name:'Colton Wade', time:'30.11' },
+        { evt:'Fly',    name:'Colton Wade', time:'23.38' },
+      ],
+    },
+  ];
+
+  // Relay records: each entry has a relay type, the 4-swimmer roster, and time.
+  const RELAY_RECORDS = [
+    { group:'7-8',
+      girls:[
+        { type:'Medley Relay',    team:'A Eklund, S Yakobov, T Talwar, K Harmon',  time:'1:25.68' },
+        { type:'Freestyle Relay', team:'S Dixon, L Reichardt, L Soleo, A Hugo',    time:'1:16.34' },
+      ],
+      boys:[
+        { type:'Medley Relay',    team:'C Fawsi, L McGann, I Vandevender, E Palonsky', time:'1:22.84' },
+        { type:'Freestyle Relay', team:'J Clark, M Hatfield, G Savage, D Georges',     time:'1:13.84' },
+      ],
+    },
+    { group:'9-10',
+      girls:[
+        { type:'Medley Relay',    team:'A Eklund, S Yakobov, Tara Talwar, Maia Lyven', time:'1:10.00' },
+        { type:'Freestyle Relay', team:'R. Temple, C. Albin, S. Dixon, L. Soleo',      time:'1:03.47' },
+      ],
+      boys:[
+        { type:'Medley Relay',    team:'J Pullen, R Geason, J Bertolini-Felice, B Russel', time:'1:12.04' },
+        { type:'Freestyle Relay', team:'Seth McGann, T. Davis, M. Thomas, S. Ankolkar',    time:'1:02.34' },
+      ],
+    },
+    { group:'11-12',
+      girls:[
+        { type:'Medley Relay',    team:'A Eklund, Tara Talwar, A Arvind, E Swafford', time:'2:12.59' },
+        { type:'Freestyle Relay', team:'A Eklund, Tara Talwar, A Arvind, E Swafford', time:'2:01.19' },
+      ],
+      boys:[
+        { type:'Medley Relay',    team:'W Soleo, N Ankolkar, A Monroe, T Wade', time:'2:19.28' },
+        { type:'Freestyle Relay', team:'W Soleo, N Ankolkar, A Monroe, T Wade', time:'2:07.29' },
+      ],
+    },
+    { group:'13-14',
+      girls:[
+        { type:'Medley Relay',    team:'A Eklund, Tara Talwar, A Arvind, E Swafford', time:'2:04.21' },
+        { type:'Freestyle Relay', team:'A Eklund, Tara Talwar, A Arvind, E Swafford', time:'1:51.78' },
+      ],
+      boys:[
+        { type:'Medley Relay',    team:'W Soleo, N Ankolkar, A Monroe, T Wade',          time:'2:00.25' },
+        { type:'Freestyle Relay', team:'H. Elsaesser, B. Lentz, A. Chinchilla, C. Salvitti', time:'1:49.41' },
+      ],
+    },
+    { group:'15-18',
+      girls:[
+        { type:'Medley Relay',    team:'E Swafford, A Eklund, Tara Talwar, Jenna Pullen', time:'2:04.62' },
+        { type:'Freestyle Relay', team:'J Park, Kaelyn Harmon, C Rose, Jenna Pullen',     time:'1:52.63' },
+      ],
+      boys:[
+        { type:'Medley Relay',    team:'T Wade, Will Soleo, Joshua Pullen, Colton Wade', time:'1:48.25' },
+        { type:'Freestyle Relay', team:'T Wade, Will Soleo, Joshua Pullen, Colton Wade', time:'1:36.29' },
+      ],
+    },
+  ];
+
+  // ============ Helpers ============
+  function escapeHtml(s){
+    return (s||'').toString().replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function cssEscape(s){
+    if(window.CSS && typeof CSS.escape === 'function') return CSS.escape(s);
+    return String(s).replace(/[^a-zA-Z0-9_-]/g, ch => '\\' + ch);
+  }
+  // Coaches say "the nine-tens", "the eleven-twelves" out loud — pluralize the
+  // numeric brackets on the poster headline. "6 & Under" is already plural.
+  function bracketLabel(b){
+    if(!b) return '';
+    if(/\d+\s*[-–&]\s*\d+/.test(b) && !b.endsWith('s')) return b + 's';
+    return b;
+  }
+  // Minute-format times ("1:22.84") get the .t-min class so print steps the
+  // font down to fit the column; sub-minute times ("9.46") stay full size.
+  function timeCellClass(t){ return (t||'').includes(':') ? ' t-min' : ''; }
+
+  // Shared poster shell — same chrome as the Fastest Five / Most Improved
+  // certificates so they all print identically. `kind` is 'individual' or
+  // 'relay' (drives the data-group key + a teal accent on relay posters).
+  function posterCard({ kind, group, eventLabel, innerCols }){
+    const today = new Date().toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'});
+    const isRelay = kind === 'relay';
+    const extraClass = isRelay ? ' award-card-relay' : '';
+    const eventClass = isRelay ? 'award-event award-event-records' : 'award-event award-event-records';
+    return `<article class="award-card${extraClass}" data-group="${escapeHtml(kind)}-${escapeHtml(group)}">
+      <div class="award-corner tl"></div>
+      <div class="award-corner tr"></div>
+      <div class="award-corner bl"></div>
+      <div class="award-corner br"></div>
+      <div class="award-header">
+        <div class="award-logo-frame">
+          <img class="award-logo" src="assets/logo-flat.jpg" alt="Highcroft Hurricanes" />
+        </div>
+        <div class="award-header-text">
+          <div class="award-kicker">Highcroft Hurricanes</div>
+          <h2 class="award-title">Team Records</h2>
+          <div class="award-title-rule" aria-hidden="true"></div>
+        </div>
+      </div>
+      <div class="award-headline">
+        <span class="award-group">${escapeHtml(bracketLabel(group))}</span>
+        <span class="${eventClass}">${escapeHtml(eventLabel)}</span>
+      </div>
+      ${innerCols}
+      <div class="award-footer">
+        <span class="award-team">Hurricanes Swim Team</span>
+        <span class="award-footer-divider" aria-hidden="true">◆</span>
+        <span class="award-date">${today}</span>
+      </div>
+      <button class="award-print-one no-print" data-print="${escapeHtml(kind)}-${escapeHtml(group)}" title="Print just this poster" aria-label="Print this poster">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      </button>
+    </article>`;
+  }
+
+  // ============ Individual records ============
+  function individualColumnHtml(entries, gender){
+    const rows = entries.map(e => `<tr class="rec-row">
+      <td class="rec-evt">${escapeHtml(e.evt)}</td>
+      <td class="rec-name">${escapeHtml(e.name)}</td>
+      <td class="rec-time${timeCellClass(e.time)}">${escapeHtml(e.time)}</td>
+    </tr>`).join('');
+    return `<div class="award-col">
+      <div class="award-col-head award-col-head-${gender.toLowerCase()}">${gender}</div>
+      <table class="rec-table"><tbody>${rows}</tbody></table>
+    </div>`;
+  }
+
+  function renderIndividual(){
+    const host = document.getElementById('individualHost');
+    const cards = INDIVIDUAL_RECORDS.map(g => {
+      const inner = `<div class="award-cols">
+        ${individualColumnHtml(g.girls, 'Girls')}
+        ${individualColumnHtml(g.boys,  'Boys')}
+      </div>`;
+      return posterCard({ kind:'individual', group:g.group, eventLabel:'Individual Records', innerCols:inner });
+    }).join('');
+    host.innerHTML = cards;
+    wirePerCardPrint(host);
+  }
+
+  // ============ Relay records ============
+  function relayColumnHtml(entries, gender){
+    const rows = entries.map(e => {
+      // Split "Medley Relay" -> "Medley" + small "Relay" so the label stacks
+      // neatly above the wrapped roster.
+      const parts = e.type.split(' ');
+      const tail = parts.length > 1 ? parts.pop() : '';
+      const head = parts.join(' ');
+      const label = tail
+        ? `<span class="rec-relay-type">${escapeHtml(head)}<small>${escapeHtml(tail)}</small></span>`
+        : `<span class="rec-relay-type">${escapeHtml(e.type)}</span>`;
+      return `<tr class="rec-row rec-row-relay">
+        <td class="rec-evt rec-evt-relay">${label}</td>
+        <td class="rec-name rec-name-relay">${escapeHtml(e.team)}</td>
+        <td class="rec-time rec-time-relay${timeCellClass(e.time)}">${escapeHtml(e.time)}</td>
+      </tr>`;
+    }).join('');
+    return `<div class="award-col">
+      <div class="award-col-head award-col-head-${gender.toLowerCase()}">${gender}</div>
+      <table class="rec-table"><tbody>${rows}</tbody></table>
+    </div>`;
+  }
+
+  function renderRelay(){
+    const host = document.getElementById('relayHost');
+    const cards = RELAY_RECORDS.map(g => {
+      const inner = `<div class="award-cols">
+        ${relayColumnHtml(g.girls, 'Girls')}
+        ${relayColumnHtml(g.boys,  'Boys')}
+      </div>`;
+      return posterCard({ kind:'relay', group:g.group, eventLabel:'Relay Records', innerCols:inner });
+    }).join('');
+    host.innerHTML = cards;
+    wirePerCardPrint(host);
+  }
+
+  function wirePerCardPrint(host){
+    host.querySelectorAll('[data-print]').forEach(btn => btn.addEventListener('click', () => {
+      safePrint({ scopes:['printing-one'], targetGroup: btn.dataset.print });
+    }));
+  }
+
+  // ============ safePrint() — same bulletproof flow as awards.html ============
+  let __activePrintCleanup = null;
+  function safePrint({ scopes = [], targetGroup = '' } = {}){
+    if(__activePrintCleanup){ try { __activePrintCleanup(); } catch(e){} }
+    const applied = new Set(scopes.filter(Boolean));
+    applied.forEach(c => document.body.classList.add(c));
+
+    if(targetGroup){
+      document.querySelectorAll('.award-card').forEach(c => c.classList.remove('print-target'));
+      const target = document.querySelector(`.award-card[data-group="${cssEscape(targetGroup)}"]`);
+      if(target) target.classList.add('print-target');
+    }
+
+    let cleaned = false, timeoutId = null;
+    const cleanup = () => {
+      if(cleaned) return;
+      cleaned = true;
+      applied.forEach(c => document.body.classList.remove(c));
+      if(targetGroup) document.querySelectorAll('.print-target').forEach(c => c.classList.remove('print-target'));
+      window.removeEventListener('afterprint', onAfter);
+      if(timeoutId){ clearTimeout(timeoutId); timeoutId = null; }
+      __activePrintCleanup = null;
+    };
+    const onAfter = () => cleanup();
+    window.addEventListener('afterprint', onAfter);
+    timeoutId = setTimeout(cleanup, 120000);
+    __activePrintCleanup = cleanup;
+
+    try {
+      const ret = window.print();
+      if(ret && typeof ret.then === 'function') ret.catch(() => {});
+    } catch(err){
+      console.warn('Print dialog blocked:', err);
+      cleanup();
+    }
+  }
+
+  // ============ Print buttons ============
+  document.getElementById('printAllRecords').addEventListener('click', () => {
+    safePrint({ scopes: [] }); // both sections, one poster per page
+  });
+  document.getElementById('printIndividual').addEventListener('click', () => {
+    safePrint({ scopes: ['printing-records-ind'] });
+  });
+  document.getElementById('printRelay').addEventListener('click', () => {
+    safePrint({ scopes: ['printing-records-relay'] });
+  });
+
+  // ============ Boot ============
+  renderIndividual();
+  renderRelay();
+</script>
+<script src="assets/mobile-nav.js" defer></script>
+</body>
+</html>
