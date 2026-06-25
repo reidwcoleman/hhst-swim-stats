@@ -392,6 +392,59 @@
     .award-group{ font-size:20px; }
     .award-event{ font-size:10.5px;letter-spacing:.16em;padding:6px 14px; }
   }
+
+  /* ====================================================================
+     RECORDS-STYLE HEADING — match the Team Records posters: a big
+     "Highcroft Hurricanes" brand line, then the poster type + age group on
+     ONE line ("Fastest Five · 11-12" / "Most Improved · 11-12"), then the
+     board. Names + times on the Fastest Five posters are sized to match the
+     Records posters exactly (Most Improved keeps its breakdown-tuned body).
+     Screen rules first, then @media print scale-up for the landscape sheet.
+     ==================================================================== */
+  .award-card .award-title{
+    font-size:48px;line-height:1;color:#1b3354 !important;
+    -webkit-text-fill-color:#1b3354 !important;background:none !important;
+  }
+  .rec-records-type{
+    display:flex;align-items:baseline;justify-content:center;flex-wrap:wrap;
+    column-gap:.32em;row-gap:2px;margin-top:8px;
+    font-family:var(--font-display);font-weight:800;line-height:1.02;
+    letter-spacing:.03em;text-transform:uppercase;
+  }
+  .rec-rt-label{ font-size:40px;color:#1b4a88; }
+  .rec-rt-sep{ font-size:33px;color:#9aa7b6;font-weight:700; }
+  .rec-rt-age{ font-size:46px;color:#1b3354; }
+  .rec-type-mi .rec-rt-label{ color:#047857; }
+
+  @media print{
+    .award-card .award-title{
+      font-size:48px !important;color:#1b3354 !important;
+      -webkit-text-fill-color:#1b3354 !important;background:none !important;
+    }
+    .rec-records-type{
+      display:flex !important;align-items:baseline;justify-content:center;
+      flex-wrap:wrap;column-gap:.32em;margin-top:8px !important;line-height:1.02 !important;
+    }
+    .rec-rt-label{ font-size:39px !important;color:#1b4a88 !important;-webkit-text-fill-color:#1b4a88 !important; }
+    .rec-type-mi .rec-rt-label{ color:#047857 !important;-webkit-text-fill-color:#047857 !important; }
+    .rec-rt-sep{ font-size:32px !important;color:#9aa7b6 !important;-webkit-text-fill-color:#9aa7b6 !important; }
+    .rec-rt-age{ font-size:45px !important;color:#1b3354 !important;-webkit-text-fill-color:#1b3354 !important; }
+    .award-card .award-title-rule{ width:104px !important;height:5px !important;margin-top:9px !important; }
+
+    /* Fastest Five names + times exactly match the Records posters (32 / 38).
+       Flatten the per-name tier sizes to one size; the 2-line clamp already
+       caps row height. Scoped away from Most Improved (its body keeps the
+       breakdown-tuned sizing). */
+    .award-card:not(.award-card-improved) .award-name-cell,
+    .award-card:not(.award-card-improved) .award-name-cell .poster-name,
+    .award-card:not(.award-card-improved) .award-name-cell .poster-name.nm-long,
+    .award-card:not(.award-card-improved) .award-name-cell .poster-name.nm-xlong,
+    .award-card:not(.award-card-improved) .award-name-cell .poster-name.nm-xxl{
+      font-size:32px !important;line-height:1.08 !important;
+    }
+    .award-card:not(.award-card-improved) .award-time-cell{ font-size:38px !important; }
+    .award-card:not(.award-card-improved) .award-time-cell.t-min{ font-size:31px !important; }
+  }
 </style>
 
 <!-- Firebase compat SDK -->
@@ -741,22 +794,20 @@
             <img class="award-logo" src="assets/logo-flat.jpg" alt="Highcroft Hurricanes" />
           </div>
           <div class="award-header-text">
-            <div class="award-kicker">Highcroft Hurricanes</div>
-            <h2 class="award-title">Fastest Five</h2>
+            <h2 class="award-title">Highcroft Hurricanes</h2>
+            <div class="rec-records-type">
+              <span class="rec-rt-label">Fastest Five</span>
+              <span class="rec-rt-sep" aria-hidden="true">·</span>
+              <span class="rec-rt-age">${escapeHtml(bracketLabel(bracket))}</span>
+            </div>
             <div class="award-title-rule" aria-hidden="true"></div>
           </div>
         </div>
         <div class="award-headline">
-          <span class="award-group">${escapeHtml(bracketLabel(bracket))}</span>
           <span class="award-event">${escapeHtml(eventLabel)}</span>
           <span class="award-event award-event-meet">Season Bests</span>
         </div>
         ${inner}
-        <div class="award-footer">
-          <span class="award-team">Hurricanes Swim Team</span>
-          <span class="award-footer-divider" aria-hidden="true">◆</span>
-          <span class="award-date">${today}</span>
-        </div>
         <button class="award-print-one no-print" data-print="${escapeHtml(bracket)}" title="Print just this card" aria-label="Print this card">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
         </button>
@@ -1023,22 +1074,20 @@
             <img class="award-logo" src="assets/logo-flat.jpg" alt="Highcroft Hurricanes" />
           </div>
           <div class="award-header-text">
-            <div class="award-kicker">Highcroft Hurricanes</div>
-            <h2 class="award-title award-title-improved">Most Improved</h2>
+            <h2 class="award-title">Highcroft Hurricanes</h2>
+            <div class="rec-records-type rec-type-mi">
+              <span class="rec-rt-label">Most Improved</span>
+              <span class="rec-rt-sep" aria-hidden="true">·</span>
+              <span class="rec-rt-age">${escapeHtml(bracketLabel(bracket))}</span>
+            </div>
             <div class="award-title-rule award-title-rule-green" aria-hidden="true"></div>
           </div>
         </div>
         <div class="award-headline">
-          <span class="award-group">${escapeHtml(bracketLabel(bracket))}</span>
           <span class="award-event award-event-improved">${escapeHtml(meet)}${date ? ' · ' + escapeHtml(fmtMeetDate(date)) : ''}</span>
         </div>
         <div class="award-improved-note">Seconds dropped at this meet vs each swimmer&rsquo;s previous best times</div>
         ${inner}
-        <div class="award-footer">
-          <span class="award-team">Hurricanes Swim Team</span>
-          <span class="award-footer-divider" aria-hidden="true">◆</span>
-          <span class="award-date">${today}</span>
-        </div>
         <button class="award-print-one no-print" data-print="improved-${escapeHtml(bracket)}" title="Print just this card" aria-label="Print this card">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
         </button>
