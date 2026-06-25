@@ -431,19 +431,25 @@
     .rec-rt-age{ font-size:45px !important;color:#1b3354 !important;-webkit-text-fill-color:#1b3354 !important; }
     .award-card .award-title-rule{ width:104px !important;height:5px !important;margin-top:9px !important; }
 
-    /* Fastest Five names + times exactly match the Records posters (32 / 38).
-       Flatten the per-name tier sizes to one size; the 2-line clamp already
-       caps row height. Scoped away from Most Improved (its body keeps the
-       breakdown-tuned sizing). */
+    /* Fastest Five: a big standalone distance label (no "Season Bests"),
+       roomier boards, and larger names + times. Most names print at 36px;
+       only the longest step down (nm-xlong/nm-xxl) so they never ellipsize.
+       Times 44px. All scoped away from Most Improved (keeps its tuned body).
+       Verified one-page fit with a worst-case board of five 2-line names. */
+    .award-card:not(.award-card-improved) .award-headline .award-event{
+      font-size:21px !important;padding:8px 22px !important;letter-spacing:.14em !important;
+    }
+    .award-card:not(.award-card-improved) .award-col{ padding:12px 20px 10px !important; }
+    .award-card:not(.award-card-improved) .award-table td{ padding:11px 6px !important; }
     .award-card:not(.award-card-improved) .award-name-cell,
     .award-card:not(.award-card-improved) .award-name-cell .poster-name,
-    .award-card:not(.award-card-improved) .award-name-cell .poster-name.nm-long,
-    .award-card:not(.award-card-improved) .award-name-cell .poster-name.nm-xlong,
-    .award-card:not(.award-card-improved) .award-name-cell .poster-name.nm-xxl{
-      font-size:32px !important;line-height:1.08 !important;
+    .award-card:not(.award-card-improved) .award-name-cell .poster-name.nm-long{
+      font-size:36px !important;line-height:1.06 !important;
     }
-    .award-card:not(.award-card-improved) .award-time-cell{ font-size:38px !important; }
-    .award-card:not(.award-card-improved) .award-time-cell.t-min{ font-size:31px !important; }
+    .award-card:not(.award-card-improved) .award-name-cell .poster-name.nm-xlong{ font-size:28px !important;line-height:1.1 !important; }
+    .award-card:not(.award-card-improved) .award-name-cell .poster-name.nm-xxl{ font-size:22px !important;line-height:1.14 !important; }
+    .award-card:not(.award-card-improved) .award-time-cell{ font-size:44px !important; }
+    .award-card:not(.award-card-improved) .award-time-cell.t-min{ font-size:35px !important; }
   }
 </style>
 
@@ -804,8 +810,7 @@
           </div>
         </div>
         <div class="award-headline">
-          <span class="award-event">${escapeHtml(eventLabel)}</span>
-          <span class="award-event award-event-meet">Season Bests</span>
+          <span class="award-event award-event-distance">${escapeHtml(eventLabel)}</span>
         </div>
         ${inner}
         <button class="award-print-one no-print" data-print="${escapeHtml(bracket)}" title="Print just this card" aria-label="Print this card">
