@@ -450,6 +450,28 @@
     .award-card:not(.award-card-improved) .award-name-cell .poster-name.nm-xxl{ font-size:22px !important;line-height:1.14 !important; }
     .award-card:not(.award-card-improved) .award-time-cell{ font-size:44px !important; }
     .award-card:not(.award-card-improved) .award-time-cell.t-min{ font-size:35px !important; }
+
+    /* ---- Most Improved: no meet/date line and no explainer note (removed in
+       markup), heading a touch larger, roomier boards, slightly bigger names +
+       total-drop, and the single biggest event-drop line printed MUCH bigger
+       (20px vs 11) with a "+N more" summary. Verified one-page fit with a
+       worst-case five-swimmer board of long two-line names. ---- */
+    .award-card-improved .award-title{ font-size:50px !important; }
+    .award-card-improved .rec-rt-label{ font-size:41px !important; }
+    .award-card-improved .rec-rt-age{ font-size:47px !important; }
+    .award-card-improved .award-col{ padding:7px 14px 6px !important; }
+    .award-card-improved .award-table td{ padding:3px 5px !important; }
+    .award-card-improved .award-name-cell{ font-size:33px !important; }
+    .award-card-improved .improved-name.nm-long{ font-size:29px !important; }
+    .award-card-improved .improved-name.nm-xlong{ font-size:24px !important; }
+    .award-card-improved .improved-name.nm-xxl{ font-size:19px !important; }
+    .award-card-improved .improved-drop{ font-size:52px !important; }
+    .award-card-improved .improved-evlist{ margin-top:4px !important; gap:2px !important; }
+    .award-card-improved .improved-evline{
+      font-size:20px !important; line-height:1.2 !important;
+      grid-template-columns:1.05in 1fr max-content !important; column-gap:14px !important;
+    }
+    .award-card-improved .improved-evmore{ font-size:14px !important; margin-top:3px !important; }
   }
 </style>
 
@@ -948,10 +970,10 @@
       // Print shows only the top PRINT_EV_LINES drops per swimmer (plus a
       // "+N more" summary) so five full breakdowns can NEVER outgrow the
       // one-page poster. On screen every line stays visible — the .iev-extra
-      // lines are only hidden inside @media print (styles.css). Two lines is
-      // the cap that keeps a worst-case board (five 2-line names, every
-      // swimmer maxing the breakdown) on one sheet at 100% print scale.
-      const PRINT_EV_LINES = 2;
+      // lines are only hidden inside @media print (styles.css). One line in
+      // print (shown large) is what makes the breakdown read "a lot bigger"
+      // while still keeping five full rows on one sheet.
+      const PRINT_EV_LINES = 1;
       const sortedEvents = (e.eventsDropped || []).slice().sort((a,b)=> b.drop - a.drop);
       const evlist = sortedEvents
         .map((ev, j) => `<div class="improved-evline${j >= PRINT_EV_LINES ? ' iev-extra' : ''}">
@@ -1088,10 +1110,6 @@
             <div class="award-title-rule award-title-rule-green" aria-hidden="true"></div>
           </div>
         </div>
-        <div class="award-headline">
-          <span class="award-event award-event-improved">${escapeHtml(meet)}${date ? ' · ' + escapeHtml(fmtMeetDate(date)) : ''}</span>
-        </div>
-        <div class="award-improved-note">Seconds dropped at this meet vs each swimmer&rsquo;s previous best times</div>
         ${inner}
         <button class="award-print-one no-print" data-print="improved-${escapeHtml(bracket)}" title="Print just this card" aria-label="Print this card">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
