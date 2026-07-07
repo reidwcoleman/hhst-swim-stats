@@ -4576,3 +4576,65 @@ footer a:hover{text-decoration:underline;text-underline-offset:3px}
 .how-step h3,h1,h2,h3{text-wrap:balance}
 .section-head p,.lead,.hero-sub,.feature p{text-wrap:pretty}
 .section-head h2,.card h2,.lookup-card h2{font-optical-sizing:auto}
+
+/* ============================================================
+   SITE REFRESH — July 2026
+   A cohesion pass across every page: the current page lights up
+   in the nav, pages get an ambient depth wash instead of a flat
+   fill, and the inner-page hero bands pick up the homepage
+   hero's underwater atmosphere (light shafts + waterline edge).
+   Everything visual-only and screen-scoped where print matters.
+   ============================================================ */
+
+/* 1 — Nav: the page you're on gets an accent pill (markup already
+   sets .active on every page; there was no style for it). */
+.nav-links a.active{
+  color:var(--accent);font-weight:600;
+  background:color-mix(in srgb,var(--accent) 12%,transparent);
+}
+.nav-links a.active:hover{
+  color:var(--accent-hover);
+  background:color-mix(in srgb,var(--accent) 18%,transparent);
+}
+/* The Admin pill-button keeps its own solid recipe even when active. */
+.nav-links a.btn.active{color:var(--accent-contrast)!important;background:var(--accent)}
+
+/* 2 — Sticky header: an aqua sheen along the bottom hairline so the
+   bar reads as glass over water rather than a plain border. */
+header::after{
+  content:'';position:absolute;left:0;right:0;bottom:-1px;height:1px;
+  pointer-events:none;opacity:.55;
+  background:linear-gradient(90deg,transparent 5%,
+    color-mix(in srgb,var(--accent) 55%,transparent) 35%,
+    color-mix(in srgb,var(--ice-400) 55%,transparent) 65%,transparent 95%);
+}
+
+@media screen{
+  /* 3 — Ambient page depth: two very soft brand washes pinned to the
+     top of the viewport so long pages never feel like a flat sheet.
+     Screen-only: print keeps its pure white canvas. */
+  body::before{
+    content:'';position:fixed;inset:0;z-index:-2;pointer-events:none;
+    background:
+      radial-gradient(90% 44% at 12% -12%,color-mix(in srgb,var(--brand-400) 10%,transparent),transparent 62%),
+      radial-gradient(70% 38% at 92% -8%,color-mix(in srgb,var(--ice-400) 9%,transparent),transparent 60%);
+  }
+
+  /* 4 — Inner-page hero bands (Records, Season Stats, Meet Recap,
+     swimmer dashboard): underwater light shafts + a fine aqua
+     waterline where the band meets the page, echoing the homepage. */
+  .dash-hero{box-shadow:inset 0 -1px 0 rgba(127,227,239,.28)}
+  .dash-hero::after{
+    content:'';position:absolute;inset:-12% -4%;pointer-events:none;
+    background:
+      linear-gradient(115deg,transparent 40%,rgba(127,227,239,.07) 46%,transparent 52%),
+      linear-gradient(103deg,transparent 60%,rgba(150,200,244,.06) 67%,transparent 74%);
+  }
+
+  /* 5 — Inner hero headlines: white dipping into aqua at the baseline,
+     like light through the surface (screen-only so print ink stays solid). */
+  .dash-hero h1{
+    background:linear-gradient(180deg,#ffffff 58%,#c3ebf5 100%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+}
