@@ -58,6 +58,9 @@ service cloud.firestore {
       allow read, write: if request.auth != null;
     }
 
+    // Includes meta/records — the team record board edited on records.html
+    // (public read so every visitor sees the board; only a signed-in coach
+    // can save changes).
     match /meta/{doc} {
       allow read: if true;
       allow write: if request.auth != null;

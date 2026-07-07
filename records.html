@@ -15,15 +15,16 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Figtree:ital,wght@0,300..900;1,300..900&family=IBM+Plex+Mono:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="assets/styles.css?v=43"/>
+<link rel="stylesheet" href="assets/styles.css?v=44"/>
 <style>
   /* ====================================================================
      records.html page-specific styling (prefixed `rec-`). The poster shell
      reuses the global .award-card / .award-cols / .award-col chrome so the
      printable posters share the exact look + @media print pagination of the
      Fastest Five and Most Improved certificates. Only the inner record-row
-     table (.rec-table) and a few page-meta bits are defined here. The records
-     are hardcoded on this page only — nothing here reads or writes swimmer
+     table (.rec-table) and a few page-meta bits are defined here. The record
+     board lives in Firestore (meta/records) with a built-in fallback — a
+     signed-in coach can edit it inline. Nothing here reads or writes swimmer
      profiles, rosters, or meet times.
      ==================================================================== */
 
@@ -198,6 +199,153 @@
   }
 
   /* ====================================================================
+     EDIT MODE — coaches sign in with the team admin account and edit the
+     record board inline. View mode (posters + print buttons) hides while
+     editing; a simplified editor with one card per age group shows instead.
+     Saved records live in Firestore (meta/records, public read / admin
+     write) so the board is shared and instantly live for every visitor.
+     ==================================================================== */
+  .rec-edit-btn svg{width:15px;height:15px;flex-shrink:0}
+  body.rec-editing .awards-intro,
+  body.rec-editing #individualSectionHead,
+  body.rec-editing #relaySectionHead,
+  body.rec-editing #individualHost,
+  body.rec-editing #relayHost{display:none!important}
+  #recEditorHost .rec-section-head{margin-top:38px}
+  #recEditorHost{display:none}
+  body.rec-editing #recEditorHost{display:block}
+  body.rec-editing{padding-bottom:96px}
+
+  .rec-editor-intro .lead{max-width:760px}
+  .rec-editor-section{margin-top:8px}
+  .rec-edit-group{margin-top:16px;padding:22px 22px 18px}
+  .rec-edit-group-head{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+  .rec-edit-groupname{
+    flex:1;min-width:0;font-family:var(--font-display);font-weight:800;
+    font-size:22px;letter-spacing:-.01em;color:var(--text);
+    background:transparent;border:1px dashed transparent;border-radius:var(--radius-sm);
+    padding:6px 10px;transition:border-color .18s ease,background .18s ease;
+  }
+  .rec-edit-groupname:hover{border-color:var(--border-strong)}
+  .rec-edit-groupname:focus{outline:none;border:1px solid var(--accent);background:var(--surface);box-shadow:0 0 0 3px var(--ring)}
+
+  /* minmax(0,1fr) so an input's intrinsic width can never blow the track
+     wider than the card (plain 1fr tracks size to min-content). */
+  .rec-edit-cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px}
+  .rec-edit-col-title{
+    display:inline-flex;align-items:center;gap:8px;margin-bottom:10px;
+    font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;
+  }
+  .rec-edit-col-title::before{content:'';width:7px;height:7px;border-radius:999px}
+  .rec-edit-col-title.girls{color:#9d3d63}
+  .rec-edit-col-title.girls::before{background:#9d3d63}
+  .rec-edit-col-title.boys{color:#2c4a6e}
+  .rec-edit-col-title.boys::before{background:#2c4a6e}
+  [data-theme="dark"] .rec-edit-col-title.girls{color:#e08bab}
+  [data-theme="dark"] .rec-edit-col-title.girls::before{background:#e08bab}
+  [data-theme="dark"] .rec-edit-col-title.boys{color:#8fb4de}
+  [data-theme="dark"] .rec-edit-col-title.boys::before{background:#8fb4de}
+
+  .rec-edit-row{display:flex;gap:8px;margin-bottom:8px;align-items:center}
+  .rec-edit-row input{
+    font-family:var(--font-body);font-size:14px;
+    padding:10px 12px;border-radius:var(--radius-sm);
+    background:var(--surface);color:var(--text);
+    border:1px solid var(--border-strong);min-width:0;
+    transition:border-color .18s ease,box-shadow .18s ease;
+  }
+  .rec-edit-row input::placeholder{color:var(--text-subtle)}
+  .rec-edit-row input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--ring)}
+  .rec-edit-evt{flex:0 0 84px}
+  .rec-edit-type{flex:0 0 132px}
+  .rec-edit-name,.rec-edit-team{flex:1 1 auto}
+  .rec-edit-time{
+    flex:0 0 96px;text-align:right;
+    font-family:var(--font-mono)!important;font-variant-numeric:tabular-nums;
+  }
+  .rec-row-del{
+    flex:0 0 34px;height:38px;border-radius:var(--radius-sm);
+    border:1px solid var(--border);background:transparent;cursor:pointer;
+    display:grid;place-items:center;color:var(--text-subtle);
+    transition:color .18s ease,border-color .18s ease,background .18s ease;
+  }
+  .rec-row-del:hover{color:var(--red);border-color:rgba(226,85,76,.45);background:rgba(226,85,76,.07)}
+  .rec-row-del:focus-visible{outline:none;box-shadow:0 0 0 3px var(--ring)}
+  .rec-row-del svg{width:15px;height:15px}
+  .rec-del-group{
+    flex:0 0 auto;display:inline-flex;align-items:center;gap:7px;
+    padding:8px 13px;border-radius:var(--radius-sm);
+    border:1px solid var(--border);background:transparent;cursor:pointer;
+    font-family:var(--font-body);font-size:12.5px;font-weight:600;color:var(--text-muted);
+    transition:color .18s ease,border-color .18s ease,background .18s ease;
+  }
+  .rec-del-group:hover{color:var(--red);border-color:rgba(226,85,76,.45);background:rgba(226,85,76,.07)}
+  .rec-del-group svg{width:14px;height:14px}
+  .rec-add-row{
+    display:inline-flex;align-items:center;gap:7px;margin-top:2px;
+    padding:8px 13px;border-radius:var(--radius-sm);
+    border:1px dashed var(--border-strong);background:transparent;cursor:pointer;
+    font-family:var(--font-body);font-size:12.5px;font-weight:600;color:var(--text-muted);
+    transition:color .18s ease,border-color .18s ease,background .18s ease;
+  }
+  .rec-add-row:hover{color:var(--accent);border-color:var(--accent);background:var(--surface-2)}
+  .rec-add-group{margin-top:16px}
+
+  /* Sticky save bar (edit mode only) */
+  .rec-savebar{
+    position:fixed;left:0;right:0;bottom:0;z-index:300;display:none;
+    background:var(--surface-glass);
+    backdrop-filter:saturate(180%) blur(18px);-webkit-backdrop-filter:saturate(180%) blur(18px);
+    border-top:1px solid var(--border-strong);
+    padding:12px max(24px,env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom)) max(24px,env(safe-area-inset-left));
+  }
+  body.rec-editing .rec-savebar{display:block}
+  .rec-savebar-inner{
+    max-width:1180px;margin:0 auto;display:flex;align-items:center;
+    justify-content:space-between;gap:14px;flex-wrap:wrap;
+  }
+  .rec-savebar-note{font-size:13px;color:var(--text-muted)}
+  .rec-savebar-note a{color:var(--text-muted);text-decoration:underline;cursor:pointer}
+  .rec-savebar-note a:hover{color:var(--text)}
+  .rec-savebar-actions{display:flex;gap:10px;flex-wrap:wrap}
+  #recSaveBtn:disabled{opacity:.6;cursor:default}
+
+  /* Toast */
+  .rec-toast{
+    position:fixed;left:50%;bottom:28px;transform:translate(-50%,16px);
+    z-index:400;max-width:min(480px,calc(100vw - 40px));
+    background:var(--surface);color:var(--text);
+    border:1px solid var(--border-strong);border-radius:var(--radius);
+    box-shadow:var(--shadow-lg);
+    padding:13px 18px;font-size:14px;font-weight:500;line-height:1.45;
+    opacity:0;pointer-events:none;
+    transition:opacity .25s ease,transform .25s cubic-bezier(.16,1,.3,1);
+  }
+  .rec-toast.show{opacity:1;transform:translate(-50%,0)}
+  .rec-toast.err{border-color:rgba(226,85,76,.5);color:var(--red)}
+  body.rec-editing .rec-toast{bottom:96px}
+
+  /* Sign-in modal uses the shared .modal-backdrop/.modal-card recipes; the
+     [hidden] attr must beat the recipe's display:flex. */
+  .modal-backdrop[hidden]{display:none}
+  #recLoginErr{margin-bottom:4px}
+
+  @media (max-width:860px){
+    .rec-edit-cols{grid-template-columns:minmax(0,1fr)}
+  }
+  @media (max-width:600px){
+    .rec-edit-group{padding:16px 14px 14px}
+    .rec-edit-evt{flex-basis:70px}
+    .rec-edit-type{flex-basis:104px}
+    .rec-edit-time{flex-basis:82px}
+    .rec-edit-row input{padding:9px 10px;font-size:13px}
+    .rec-savebar-inner{justify-content:center}
+    .rec-savebar-note{width:100%;text-align:center}
+    .rec-savebar-actions{width:100%;justify-content:stretch}
+    .rec-savebar-actions .btn{flex:1;justify-content:center}
+  }
+
+  /* ====================================================================
      PRINT — the global @media print block in styles.css already handles the
      .award-card landscape pagination, white ink-saver background, hidden
      decorations, header/footer scale-up, and per-card (.printing-one) +
@@ -298,7 +446,7 @@
     <div class="leaderboard-hero-content">
       <div class="kicker"><span class="pulse"></span> Team Hall of Records</div>
       <h1>Team Records</h1>
-      <p class="lb-sub">The fastest swims in Highcroft Hurricanes history — individual records by age group and stroke, plus relay records. These are kept here as a standalone record book and don't affect any swimmer profile, roster, or meet results. Print any board as a poster.</p>
+      <p class="lb-sub">The fastest swims in Highcroft Hurricanes history — individual records by age group and stroke, plus relay records. These are kept here as a standalone record book and don't affect any swimmer profile, roster, or meet results. Print any board as a poster, or sign in as a coach to edit the board right on this page.</p>
     </div>
   </div>
 </section>
@@ -319,9 +467,16 @@
         <span class="records-controls-note">
           Prints <strong>both</strong> Individual <strong>and</strong> Relay record posters for every age group, one per page.
         </span>
+        <button class="btn ghost rec-edit-btn" id="editRecordsBtn" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+          Edit records
+        </button>
       </div>
     </div>
   </div>
+
+  <!-- ============ RECORD EDITOR (shown in edit mode only) ============ -->
+  <section id="recEditorHost" class="no-print" aria-label="Record board editor"></section>
 
   <!-- ============ INDIVIDUAL RECORDS ============ -->
   <div class="rec-section-head no-print" id="individualSectionHead">
@@ -347,12 +502,59 @@
 
 </main>
 
+<!-- ============ STICKY SAVE BAR (edit mode) ============ -->
+<div class="rec-savebar no-print" id="recSavebar">
+  <div class="rec-savebar-inner">
+    <span class="rec-savebar-note" id="recSavebarNote">Editing the record board</span>
+    <div class="rec-savebar-actions">
+      <button class="btn ghost" id="recResetBtn" type="button">Reset to original board</button>
+      <button class="btn ghost" id="recCancelBtn" type="button">Cancel</button>
+      <button class="btn btn-gradient" id="recSaveBtn" type="button">Save changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ COACH SIGN-IN MODAL ============ -->
+<div class="modal-backdrop no-print" id="recLoginModal" hidden>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="recLoginTitle">
+    <button class="modal-close" id="recLoginClose" type="button" aria-label="Close">&times;</button>
+    <h2 id="recLoginTitle">Coach sign-in</h2>
+    <p class="lead">Sign in with the team admin account to edit the record board. Changes go live for everyone as soon as you save.</p>
+    <form id="recLoginForm" style="margin-top:18px">
+      <div class="field">
+        <label for="recLoginEmail">Email</label>
+        <input type="email" id="recLoginEmail" autocomplete="email" required placeholder="coach@example.com"/>
+      </div>
+      <div class="field">
+        <label for="recLoginPass">Password</label>
+        <input type="password" id="recLoginPass" autocomplete="current-password" required placeholder="••••••••"/>
+      </div>
+      <div class="error-msg" id="recLoginErr"></div>
+      <div class="modal-actions">
+        <button class="btn ghost" type="button" id="recLoginCancel">Cancel</button>
+        <button class="btn" type="submit" id="recLoginSubmit">Sign in &amp; edit</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ============ TOAST ============ -->
+<div class="rec-toast no-print" id="recToast" role="status" aria-live="polite"></div>
+
 <footer>
   Highcroft Hurricanes Swim Team · <a href="leaderboards.html">Season Stats</a> · <a href="meet-recap.html">Meet Recap</a> · <a href="records.html">Records</a>
 </footer>
 
+<!-- Firebase compat SDK — used to read/write the shared record board
+     (Firestore doc meta/records). If these fail to load (offline), the page
+     still renders the built-in defaults; only editing is unavailable. -->
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="assets/firebase-init.js"></script>
+
 <script>
-  // ============ Theme (inline — this page needs no Firebase/data.js) ============
+  // ============ Theme ============
   (function(){
     function initTheme(){
       var saved = localStorage.getItem('hhst.theme') || 'light';
@@ -369,10 +571,14 @@
     if(btn) btn.addEventListener('click', toggleTheme);
   })();
 
-  // ============ RECORD DATA (hardcoded — page-only, never touches Firestore) ============
+  // ============ RECORD DATA ============
+  // The DEFAULT_* arrays below are the original record board, kept as the
+  // built-in fallback/seed. The live board is stored in Firestore
+  // (meta/records — public read, admin write) so a signed-in coach can edit
+  // it right on this page and the change is instantly live for everyone.
   // Each age group has Girls + Boys columns. Order follows the team's age
   // brackets. Times are stored exactly as on the official record board.
-  const INDIVIDUAL_RECORDS = [
+  const DEFAULT_INDIVIDUAL_RECORDS = [
     { group:'6 & Under',
       girls:[
         { evt:'Free',   name:'J. Fishburn', time:'11.00' },
@@ -458,7 +664,7 @@
   ];
 
   // Relay records: each entry has a relay type, the 4-swimmer roster, and time.
-  const RELAY_RECORDS = [
+  const DEFAULT_RELAY_RECORDS = [
     { group:'7-8',
       girls:[
         { type:'Medley Relay',    team:'A Eklund, S Yakobov, T Talwar, K Harmon',  time:'1:25.68' },
@@ -510,6 +716,15 @@
       ],
     },
   ];
+
+  // ============ Live state ============
+  // RECORDS is what the page renders. It starts as the built-in defaults and
+  // is replaced by the Firestore copy (meta/records) when one exists.
+  function deepClone(v){ return JSON.parse(JSON.stringify(v)); }
+  let RECORDS = {
+    individual: deepClone(DEFAULT_INDIVIDUAL_RECORDS),
+    relay: deepClone(DEFAULT_RELAY_RECORDS)
+  };
 
   // ============ Helpers ============
   function escapeHtml(s){
@@ -579,7 +794,7 @@
 
   function renderIndividual(){
     const host = document.getElementById('individualHost');
-    const cards = INDIVIDUAL_RECORDS.map(g => {
+    const cards = RECORDS.individual.map(g => {
       const inner = `<div class="award-cols">
         ${individualColumnHtml(g.girls, 'Girls')}
         ${individualColumnHtml(g.boys,  'Boys')}
@@ -624,7 +839,7 @@
 
   function renderRelay(){
     const host = document.getElementById('relayHost');
-    const cards = RELAY_RECORDS.map(g => {
+    const cards = RECORDS.relay.map(g => {
       const inner = `<div class="award-cols">
         ${relayColumnHtml(g.girls, 'Girls')}
         ${relayColumnHtml(g.boys,  'Boys')}
@@ -689,9 +904,322 @@
     safePrint({ scopes: ['printing-records-relay'] });
   });
 
+  function renderAll(){
+    renderIndividual();
+    renderRelay();
+  }
+
+  // ============ Firestore load ============
+  // Render defaults immediately (fast, works offline), then swap in the
+  // saved board if one exists.
+  function recordsDoc(){ return FB.db.collection('meta').doc('records'); }
+  async function loadSavedRecords(){
+    if(!window.FB) return;
+    try {
+      const snap = await recordsDoc().get();
+      if(snap.exists){
+        const d = snap.data() || {};
+        if(Array.isArray(d.individual) && Array.isArray(d.relay)){
+          RECORDS = { individual: d.individual, relay: d.relay };
+          renderAll();
+        }
+      }
+    } catch(e){
+      console.warn('Could not load saved records (showing built-in board):', e);
+    }
+  }
+
+  // ============ Toast ============
+  let __toastTimer = null;
+  function toast(msg, isErr){
+    const el = document.getElementById('recToast');
+    el.textContent = msg;
+    el.classList.toggle('err', !!isErr);
+    el.classList.add('show');
+    if(__toastTimer) clearTimeout(__toastTimer);
+    __toastTimer = setTimeout(() => el.classList.remove('show'), isErr ? 6000 : 3600);
+  }
+
+  // ============ EDITOR ============
+  const editorHost = document.getElementById('recEditorHost');
+  let editorDirty = false;
+
+  const TRASH_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>';
+
+  function attr(s){ return escapeHtml(s); }
+
+  function individualRowHtml(e){
+    e = e || {};
+    return `<div class="rec-edit-row" data-row="individual">
+      <input class="rec-edit-evt" value="${attr(e.evt || '')}" placeholder="Stroke" aria-label="Stroke"/>
+      <input class="rec-edit-name" value="${attr(e.name || '')}" placeholder="Record holder" aria-label="Record holder"/>
+      <input class="rec-edit-time" value="${attr(e.time || '')}" placeholder="0.00" aria-label="Time"/>
+      <button class="rec-row-del" type="button" title="Remove this record" aria-label="Remove this record">${TRASH_SVG}</button>
+    </div>`;
+  }
+  function relayRowHtml(e){
+    e = e || {};
+    return `<div class="rec-edit-row" data-row="relay">
+      <input class="rec-edit-type" value="${attr(e.type || '')}" placeholder="Relay type" aria-label="Relay type"/>
+      <input class="rec-edit-team" value="${attr(e.team || '')}" placeholder="Four swimmers, separated by commas" aria-label="Relay lineup"/>
+      <input class="rec-edit-time" value="${attr(e.time || '')}" placeholder="0:00.00" aria-label="Time"/>
+      <button class="rec-row-del" type="button" title="Remove this record" aria-label="Remove this record">${TRASH_SVG}</button>
+    </div>`;
+  }
+
+  function editColumnHtml(kind, gender, entries){
+    const rowFn = kind === 'relay' ? relayRowHtml : individualRowHtml;
+    const rows = (entries || []).map(rowFn).join('');
+    return `<div class="rec-edit-col" data-gender="${gender.toLowerCase()}">
+      <div class="rec-edit-col-title ${gender.toLowerCase()}">${gender}</div>
+      <div class="rec-edit-rows">${rows}</div>
+      <button class="rec-add-row" type="button">+ Add record</button>
+    </div>`;
+  }
+
+  function editGroupHtml(kind, g){
+    g = g || { group:'', girls:[], boys:[] };
+    return `<div class="card rec-edit-group" data-kind="${attr(kind)}">
+      <div class="rec-edit-group-head">
+        <input class="rec-edit-groupname" value="${attr(g.group || '')}" placeholder="Age group (e.g. 9-10)" aria-label="Age group"/>
+        <button class="rec-del-group" type="button">${TRASH_SVG} Remove group</button>
+      </div>
+      <div class="rec-edit-cols">
+        ${editColumnHtml(kind, 'Girls', g.girls)}
+        ${editColumnHtml(kind, 'Boys', g.boys)}
+      </div>
+    </div>`;
+  }
+
+  function editSectionHtml(kind, title, groups){
+    return `<div class="rec-editor-section" data-section="${attr(kind)}">
+      <div class="rec-section-head">
+        <span class="rec-section-eyebrow">${escapeHtml(title)}</span>
+        <span class="rec-section-rule" aria-hidden="true"></span>
+      </div>
+      <div class="rec-editor-groups">${groups.map(g => editGroupHtml(kind, g)).join('')}</div>
+      <button class="btn ghost rec-add-group" type="button">+ Add age group</button>
+    </div>`;
+  }
+
+  function renderEditor(){
+    editorHost.innerHTML = `
+      <div class="card rec-editor-intro">
+        <h2>Edit the record board</h2>
+        <p class="lead">Fix a name or time, add or remove records, or add a whole age group.
+        Nothing changes for visitors until you hit <strong>Save changes</strong> in the bar below —
+        then the new board is live for everyone, instantly.</p>
+      </div>
+      ${editSectionHtml('individual', 'Individual Team Records', RECORDS.individual)}
+      ${editSectionHtml('relay', 'Relay Team Records', RECORDS.relay)}
+    `;
+    editorDirty = false;
+  }
+
+  // One delegated listener handles all add/remove clicks + dirty tracking.
+  editorHost.addEventListener('click', (ev) => {
+    const del = ev.target.closest('.rec-row-del');
+    if(del){ del.closest('.rec-edit-row').remove(); editorDirty = true; return; }
+
+    const addRow = ev.target.closest('.rec-add-row');
+    if(addRow){
+      const col = addRow.closest('.rec-edit-col');
+      const kind = addRow.closest('.rec-edit-group').dataset.kind;
+      const rows = col.querySelector('.rec-edit-rows');
+      rows.insertAdjacentHTML('beforeend', kind === 'relay' ? relayRowHtml() : individualRowHtml());
+      rows.lastElementChild.querySelector('input').focus();
+      editorDirty = true;
+      return;
+    }
+
+    const delGroup = ev.target.closest('.rec-del-group');
+    if(delGroup){
+      const card = delGroup.closest('.rec-edit-group');
+      const label = card.querySelector('.rec-edit-groupname').value.trim() || 'this age group';
+      if(confirm(`Remove ${label} and all its records from the board?`)){
+        card.remove();
+        editorDirty = true;
+      }
+      return;
+    }
+
+    const addGroup = ev.target.closest('.rec-add-group');
+    if(addGroup){
+      const section = addGroup.closest('.rec-editor-section');
+      const kind = section.dataset.section;
+      section.querySelector('.rec-editor-groups')
+        .insertAdjacentHTML('beforeend', editGroupHtml(kind, { group:'', girls:[{}], boys:[{}] }));
+      const card = section.querySelector('.rec-editor-groups').lastElementChild;
+      card.querySelector('.rec-edit-groupname').focus();
+      card.scrollIntoView({ behavior:'smooth', block:'center' });
+      editorDirty = true;
+    }
+  });
+  editorHost.addEventListener('input', () => { editorDirty = true; });
+
+  // Read the whole board back out of the editor DOM.
+  function harvestEditor(){
+    const out = { individual: [], relay: [] };
+    editorHost.querySelectorAll('.rec-editor-section').forEach(section => {
+      const kind = section.dataset.section;
+      section.querySelectorAll('.rec-edit-group').forEach(card => {
+        const group = card.querySelector('.rec-edit-groupname').value.trim();
+        const entry = { group, girls: [], boys: [] };
+        card.querySelectorAll('.rec-edit-col').forEach(col => {
+          const list = entry[col.dataset.gender];
+          col.querySelectorAll('.rec-edit-row').forEach(row => {
+            if(kind === 'relay'){
+              const type = row.querySelector('.rec-edit-type').value.trim();
+              const team = row.querySelector('.rec-edit-team').value.trim();
+              const time = row.querySelector('.rec-edit-time').value.trim();
+              if(type || team || time) list.push({ type, team, time });
+            } else {
+              const evt  = row.querySelector('.rec-edit-evt').value.trim();
+              const name = row.querySelector('.rec-edit-name').value.trim();
+              const time = row.querySelector('.rec-edit-time').value.trim();
+              if(evt || name || time) list.push({ evt, name, time });
+            }
+          });
+        });
+        // Keep the group if it has a label or any rows at all.
+        if(group || entry.girls.length || entry.boys.length) out[kind].push(entry);
+      });
+    });
+    return out;
+  }
+
+  function enterEditMode(){
+    renderEditor();
+    document.body.classList.add('rec-editing');
+    const email = (window.FB && FB.auth.currentUser && FB.auth.currentUser.email) || '';
+    document.getElementById('recSavebarNote').innerHTML = email
+      ? `Editing as <strong>${escapeHtml(email)}</strong> · <a id="recSignOut">Sign out</a>`
+      : `Editing the record board · <a id="recSignOut">Sign out</a>`;
+    document.getElementById('recEditorHost').scrollIntoView({ behavior:'smooth', block:'start' });
+  }
+  function exitEditMode(){
+    document.body.classList.remove('rec-editing');
+    editorHost.innerHTML = '';
+    editorDirty = false;
+  }
+
+  // ============ Auth ============
+  const loginModal = document.getElementById('recLoginModal');
+  function openLogin(){
+    document.getElementById('recLoginErr').classList.remove('show');
+    loginModal.hidden = false;
+    document.getElementById('recLoginEmail').focus();
+  }
+  function closeLogin(){ loginModal.hidden = true; }
+  document.getElementById('recLoginClose').addEventListener('click', closeLogin);
+  document.getElementById('recLoginCancel').addEventListener('click', closeLogin);
+  loginModal.addEventListener('click', (ev) => { if(ev.target === loginModal) closeLogin(); });
+  document.addEventListener('keydown', (ev) => { if(ev.key === 'Escape' && !loginModal.hidden) closeLogin(); });
+
+  document.getElementById('recLoginForm').addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const btn = document.getElementById('recLoginSubmit');
+    const err = document.getElementById('recLoginErr');
+    err.classList.remove('show');
+    btn.disabled = true; btn.textContent = 'Signing in…';
+    try {
+      await FB.auth.signInWithEmailAndPassword(
+        document.getElementById('recLoginEmail').value.trim(),
+        document.getElementById('recLoginPass').value
+      );
+      closeLogin();
+      document.getElementById('recLoginPass').value = '';
+      enterEditMode();
+    } catch(e){
+      const code = (e && e.code) || '';
+      err.textContent =
+        code.includes('user-not-found') ? 'No admin account found for that email.' :
+        (code.includes('wrong-password') || code.includes('invalid-credential')) ? 'Incorrect email or password.' :
+        code.includes('too-many-requests') ? 'Too many failed attempts. Try again in a minute.' :
+        code.includes('network') ? 'Network error — check your connection.' :
+        (e && e.message) || 'Sign-in failed.';
+      err.classList.add('show');
+    } finally {
+      btn.disabled = false; btn.textContent = 'Sign in & edit';
+    }
+  });
+
+  document.getElementById('editRecordsBtn').addEventListener('click', () => {
+    if(!window.FB){
+      toast('Can’t reach the team database right now — check your connection and reload.', true);
+      return;
+    }
+    if(FB.auth.currentUser) enterEditMode();
+    else openLogin();
+  });
+
+  // Sign-out link lives inside the savebar note (re-rendered per edit session).
+  document.getElementById('recSavebar').addEventListener('click', async (ev) => {
+    if(ev.target.id !== 'recSignOut') return;
+    if(editorDirty && !confirm('Discard your unsaved changes and sign out?')) return;
+    try { await FB.auth.signOut(); } catch(e){}
+    exitEditMode();
+    toast('Signed out.');
+  });
+
+  // ============ Save / Cancel / Reset ============
+  document.getElementById('recCancelBtn').addEventListener('click', () => {
+    if(editorDirty && !confirm('Discard your unsaved changes?')) return;
+    exitEditMode();
+  });
+
+  document.getElementById('recResetBtn').addEventListener('click', () => {
+    if(!confirm('Load the original built-in record board into the editor? (Nothing is saved until you hit Save changes.)')) return;
+    RECORDS = {
+      individual: deepClone(DEFAULT_INDIVIDUAL_RECORDS),
+      relay: deepClone(DEFAULT_RELAY_RECORDS)
+    };
+    renderEditor();
+    editorDirty = true;
+    toast('Original board loaded — hit Save changes to make it live.');
+  });
+
+  document.getElementById('recSaveBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('recSaveBtn');
+    const data = harvestEditor();
+    if(!data.individual.length && !data.relay.length){
+      toast('The board is empty — add at least one record before saving.', true);
+      return;
+    }
+    btn.disabled = true; btn.textContent = 'Saving…';
+    try {
+      await recordsDoc().set({
+        individual: data.individual,
+        relay: data.relay,
+        updatedAt: FB.FieldValue.serverTimestamp(),
+        updatedBy: (FB.auth.currentUser && FB.auth.currentUser.email) || ''
+      });
+      RECORDS = data;
+      renderAll();
+      exitEditMode();
+      toast('Record board saved — it’s live for everyone now.');
+    } catch(e){
+      console.warn('Save failed:', e);
+      const code = (e && e.code) || '';
+      toast(code.includes('permission') ?
+        'Save failed — this account isn’t allowed to edit records.' :
+        'Save failed — check your connection and try again.', true);
+    } finally {
+      btn.disabled = false; btn.textContent = 'Save changes';
+    }
+  });
+
+  // Warn before leaving the page with unsaved edits.
+  window.addEventListener('beforeunload', (ev) => {
+    if(document.body.classList.contains('rec-editing') && editorDirty){
+      ev.preventDefault();
+      ev.returnValue = '';
+    }
+  });
+
   // ============ Boot ============
-  renderIndividual();
-  renderRelay();
+  renderAll();
+  loadSavedRecords();
 </script>
 <script src="assets/mobile-nav.js" defer></script>
 </body>
