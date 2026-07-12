@@ -750,6 +750,10 @@
     // Loaded lazily below so a roster-only upload never hits Firestore for records.
     let existingRecords = null;
     const newRecordWrites = [];
+    // History pushes: whenever a record is BEATEN, its previous holder is
+    // copied into hhst_records/{id}/history/{autoId} first so the record
+    // book keeps a full timeline instead of overwriting the past.
+    const recordHistoryWrites = [];
     const newRecordsForCaller = [];
     async function loadExistingRecords(){
       if(existingRecords) return;
@@ -789,6 +793,35 @@
         previousSwimmerName: existing ? (existing.swimmerName || '') : '',
         previousSwimmerKey: existing ? (existing.swimmerKey || '') : ''
       };
+      // Archive the OUTGOING record to the history subcollection before we
+      // overwrite the main doc — records are permanent. Only archive a real
+      // previous record with a swimmer/time; a first-ever record has nothing
+      // to archive. Skip when the "existing" is actually another pending write
+      // from earlier in this same upload (its swimmerKey exists but recognized
+      // as a pending write via the newRecordWrites map).
+      const pendingInThisUpload = newRecordWrites.some(w => w.id === recId);
+      if(existing && !pendingInThisUpload && existing.swimmerKey && isFinite(existing.seconds)){
+        recordHistoryWrites.push({
+          recordId: recId,
+          data: {
+            recordId: recId,
+            ageGroup: existing.ageGroup || bracket,
+            gender: existing.gender || genderCode,
+            genderLabel: existing.genderLabel || genderLabel(existing.gender || genderCode),
+            event: existing.event || normEvent,
+            swimmerKey: existing.swimmerKey || '',
+            swimmerName: existing.swimmerName || '',
+            time: existing.time || '',
+            seconds: existing.seconds,
+            meet: existing.meet || '',
+            date: existing.date || '',
+            season: existing.season || '',
+            brokenBySwimmerName: name,
+            brokenBySeconds: seconds,
+            brokenByTime: timeStr
+          }
+        });
+      }
       // In-memory update so later rows in this same upload compare against the
       // pending new record (avoids two "NEW RECORD" hits for the same event
       // when a swimmer beats the standing record twice in one file).
@@ -1215,10 +1248,24 @@
       await batch.commit();
     }
 
-    // Write any staged team-records updates. One doc per record id (gender +
-    // age group + normalized event) — the latest-staged fastest wins because
-    // checkRecord dedupes in place. setAt uses a server timestamp so the
-    // records page can order most-recent-first.
+    // Archive every OUTGOING record into its per-record history subcollection
+    // FIRST — records are permanent. Auto-generated doc ids in
+    // hhst_records/{recordId}/history so a timeline of every previous holder
+    // is preserved. Doing this before the main-doc overwrite means a partial
+    // failure can only ever LOSE the new write, never the old one.
+    for(let i=0;i<recordHistoryWrites.length;i+=400){
+      const batch = FB.db.batch();
+      recordHistoryWrites.slice(i, i+400).forEach(h => {
+        const ref = FB.db.collection('hhst_records').doc(h.recordId)
+          .collection('history').doc();
+        batch.set(ref, { ...h.data, archivedAt: FB.FieldValue.serverTimestamp() });
+      });
+      await batch.commit();
+    }
+    // Then write any staged team-records updates. One doc per record id
+    // (gender + age group + normalized event) — the latest-staged fastest
+    // wins because checkRecord dedupes in place. setAt uses a server
+    // timestamp so the records page can order most-recent-first.
     for(let i=0;i<newRecordWrites.length;i+=400){
       const batch = FB.db.batch();
       newRecordWrites.slice(i, i+400).forEach(w => {
@@ -2676,10 +2723,66 @@
     });
     return out;
   }
-  // Wipe every team record — the "Clear All Records" admin button. Doesn't
-  // touch swimmers or meet times; a subsequent upload will re-establish
-  // records from whatever times survive.
-  async function clearAllRecords(){ await clearCollection('hhst_records'); }
+  // Fetch a single record's history subcollection (every previous holder,
+  // newest-first). Called on-demand when a coach expands a record on the
+  // records page — we never bulk-fetch every record's history up front.
+  async function getRecordHistory(recordId){
+    if(!recordId) return [];
+    const snap = await FB.db.collection('hhst_records').doc(recordId)
+      .collection('history').get();
+    const out = [];
+    snap.forEach(d => out.push({ id: d.id, ...d.data() }));
+    const ms = h => {
+      const t = h && h.archivedAt;
+      if(t && typeof t.toMillis === 'function') return t.toMillis();
+      if(t && typeof t.seconds === 'number') return t.seconds * 1000;
+      return 0;
+    };
+    out.sort((a, b) => ms(b) - ms(a));
+    return out;
+  }
+  // Seed the record book with a batch of historical entries — used the one
+  // time to import the wall's pre-existing records so they survive the
+  // move to Firestore. `entries` is [{ ageGroup, gender:'M'|'F', event,
+  // swimmerName, time, meet?, date?, season? }, ...]. Existing docs are
+  // NEVER overwritten (records are permanent — a real upload that has since
+  // set a faster time always wins), so re-running the seed is a safe no-op.
+  // Returns { seeded, skipped }.
+  async function seedHistoricalRecords(entries){
+    entries = Array.isArray(entries) ? entries : [];
+    let seeded = 0, skipped = 0;
+    for(const e of entries){
+      if(!e || !e.event || !e.ageGroup || !e.swimmerName || !e.time) { skipped++; continue; }
+      const genderCode = e.gender === 'F' || e.gender === 'M' ? e.gender : parseGender(e.gender);
+      if(genderCode !== 'M' && genderCode !== 'F') { skipped++; continue; }
+      const normEvent = normalizeRecordEvent(e.event);
+      if(!normEvent) { skipped++; continue; }
+      const seconds = timeToSeconds(e.time);
+      if(!isFinite(seconds)) { skipped++; continue; }
+      const recId = recordDocId(genderCode, e.ageGroup, normEvent);
+      const ref = FB.db.collection('hhst_records').doc(recId);
+      const cur = await ref.get();
+      if(cur.exists){ skipped++; continue; } // never overwrite an existing record
+      await ref.set({
+        recordId: recId,
+        ageGroup: e.ageGroup,
+        gender: genderCode,
+        genderLabel: genderLabel(genderCode),
+        event: normEvent,
+        swimmerKey: e.swimmerKey || '',
+        swimmerName: e.swimmerName,
+        time: fmtTime(e.time),
+        seconds,
+        meet: e.meet || '',
+        date: e.date || '',
+        season: e.season || '',
+        seeded: true,
+        setAt: FB.FieldValue.serverTimestamp()
+      });
+      seeded++;
+    }
+    return { seeded, skipped };
+  }
   // Delete every uploads-registry row of a given mode ('roster' | 'results').
   async function deleteUploadsByMode(mode){
     try {
@@ -3376,7 +3479,7 @@
     getTimeAudit, restoreTimeEvent, recordManualTimeAudit, clearSeasonMeetTimes,
     migrateSeasonAges, countSwimmersNeedingSeasonMigration, inferMissingDistances, renameMeet, dedupeMeetByStroke,
     clearAll, clearRoster, clearMeetTimes,
-    getRecords, clearAllRecords, normalizeRecordEvent, recordDocId,
+    getRecords, getRecordHistory, seedHistoricalRecords, normalizeRecordEvent, recordDocId,
     isAdminLoggedIn, loginAdmin, logoutAdmin, onAuthChanged,
     statsForSwimmer, rankSwimmerInAgeGroup, buildLeaderboards, teamStats, teamStatsBySeason,
     getAllSeasons, currentSeason, currentSeasonWithTimes, filterSwimmerToSeason, getAllMeets,

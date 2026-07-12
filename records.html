@@ -82,7 +82,7 @@
   .rec-list{display:flex;flex-direction:column;gap:8px}
   .rec-item{
     display:grid;grid-template-columns:auto 1fr auto;align-items:center;
-    gap:12px;padding:10px 12px;border-radius:10px;
+    gap:10px 12px;padding:10px 12px;border-radius:10px;
     background:var(--surface-2,rgba(0,0,0,.02));
     border:1px solid var(--border);
     transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease;
@@ -119,6 +119,48 @@
     padding:24px 8px;text-align:center;color:var(--text-muted);
     font-size:13px;font-style:italic;
   }
+
+  /* Collapsible per-record history — an inline <details> under each record
+     shows every previous holder. Empty history hides the disclosure entirely
+     so records that have never been broken don't advertise a dead toggle. */
+  .rec-history{margin-top:8px;grid-column:1 / -1}
+  .rec-history summary{
+    display:inline-flex;align-items:center;gap:6px;cursor:pointer;
+    font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--text-muted);padding:3px 8px;border-radius:6px;
+    background:rgba(0,0,0,.03);border:1px solid var(--border);
+    transition:color .15s ease,background .15s ease,border-color .15s ease;
+  }
+  [data-theme="dark"] .rec-history summary{background:rgba(255,255,255,.03)}
+  .rec-history summary:hover{color:var(--text);border-color:var(--border-strong)}
+  .rec-history summary::-webkit-details-marker{display:none}
+  .rec-history summary::after{
+    content:"▾";font-size:10px;opacity:.7;transition:transform .15s ease;
+  }
+  .rec-history[open] summary::after{transform:rotate(180deg)}
+  .rec-history-body{
+    margin-top:8px;padding:10px 12px;border-radius:8px;
+    background:rgba(0,0,0,.02);border:1px dashed var(--border);
+  }
+  [data-theme="dark"] .rec-history-body{background:rgba(255,255,255,.02)}
+  .rec-history-list{display:flex;flex-direction:column;gap:6px;margin:0;padding:0;list-style:none}
+  .rec-history-row{
+    display:grid;grid-template-columns:1fr auto;gap:10px;align-items:baseline;
+    font-size:13px;color:var(--text);
+  }
+  .rec-history-row .rec-history-name{
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .rec-history-row .rec-history-sub{
+    display:block;font-size:11.5px;color:var(--text-muted);margin-top:1px;
+  }
+  .rec-history-row .rec-history-time{
+    font-family:var(--font-display);font-weight:800;font-size:14px;
+    font-variant-numeric:tabular-nums;letter-spacing:-.01em;color:var(--text-muted);
+    white-space:nowrap;
+  }
+  .rec-history-empty{font-size:12px;color:var(--text-muted);font-style:italic}
+  .rec-history-loading{font-size:12px;color:var(--text-muted)}
 
   .records-toolbar{
     display:flex;align-items:center;justify-content:space-between;
@@ -186,7 +228,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="assets/firebase-init.js"></script>
-<script src="assets/data.js?v=44"></script>
+<script src="assets/data.js?v=45"></script>
 <script src="assets/mobile-nav.js" defer></script>
 <script>
   HHST.initTheme();
@@ -206,14 +248,78 @@
     const stroke = parts.slice(1).join(' ') || rec.event || '';
     const submeta = [dist ? `${dist} yd` : '', rec.meet, rec.date, rec.season]
       .filter(Boolean).map(escapeHtml).join(' · ');
-    return `<div class="rec-item">
+    // Every record gets a history <details> — the FIRST expansion fetches
+    // the record's history subcollection on demand (records with an empty
+    // history render "Never been broken" once opened). Records are permanent,
+    // so this timeline is the point.
+    return `<div class="rec-item" data-record-id="${escapeHtml(rec.id || rec.recordId || '')}">
       <span class="rec-evt">${escapeHtml(stroke)}</span>
       <div class="rec-meta">
         <div class="rec-name">${escapeHtml(rec.swimmerName || '—')}</div>
         <div class="rec-sub">${submeta}</div>
       </div>
       <span class="rec-time">${escapeHtml(rec.time || '')}</span>
+      <details class="rec-history">
+        <summary>Previous holders</summary>
+        <div class="rec-history-body" data-history-body>
+          <div class="rec-history-loading">Loading history…</div>
+        </div>
+      </details>
     </div>`;
+  }
+
+  function fmtHistoryDate(h){
+    // Prefer the meet's own date; fall back to when we archived it.
+    if(h.date) return h.date;
+    const t = h.archivedAt;
+    let ms = 0;
+    if(t && typeof t.toMillis === 'function') ms = t.toMillis();
+    else if(t && typeof t.seconds === 'number') ms = t.seconds * 1000;
+    if(!ms) return h.season || '';
+    const d = new Date(ms);
+    return d.toLocaleDateString(undefined, { year:'numeric', month:'short' });
+  }
+
+  async function loadHistoryInto(bodyEl, recordId){
+    if(!recordId){
+      bodyEl.innerHTML = '<div class="rec-history-empty">No history available.</div>';
+      return;
+    }
+    try {
+      const history = await HHST.getRecordHistory(recordId);
+      if(!history.length){
+        bodyEl.innerHTML = '<div class="rec-history-empty">Never been broken — this is the first record on the books.</div>';
+        return;
+      }
+      const rows = history.map(h => {
+        const when = escapeHtml(fmtHistoryDate(h));
+        const meet = escapeHtml(h.meet || '');
+        const sub = [when, meet].filter(Boolean).join(' · ');
+        return `<li class="rec-history-row">
+          <div>
+            <div class="rec-history-name">${escapeHtml(h.swimmerName || '—')}</div>
+            ${sub ? `<div class="rec-history-sub">${sub}</div>` : ''}
+          </div>
+          <div class="rec-history-time">${escapeHtml(h.time || '')}</div>
+        </li>`;
+      }).join('');
+      bodyEl.innerHTML = `<ul class="rec-history-list">${rows}</ul>`;
+    } catch(err){
+      console.error(err);
+      bodyEl.innerHTML = `<div class="rec-history-empty">Couldn't load history: ${escapeHtml(err.message || err)}</div>`;
+    }
+  }
+
+  function wireHistoryLazyLoad(host){
+    host.querySelectorAll('.rec-history').forEach(det => {
+      det.addEventListener('toggle', () => {
+        if(!det.open || det.dataset.loaded) return;
+        det.dataset.loaded = '1';
+        const item = det.closest('.rec-item');
+        const bodyEl = det.querySelector('[data-history-body]');
+        loadHistoryInto(bodyEl, item ? item.dataset.recordId : '');
+      });
+    });
   }
 
   function columnHtml(records, gender, label){
@@ -264,6 +370,7 @@
         </section>`;
       }).join('');
     host.innerHTML = sections;
+    wireHistoryLazyLoad(host);
     meta.innerHTML = `<strong>${records.length}</strong> record${records.length === 1 ? '' : 's'} across ${sections ? HHST.AGE_GROUP_ORDER.filter(ag => byAge[ag] && (byAge[ag].F.length || byAge[ag].M.length)).length : 0} age group${records.length === 1 ? '' : 's'}.`;
   }
 

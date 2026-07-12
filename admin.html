@@ -391,10 +391,10 @@
          Reset. ---- */
   .maintenance-btn{transition:transform .18s ease,border-color .18s ease,background .18s ease}
   .maintenance-btn:hover{transform:translateY(-1px)}
-  #clearRosterBtn,#clearTimesBtn,#clearRecordsBtn{border-color:rgba(226,85,76,.32);color:var(--red-light)}
-  #clearRosterBtn:hover,#clearTimesBtn:hover,#clearRecordsBtn:hover{
+  #clearRosterBtn,#clearTimesBtn{border-color:rgba(226,85,76,.32);color:var(--red-light)}
+  #clearRosterBtn:hover,#clearTimesBtn:hover{
     border-color:var(--red,#e2554c);background:rgba(226,85,76,.08)}
-  #clearRosterBtn svg,#clearTimesBtn svg,#clearRecordsBtn svg{color:var(--red-light);opacity:.9}
+  #clearRosterBtn svg,#clearTimesBtn svg{color:var(--red-light);opacity:.9}
 
   /* ---- Focus rings for bare <summary> disclosure rows in the cards ---- */
   details > summary:focus-visible{outline:none;border-radius:var(--radius-sm);
@@ -1386,9 +1386,9 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             Clear meet times only
           </button>
-          <button class="btn ghost maintenance-btn" id="clearRecordsBtn">
+          <button class="btn ghost maintenance-btn" id="seedRecordsBtn" title="Import the historical wall records into Firestore. Never overwrites a record that's already been set — safe to click multiple times.">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M17 5h2a2 2 0 0 1 0 4h-2"/><path d="M7 5H5a2 2 0 0 0 0 4h2"/></svg>
-            Clear all records
+            Seed historical records
           </button>
           <button class="btn danger maintenance-btn" id="resetDataBtn">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9"/><polyline points="3 4 3 12 11 12"/></svg>
@@ -1454,7 +1454,8 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
   </div>
 </div>
 
-<script src="assets/data.js?v=44"></script>
+<script src="assets/data.js?v=45"></script>
+<script src="assets/historical-records.js?v=1"></script>
 <script>
   HHST.initTheme();
 
@@ -2284,14 +2285,17 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
     }
   });
 
-  document.getElementById('clearRecordsBtn').addEventListener('click', async ()=>{
-    if(!confirm('Clear the entire team record book? Swimmers and meet times stay intact — the next upload will re-set records from surviving times.')) return;
+  // Seed the historical wall records into Firestore. Safe to click repeatedly:
+  // seedHistoricalRecords never overwrites a record that's already been set,
+  // so a real upload that's since produced a faster time always wins.
+  document.getElementById('seedRecordsBtn').addEventListener('click', async ()=>{
+    if(!confirm('Import the historical wall records into Firestore? Existing records (already on file or set by an upload) are left alone — safe to run more than once.')) return;
     try{
-      await HHST.clearAllRecords();
-      setStatus('ok','All team records cleared.');
+      const res = await HHST.seedHistoricalRecords(window.HHST_HISTORICAL_RECORDS || []);
+      setStatus('ok', `Seeded ${res.seeded} historical record${res.seeded===1?'':'s'} (${res.skipped} skipped — already on file or missing data).`);
     } catch(err){
       console.error(err);
-      setStatus('err','Clear failed: ' + (err.message || err));
+      setStatus('err','Seed failed: ' + (err.message || err));
     }
   });
 
