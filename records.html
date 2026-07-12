@@ -18,7 +18,8 @@
 <link rel="stylesheet" href="assets/styles.css?v=43"/>
 <style>
   /* records.html — data-driven view of hhst_records. All colors come from the
-     site's theme variables so dark and light both feel native.
+     site's theme variables so dark and light both feel native. A parallel
+     @media print block turns the page into a printable wall poster.
      ============================================================= */
   .records-shell{padding-bottom:80px}
   footer{padding-bottom:calc(36px + 80px + env(safe-area-inset-bottom))}
@@ -31,14 +32,32 @@
   .records-empty h3{font-size:20px;margin:0 0 8px;color:var(--text)}
   .records-empty p{margin:0 auto;max-width:520px;line-height:1.55}
 
-  .rec-age-section{margin-top:36px}
-  .rec-age-section:first-of-type{margin-top:24px}
+  /* Kind-level section (Individual, Relay) header. */
+  .rec-kind-section{margin-top:44px}
+  .rec-kind-section:first-of-type{margin-top:20px}
+  .rec-kind-head{
+    display:flex;align-items:center;gap:14px;margin:0 2px 14px;
+    padding-bottom:10px;border-bottom:2px solid var(--border-strong);
+  }
+  .rec-kind-head h2{
+    margin:0;font-family:var(--font-display);
+    font-size:32px;font-weight:800;letter-spacing:-.025em;color:var(--text);
+  }
+  .rec-kind-eyebrow{
+    display:inline-flex;align-items:center;padding:3px 12px;border-radius:999px;
+    font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+    background:var(--accent-tint);color:var(--accent);
+    border:1px solid var(--accent-border);
+  }
+
+  .rec-age-section{margin-top:32px}
+  .rec-age-section:first-of-type{margin-top:20px}
   .rec-age-head{
     display:flex;align-items:center;gap:14px;margin:0 2px 14px;
     font-family:var(--font-display);
   }
-  .rec-age-head h2{
-    margin:0;font-size:28px;font-weight:800;letter-spacing:-.02em;color:var(--text);
+  .rec-age-head h3{
+    margin:0;font-size:24px;font-weight:800;letter-spacing:-.02em;color:var(--text);
   }
   .rec-age-count{
     display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;
@@ -115,14 +134,21 @@
     color:var(--text);white-space:nowrap;
   }
 
+  /* Relay-specific: the 4-swimmer lineup wraps below the header row so each
+     name gets room to breathe. */
+  .rec-item-relay .rec-name{white-space:normal;font-size:14px}
+  .rec-item-relay .rec-evt{min-width:88px}
+  .rec-relay-lineup{
+    grid-column:2 / 3;font-size:12.5px;color:var(--text-muted);
+    line-height:1.5;
+  }
+
   .rec-col-empty{
     padding:24px 8px;text-align:center;color:var(--text-muted);
     font-size:13px;font-style:italic;
   }
 
-  /* Collapsible per-record history — an inline <details> under each record
-     shows every previous holder. Empty history hides the disclosure entirely
-     so records that have never been broken don't advertise a dead toggle. */
+  /* Collapsible per-record history. */
   .rec-history{margin-top:8px;grid-column:1 / -1}
   .rec-history summary{
     display:inline-flex;align-items:center;gap:6px;cursor:pointer;
@@ -166,10 +192,87 @@
     display:flex;align-items:center;justify-content:space-between;
     gap:12px;flex-wrap:wrap;margin-bottom:6px;
   }
-  .records-toolbar-meta{
-    font-size:13px;color:var(--text-muted);
-  }
+  .records-toolbar-meta{font-size:13px;color:var(--text-muted)}
   .records-toolbar-meta strong{color:var(--text)}
+  #printBtn{display:inline-flex;align-items:center;gap:8px;padding:9px 16px}
+
+  /* =====================================================================
+     PRINT LAYOUT — wall poster. The Firestore-backed record table renders
+     as a clean printable poster: header with team branding, Individual +
+     Relay each on their own page(s), Boys / Girls side-by-side, white
+     background, no nav / hero / history disclosure / toolbar / buttons.
+     Uses `body.printing-records` for on-screen "print preview" via the
+     Print button, mirrored by @media print for the actual print dialog.
+     ===================================================================== */
+  .print-only{display:none}
+
+  body.printing-records,
+  @media print{}
+
+  body.printing-records header,
+  body.printing-records .dash-hero,
+  body.printing-records footer,
+  body.printing-records .records-toolbar,
+  body.printing-records .rec-history{display:none !important}
+  body.printing-records{background:#fff !important}
+  body.printing-records .records-shell{padding:0}
+  body.printing-records .print-only{display:block}
+
+  @media print{
+    @page{ size:letter portrait; margin:0.5in }
+    header,footer,.dash-hero,.records-toolbar,.rec-history,#themeToggle{
+      display:none !important
+    }
+    html,body{background:#fff !important;color:#111 !important}
+    .records-shell{padding:0 !important}
+    .rec-col,.rec-item,.rec-item[hover]{
+      background:#fff !important;box-shadow:none !important;
+      border-color:#c9d3df !important;
+    }
+    .rec-item:hover{transform:none !important}
+    .rec-name,.rec-time,.rec-col-title,.rec-age-head h3,.rec-kind-head h2{color:#111 !important}
+    .rec-sub{color:#555 !important}
+    .rec-evt,.rec-col-tag,.rec-age-count,.rec-kind-eyebrow{
+      /* Solid ink — gradients + tints don't print reliably. */
+      -webkit-print-color-adjust:exact;print-color-adjust:exact;
+    }
+    /* Each top-level Individual/Relay group starts on its own page so a
+       coach can grab just one poster from the print dialog. */
+    .rec-kind-section{page-break-before:always;margin-top:0}
+    .rec-kind-section:first-of-type{page-break-before:auto}
+    .rec-age-section,.rec-cols,.rec-col,.rec-item{
+      page-break-inside:avoid;break-inside:avoid
+    }
+    .print-only{display:block !important}
+    .print-header{
+      text-align:center;padding:0 0 10px;margin:0 0 18px;
+      border-bottom:2px solid #111;
+    }
+    .print-header .print-brand{
+      font-family:var(--font-display);font-size:34px;font-weight:800;
+      letter-spacing:-.02em;color:#111;margin:0;
+    }
+    .print-header .print-brand em{font-style:italic;color:#0a4a95}
+    .print-header .print-sub{
+      margin:6px 0 0;font-size:14px;color:#333;letter-spacing:.06em;text-transform:uppercase;
+    }
+    .print-footer{
+      margin-top:16px;padding-top:8px;border-top:1px solid #ccc;
+      font-size:10.5px;text-align:center;color:#666;letter-spacing:.04em;text-transform:uppercase;
+    }
+  }
+  /* Same print-header/print-footer chrome for the on-screen print preview. */
+  body.printing-records .print-header{
+    text-align:center;padding:0 0 10px;margin:0 0 18px;border-bottom:2px solid var(--text);
+  }
+  body.printing-records .print-header .print-brand{
+    font-family:var(--font-display);font-size:34px;font-weight:800;
+    letter-spacing:-.02em;margin:0;
+  }
+  body.printing-records .print-header .print-brand em{font-style:italic;color:var(--accent)}
+  body.printing-records .print-header .print-sub{
+    margin:6px 0 0;font-size:14px;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;
+  }
 </style>
 </head>
 <body>
@@ -207,17 +310,31 @@
     <div class="leaderboard-hero-content">
       <div class="kicker"><span class="pulse"></span> Team Hall of Records</div>
       <h1>Team Records</h1>
-      <p class="lb-sub">The fastest times ever swum by a Hurricane in each age group and event. Records update automatically when a new fastest time is uploaded — a new record is called out on the admin dashboard the moment it's set.</p>
+      <p class="lb-sub">The all-time fastest Hurricanes swims in each age group. Records are permanent — when a swim breaks one, the previous holder is archived in the record's history so the timeline lives on.</p>
     </div>
   </div>
 </section>
 
 <main class="admin-shell records-shell">
+  <!-- Print-only header (also shown on-screen when print preview is active). -->
+  <div class="print-only print-header">
+    <h1 class="print-brand">Highcroft <em>Hurricanes</em></h1>
+    <p class="print-sub">All-Time Team Records</p>
+  </div>
+
   <div class="records-toolbar">
     <div class="records-toolbar-meta" id="recordsMeta">Loading records…</div>
+    <button class="btn btn-gradient" id="printBtn" type="button" title="Print or save as PDF">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      Print records
+    </button>
   </div>
 
   <div id="recordsHost"></div>
+
+  <div class="print-only print-footer">
+    Highcroft Hurricanes Swim Team · Records maintained at hhstswimstats.web.app
+  </div>
 </main>
 
 <footer>
@@ -228,7 +345,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="assets/firebase-init.js"></script>
-<script src="assets/data.js?v=45"></script>
+<script src="assets/data.js?v=46"></script>
 <script src="assets/mobile-nav.js" defer></script>
 <script>
   HHST.initTheme();
@@ -238,25 +355,33 @@
     return (s||'').toString().replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
 
+  // Split "50 Free" into distance + stroke for the chip/meta line. Relay
+  // events ("Medley Relay") have no distance, so fall back to the raw label.
+  function splitEvent(rec){
+    const ev = rec.event || '';
+    if(rec.kind === 'relay') return { dist:'', stroke:ev };
+    const m = ev.match(/^(\d+)\s+(.+)$/);
+    if(m) return { dist:m[1], stroke:m[2] };
+    return { dist:'', stroke:ev };
+  }
+
   function recordItemHtml(rec){
     if(!rec) return '';
-    // Split the "50 Free" event label so the chip carries the stroke and the
-    // distance stays on the meta line — reads cleanly on both narrow phones and
-    // wide desktops. Everything else pulls from the record doc directly.
-    const parts = (rec.event || '').split(/\s+/);
-    const dist  = parts[0] || '';
-    const stroke = parts.slice(1).join(' ') || rec.event || '';
-    const submeta = [dist ? `${dist} yd` : '', rec.meet, rec.date, rec.season]
-      .filter(Boolean).map(escapeHtml).join(' · ');
-    // Every record gets a history <details> — the FIRST expansion fetches
-    // the record's history subcollection on demand (records with an empty
-    // history render "Never been broken" once opened). Records are permanent,
-    // so this timeline is the point.
-    return `<div class="rec-item" data-record-id="${escapeHtml(rec.id || rec.recordId || '')}">
+    const { dist, stroke } = splitEvent(rec);
+    const isRelay = rec.kind === 'relay';
+    // Individual: "25 yd · Meet · Date". Relay: swimmers wrap onto a second line.
+    let sub = '';
+    if(isRelay && Array.isArray(rec.swimmers) && rec.swimmers.length){
+      sub = escapeHtml(rec.swimmers.join(', '));
+    } else {
+      sub = [dist ? `${dist} yd` : '', rec.meet, rec.date, rec.season]
+        .filter(Boolean).map(escapeHtml).join(' · ');
+    }
+    return `<div class="rec-item${isRelay ? ' rec-item-relay' : ''}" data-record-id="${escapeHtml(rec.id || rec.recordId || '')}">
       <span class="rec-evt">${escapeHtml(stroke)}</span>
       <div class="rec-meta">
-        <div class="rec-name">${escapeHtml(rec.swimmerName || '—')}</div>
-        <div class="rec-sub">${submeta}</div>
+        <div class="rec-name">${escapeHtml(isRelay ? (rec.swimmers && rec.swimmers.length ? 'Relay Team' : rec.swimmerName || '—') : (rec.swimmerName || '—'))}</div>
+        <div class="rec-sub">${sub}</div>
       </div>
       <span class="rec-time">${escapeHtml(rec.time || '')}</span>
       <details class="rec-history">
@@ -269,15 +394,13 @@
   }
 
   function fmtHistoryDate(h){
-    // Prefer the meet's own date; fall back to when we archived it.
     if(h.date) return h.date;
     const t = h.archivedAt;
     let ms = 0;
     if(t && typeof t.toMillis === 'function') ms = t.toMillis();
     else if(t && typeof t.seconds === 'number') ms = t.seconds * 1000;
     if(!ms) return h.season || '';
-    const d = new Date(ms);
-    return d.toLocaleDateString(undefined, { year:'numeric', month:'short' });
+    return new Date(ms).toLocaleDateString(undefined, { year:'numeric', month:'short' });
   }
 
   async function loadHistoryInto(bodyEl, recordId){
@@ -294,11 +417,11 @@
       const rows = history.map(h => {
         const when = escapeHtml(fmtHistoryDate(h));
         const meet = escapeHtml(h.meet || '');
-        const sub = [when, meet].filter(Boolean).join(' · ');
+        const subLine = [when, meet].filter(Boolean).join(' · ');
         return `<li class="rec-history-row">
           <div>
             <div class="rec-history-name">${escapeHtml(h.swimmerName || '—')}</div>
-            ${sub ? `<div class="rec-history-sub">${sub}</div>` : ''}
+            ${subLine ? `<div class="rec-history-sub">${subLine}</div>` : ''}
           </div>
           <div class="rec-history-time">${escapeHtml(h.time || '')}</div>
         </li>`;
@@ -325,7 +448,7 @@
   function columnHtml(records, gender, label){
     const list = records.length
       ? records.map(recordItemHtml).join('')
-      : `<div class="rec-col-empty">No ${label.toLowerCase()} records yet — upload a meet to set the first.</div>`;
+      : `<div class="rec-col-empty">No ${label.toLowerCase()} records yet.</div>`;
     return `<div class="rec-col rec-col-${gender.toLowerCase()}">
       <div class="rec-col-head">
         <span class="rec-col-title">${escapeHtml(label)}</span>
@@ -335,44 +458,104 @@
     </div>`;
   }
 
-  function render(records){
-    const host = document.getElementById('recordsHost');
-    const meta = document.getElementById('recordsMeta');
-    if(!records.length){
-      host.innerHTML = `<div class="records-empty">
-        <h3>No records yet</h3>
-        <p>Team records will appear here automatically as meet times get uploaded. Each new fastest time for an age group + event is stored as a record — the coach sees a "NEW RECORD!" flash on the admin dashboard the moment it's set.</p>
-      </div>`;
-      meta.textContent = '';
-      return;
-    }
-    // Group by age group in canonical order; within each, girls col + boys col;
-    // within each col, records already come sorted (stroke/distance) from data.js.
+  // Bucket a flat record list by age group in canonical order.
+  function bucketByAge(records){
     const byAge = {};
     HHST.AGE_GROUP_ORDER.forEach(g => { byAge[g] = { F: [], M: [] }; });
     records.forEach(r => {
       const g = byAge[r.ageGroup] || (byAge[r.ageGroup] = { F: [], M: [] });
       (r.gender === 'F' ? g.F : g.M).push(r);
     });
-    const sections = HHST.AGE_GROUP_ORDER.filter(ag => byAge[ag] && (byAge[ag].F.length || byAge[ag].M.length))
-      .map(ag => {
-        const g = byAge[ag];
-        return `<section class="rec-age-section">
-          <div class="rec-age-head">
-            <h2>${escapeHtml(ag)}</h2>
-            <span class="rec-age-count">${g.F.length + g.M.length} record${(g.F.length + g.M.length) === 1 ? '' : 's'}</span>
-            <span class="rec-age-rule" aria-hidden="true"></span>
-          </div>
-          <div class="rec-cols">
-            ${columnHtml(g.F, 'Girls', 'Girls')}
-            ${columnHtml(g.M, 'Boys', 'Boys')}
-          </div>
-        </section>`;
-      }).join('');
+    return byAge;
+  }
+
+  function kindSectionHtml(kindKey, kindLabel, records){
+    const byAge = bucketByAge(records);
+    const present = HHST.AGE_GROUP_ORDER.filter(ag => byAge[ag] && (byAge[ag].F.length || byAge[ag].M.length));
+    if(!present.length) return '';
+    const groups = present.map(ag => {
+      const g = byAge[ag];
+      return `<section class="rec-age-section">
+        <div class="rec-age-head">
+          <h3>${escapeHtml(ag)}</h3>
+          <span class="rec-age-count">${g.F.length + g.M.length} record${(g.F.length + g.M.length) === 1 ? '' : 's'}</span>
+          <span class="rec-age-rule" aria-hidden="true"></span>
+        </div>
+        <div class="rec-cols">
+          ${columnHtml(g.F, 'Girls', 'Girls')}
+          ${columnHtml(g.M, 'Boys', 'Boys')}
+        </div>
+      </section>`;
+    }).join('');
+    return `<section class="rec-kind-section rec-kind-${kindKey}">
+      <div class="rec-kind-head">
+        <span class="rec-kind-eyebrow">${escapeHtml(kindKey === 'relay' ? 'Relays' : 'Individual')}</span>
+        <h2>${escapeHtml(kindLabel)}</h2>
+      </div>
+      ${groups}
+    </section>`;
+  }
+
+  function render(records){
+    const host = document.getElementById('recordsHost');
+    const meta = document.getElementById('recordsMeta');
+    if(!records.length){
+      host.innerHTML = `<div class="records-empty">
+        <h3>No records yet</h3>
+        <p>Team records will appear here automatically as meet times get uploaded, and the historical wall records can be seeded once from the admin dashboard.</p>
+      </div>`;
+      meta.textContent = '';
+      return;
+    }
+    // A record without an explicit kind (legacy or hand-added) counts as an
+    // individual record — the ingest path only writes individuals anyway.
+    const individual = records.filter(r => (r.kind || 'individual') === 'individual');
+    const relay      = records.filter(r => r.kind === 'relay');
+    const sections = [
+      kindSectionHtml('individual', 'Individual Team Records', individual),
+      kindSectionHtml('relay',      'Relay Team Records',      relay)
+    ].filter(Boolean).join('');
     host.innerHTML = sections;
     wireHistoryLazyLoad(host);
-    meta.innerHTML = `<strong>${records.length}</strong> record${records.length === 1 ? '' : 's'} across ${sections ? HHST.AGE_GROUP_ORDER.filter(ag => byAge[ag] && (byAge[ag].F.length || byAge[ag].M.length)).length : 0} age group${records.length === 1 ? '' : 's'}.`;
+    const bits = [];
+    if(individual.length) bits.push(`<strong>${individual.length}</strong> individual`);
+    if(relay.length)      bits.push(`<strong>${relay.length}</strong> relay`);
+    meta.innerHTML = `${bits.join(' · ')} record${records.length === 1 ? '' : 's'} on the wall.`;
   }
+
+  // ---- Print button: apply .printing-records so on-screen preview matches
+  //      what the print dialog will show, then trigger the browser dialog.
+  //      afterprint fires when the dialog closes (Cancel or Print), so the
+  //      class is always cleaned up.
+  let __activePrintCleanup = null;
+  function safePrint(){
+    if(__activePrintCleanup){ try { __activePrintCleanup(); } catch(e){} }
+    document.body.classList.add('printing-records');
+    let cleaned = false, to = null;
+    const cleanup = () => {
+      if(cleaned) return;
+      cleaned = true;
+      document.body.classList.remove('printing-records');
+      window.removeEventListener('afterprint', onAfter);
+      if(to){ clearTimeout(to); to = null; }
+      __activePrintCleanup = null;
+    };
+    const onAfter = () => cleanup();
+    window.addEventListener('afterprint', onAfter);
+    to = setTimeout(cleanup, 120000);
+    __activePrintCleanup = cleanup;
+    try {
+      // Expand every history disclosure BEFORE printing so the print output
+      // matches the on-screen preview? No — print CSS hides history entirely
+      // so we can leave them collapsed. Just print.
+      const ret = window.print();
+      if(ret && typeof ret.then === 'function') ret.catch(() => {});
+    } catch(err){
+      console.warn('Print dialog blocked:', err);
+      cleanup();
+    }
+  }
+  document.getElementById('printBtn').addEventListener('click', safePrint);
 
   (async function boot(){
     try {

@@ -777,6 +777,7 @@
       if(seconds >= prevSec) return; // not a new record
       const payload = {
         recordId: recId,
+        kind: 'individual', // ingest never produces relay records — those live in the seed
         ageGroup: bracket,
         gender: genderCode,
         genderLabel: genderLabel(genderCode),
@@ -2755,7 +2756,15 @@
       if(!e || !e.event || !e.ageGroup || !e.swimmerName || !e.time) { skipped++; continue; }
       const genderCode = e.gender === 'F' || e.gender === 'M' ? e.gender : parseGender(e.gender);
       if(genderCode !== 'M' && genderCode !== 'F') { skipped++; continue; }
-      const normEvent = normalizeRecordEvent(e.event);
+      const kind = e.kind === 'relay' ? 'relay' : 'individual';
+      // Individual records need to normalize to "<dist> <Stroke>" so that
+      // records-from-ingest and seed records land on the same doc id. Relays
+      // don't have a distance-stroke shape, so their event string is kept
+      // as-is ("Medley Relay" / "Freestyle Relay") — the doc id still slugs
+      // it fine.
+      const normEvent = kind === 'relay'
+        ? (e.event || '').toString().trim()
+        : normalizeRecordEvent(e.event);
       if(!normEvent) { skipped++; continue; }
       const seconds = timeToSeconds(e.time);
       if(!isFinite(seconds)) { skipped++; continue; }
@@ -2763,8 +2772,9 @@
       const ref = FB.db.collection('hhst_records').doc(recId);
       const cur = await ref.get();
       if(cur.exists){ skipped++; continue; } // never overwrite an existing record
-      await ref.set({
+      const payload = {
         recordId: recId,
+        kind,
         ageGroup: e.ageGroup,
         gender: genderCode,
         genderLabel: genderLabel(genderCode),
@@ -2778,7 +2788,11 @@
         season: e.season || '',
         seeded: true,
         setAt: FB.FieldValue.serverTimestamp()
-      });
+      };
+      if(kind === 'relay' && Array.isArray(e.swimmers)){
+        payload.swimmers = e.swimmers.slice(0, 8); // usually 4; a safety cap
+      }
+      await ref.set(payload);
       seeded++;
     }
     return { seeded, skipped };
