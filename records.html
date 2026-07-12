@@ -202,125 +202,20 @@
     .rec-relay-time{ font-size:21px; }
   }
 
-  /* ====================================================================
-     COMPACT PRINT SHEETS — one page per section (Individual, Relay).
-     Hidden on screen; shown in print. Each sheet lays every age group into
-     a landscape US Letter with a single-title header + a grid of
-     Girls / Boys blocks per age group. Sized so nothing overflows, and if
-     a coach only wants one section they get exactly one page.
-
-     The per-age-group .award-card posters still exist for the per-card ⎘
-     button (body.printing-one), which prints ONE card as its own landscape
-     page. Everything else uses the compact sheets.
-     ==================================================================== */
-  .print-sheet{ display:none; }
-  .ps-header{
-    display:flex;align-items:center;gap:14px;
-    padding-bottom:8px;margin-bottom:10px;border-bottom:2px solid #1b3354;
-  }
-  .ps-header img{ height:50px;width:50px;border-radius:8px;object-fit:cover; }
-  .ps-header h1{
-    margin:0;font-family:var(--font-display);font-size:26px;font-weight:800;
-    letter-spacing:-.02em;color:#1b3354;
-  }
-  .ps-header .ps-sub{
-    margin-top:2px;font-family:var(--font-display);font-weight:800;
-    font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:#2c4a6e;
-  }
-  .ps-header.ps-header-relay .ps-sub{ color:#0f6e63; }
-  .ps-grid{
-    display:grid;grid-template-columns:1fr 1fr 1fr;
-    gap:8px 12px;
-  }
-  .ps-agecard{
-    border:1px solid #c9d3df;border-radius:10px;padding:8px 10px 9px;
-    background:#fff;
-    /* Never split an age group across pages — always the atomic unit. */
-    page-break-inside:avoid;break-inside:avoid;
-  }
-  .ps-agehead{
-    display:flex;align-items:baseline;justify-content:space-between;gap:8px;
-    padding-bottom:5px;margin-bottom:6px;border-bottom:1px solid #dfe6ee;
-  }
-  .ps-agehead .ps-age{
-    font-family:var(--font-display);font-size:16px;font-weight:800;
-    letter-spacing:-.01em;color:#1b3354;
-  }
-  .ps-agehead .ps-agenote{
-    font-size:9px;font-weight:700;letter-spacing:.10em;text-transform:uppercase;color:#6b7a90;
-  }
-  .ps-pair{ display:grid;grid-template-columns:1fr 1fr;gap:6px 10px; }
-  .ps-side-title{
-    font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;
-    margin-bottom:3px;
-  }
-  .ps-side-girls .ps-side-title{ color:#8f3a5c; }
-  .ps-side-boys  .ps-side-title{ color:#2c4a6e; }
-  .ps-row{
-    display:grid;grid-template-columns:44px 1fr auto;gap:6px;
-    align-items:baseline;padding:2px 0;
-    font-size:11px;line-height:1.25;
-    border-bottom:1px dotted #eef1f5;
-  }
-  .ps-row:last-child{ border-bottom:none; }
-  .ps-row .ps-evt{
-    font-weight:800;font-size:8.5px;letter-spacing:.06em;text-transform:uppercase;
-    padding:2px 5px;border-radius:3px;color:#fff;text-align:center;
-    background:#2c4a6e;
-  }
-  .ps-side-girls .ps-row .ps-evt{ background:#8f3a5c; }
-  .ps-row .ps-name{
-    font-weight:600;color:#16273d;
-    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-  }
-  .ps-row .ps-time{
-    font-family:var(--font-display);font-weight:800;font-size:12px;
-    font-variant-numeric:tabular-nums;letter-spacing:-.01em;color:#1b3354;
-    white-space:nowrap;
-  }
-  .ps-side-girls .ps-row .ps-time{ color:#7d2f52; }
-
-  /* Relay cells: type + time on top, 4 names beneath. */
-  .ps-relay{ padding:4px 0;border-bottom:1px dotted #eef1f5; }
-  .ps-relay:last-child{ border-bottom:none; }
-  .ps-relay-head{
-    display:flex;align-items:baseline;justify-content:space-between;gap:6px;
-    margin-bottom:2px;
-  }
-  .ps-relay-type{
-    font-weight:800;font-size:8.5px;letter-spacing:.08em;text-transform:uppercase;
-    padding:2px 6px;border-radius:3px;color:#fff;background:#2c4a6e;
-  }
-  .ps-side-girls .ps-relay-type{ background:#8f3a5c; }
-  .ps-relay-time{
-    font-family:var(--font-display);font-weight:800;font-size:12px;
-    font-variant-numeric:tabular-nums;color:#1b3354;
-  }
-  .ps-side-girls .ps-relay-time{ color:#7d2f52; }
-  .ps-relay-names{
-    font-size:10px;line-height:1.35;color:#16273d;
-    display:grid;grid-template-columns:1fr 1fr;column-gap:8px;
-  }
-  .ps-relay-names span{ white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
-
-  .ps-footer{
-    margin-top:8px;padding-top:6px;border-top:1px solid #dfe6ee;
-    font-size:9px;letter-spacing:.10em;text-transform:uppercase;text-align:center;color:#6b7a90;
-  }
-
   /* ==============================================================
-     Print scoping.
-     Default (Ctrl+P and "Print all records"): compact one-page sheets.
-     body.printing-compact-ind  → only the individual sheet
-     body.printing-compact-rel  → only the relay sheet
-     body.printing-one          → single .award-card poster (the ⎘ button
-                                   in a card's corner). Sheets stay hidden.
+     Print scoping — one age group (Girls + Boys side-by-side) per
+     landscape page, via the global .award-card{page-break-before:always}
+     rule in assets/styles.css. Mirrors the Fastest Five / Most Improved
+     pattern (body.printing-awards / body.printing-improved) already used
+     on awards.html.
+       Default (Ctrl+P and "Print all records"): every poster, both
+         sections, one age group per page.
+       body.printing-ind  → only #individualHost's posters
+       body.printing-rel  → only #relayHost's posters
+       body.printing-one  → single .award-card poster (the ⎘ button in a
+                             card's corner)
      ============================================================== */
   @media print{
-    /* NB: no @page override here — the global styles.css sets
-       `@page { size: letter landscape; margin: 0 }` and the per-card
-       print system relies on that margin:0 to make each .award-card exactly
-       one sheet. Instead we pad the compact sheet with its own inner box. */
     header, footer, .no-print, .dash-hero, .awards-intro, .rec-section-head,
     .modal-backdrop, #themeToggle{
       display:none !important;
@@ -328,45 +223,80 @@
     html, body{ background:#fff !important;color:#0c2237 !important; }
     main, .admin-shell{ padding:0 !important;margin:0 !important;max-width:none !important; }
 
-    /* Default: hide the on-screen poster cards, show the compact sheets. */
-    .awards-host{ display:none !important; }
-    .print-sheet{
-      display:block !important;
-      /* Own inner margin so the sheet doesn't run to the sheet edge. */
-      padding:0.3in 0.35in !important;
-      /* Each sheet is exactly one landscape page — never split, never doubled up. */
-      height:8.5in;box-sizing:border-box;
-      page-break-inside:avoid;
-    }
-    .print-sheet + .print-sheet{ page-break-before:always; }
+    /* Section-scoped print buttons hide the other section's posters entirely. */
+    body.printing-ind #relayHost{ display:none !important; }
+    body.printing-rel #individualHost{ display:none !important; }
 
-    /* Section-scoped print buttons hide the other sheet entirely. */
-    body.printing-compact-ind .print-sheet-relay,
-    body.printing-compact-rel .print-sheet-individual{ display:none !important; }
-
-    /* Per-card ⎘ button flips modes: show the .award-card system, hide the
-       compact sheets. Global styles.css handles the .award-card layout for
-       .printing-one — we just re-un-hide the host and hide the sheets. */
-    body.printing-one .awards-host{ display:block !important; }
-    body.printing-one .print-sheet{ display:none !important; }
+    /* Per-card ⎘ button prints just that one poster. */
     body.printing-one .award-card:not(.print-target){ display:none !important; }
+
+    /* ---- Fill the fixed 8in-tall poster cleanly --------------------------
+       assets/styles.css locks .award-card to a fixed height:8in for print
+       (so N posters = N pages) and lays its two children (header, board)
+       out with justify-content:space-between. A records poster only has
+       3-4 rows per column — far less content than Fastest Five/Most
+       Improved's 10-row tables — so space-between was dumping ALL the
+       leftover height into one raw gap between the header and the board,
+       leaving the board stranded at the very bottom of the page. Auto
+       margins on the board win over justify-content and split the leftover
+       space evenly above + below it, so the board sits centered under the
+       header instead. */
+    .award-card .award-cols{ margin-top:auto !important;margin-bottom:auto !important; }
+
+    /* ---- Record-board print scale-up --------------------------------
+       The .rec-* classes are this page's own poster chrome (not shared
+       with Fastest Five/Most Improved, so they never got the global
+       print scale-up). On screen the card is a ~700px-wide preview; in
+       print it's a full 10.5in x 8in sheet, so the same pixel sizes read
+       small and sparse. Scale everything up ~1.4-1.5x so the board reads
+       clearly from across a room, matching the size and weight of the
+       header above it. */
+    .rec-board{ gap:14px !important;margin-top:18px !important; }
+    .rec-row{ padding:18px 20px !important;gap:12px !important;border-radius:15px !important; }
+    .rec-evt{ min-width:64px !important;padding:7px 12px !important;font-size:13px !important;border-radius:8px !important; }
+    .rec-name{ font-size:26px !important; }
+    .rec-time{ font-size:32px !important; }
+    .rec-row-relay{ gap:11px !important; }
+    .rec-relay-chip{ padding:7px 14px !important;font-size:13px !important;border-radius:8px !important; }
+    .rec-relay-time{ font-size:30px !important; }
+    .rec-relay-names{ gap:8px 22px !important; }
+    .rec-swimmer{ font-size:26px !important; }
+    .rec-swimmer.rec-sw-2{ font-size:23px !important; }
+    .rec-swimmer.rec-sw-3{ font-size:19px !important; }
+    .rec-swimmer.rec-sw-4{ font-size:16px !important; }
+
+    /* The relay board only ever has 2 rows (Medley + Freestyle) per gender —
+       noticeably less content than a 4-event individual board — so it gets
+       its own larger fixed scale (no per-group variance to account for,
+       relay-only, scoped to #relayHost so it never touches the individual
+       sheet). */
+    #relayHost .rec-board{ gap:20px !important; }
+    #relayHost .rec-row-relay{ padding:26px 24px !important;gap:14px !important; }
+    #relayHost .rec-relay-chip{ padding:9px 16px !important;font-size:14px !important; }
+    #relayHost .rec-relay-time{ font-size:36px !important; }
+    #relayHost .rec-relay-names{ gap:10px 26px !important; }
+    #relayHost .rec-swimmer{ font-size:30px !important; }
+    #relayHost .rec-swimmer.rec-sw-2{ font-size:26px !important; }
+    #relayHost .rec-swimmer.rec-sw-3{ font-size:22px !important; }
+    #relayHost .rec-swimmer.rec-sw-4{ font-size:18px !important; }
+
+    /* "6 & Under" is the one individual board with only 3 events (no Fly at
+       that age) instead of 4 — scale its rows up a notch so the board fills
+       the page as fully as every other age group's poster does. */
+    .award-card[data-group="individual-6 & Under"] .rec-board{ gap:22px !important; }
+    .award-card[data-group="individual-6 & Under"] .rec-row{ padding:28px 24px !important; }
+    .award-card[data-group="individual-6 & Under"] .rec-evt{ min-width:72px !important;padding:10px 15px !important;font-size:15px !important; }
+    .award-card[data-group="individual-6 & Under"] .rec-name{ font-size:32px !important; }
+    .award-card[data-group="individual-6 & Under"] .rec-time{ font-size:40px !important; }
   }
 
-  /* Same layout for the on-screen print preview when the user has clicked
-     one of the compact-print buttons — lets them see what the sheet looks
-     like before the browser dialog opens. */
-  body.printing-compact-all .awards-host,
-  body.printing-compact-ind .awards-host,
-  body.printing-compact-rel .awards-host{ display:none; }
-  body.printing-compact-all .print-sheet,
-  body.printing-compact-ind .print-sheet-individual,
-  body.printing-compact-rel .print-sheet-relay{ display:block; }
-  body.printing-compact-all .awards-intro,
-  body.printing-compact-ind .awards-intro,
-  body.printing-compact-rel .awards-intro,
-  body.printing-compact-all .rec-section-head,
-  body.printing-compact-ind .rec-section-head,
-  body.printing-compact-rel .rec-section-head{ display:none; }
+  /* Same section-scoping for the brief on-screen flash between clicking a
+     print button and the OS print dialog opening. */
+  body.printing-ind #relayHost,
+  body.printing-rel #individualHost{ display:none; }
+  body.printing-all .awards-intro, body.printing-all .rec-section-head,
+  body.printing-ind .awards-intro, body.printing-ind .rec-section-head,
+  body.printing-rel .awards-intro, body.printing-rel .rec-section-head{ display:none; }
 </style>
 </head>
 <body>
@@ -452,13 +382,6 @@
     </button>
   </div>
   <section id="relayHost" class="awards-host"></section>
-
-  <!-- Compact one-page print sheets. Hidden on screen (unless print-preview
-       classes are on <body>); populated from HHST.getMergedRecords() alongside
-       the on-screen posters. Ctrl+P / "Print all records" outputs these two
-       sheets, one per landscape page. -->
-  <div class="print-sheet print-sheet-individual" id="printSheetIndividual"></div>
-  <div class="print-sheet print-sheet-relay" id="printSheetRelay"></div>
 
 </main>
 
@@ -633,89 +556,6 @@
 
     wirePerCardPrint(indHost);
     wirePerCardPrint(relHost);
-
-    renderPrintSheets(buckets, indGroups, relGroups);
-  }
-
-  // ============ Compact one-page print sheets ============
-  // Both sheets live in the DOM (hidden) at all times, and print-time CSS
-  // reveals them instead of the per-age-group posters. Each sheet is one
-  // landscape page — a 3-column grid of age-group cards so every record fits
-  // without splitting across pages. Sourced from the SAME merged data, so
-  // the poster view and the printed sheet can never drift.
-  function individualPsCellHtml(entries, gender){
-    const sideCls = 'ps-side-' + gender.toLowerCase();
-    const rows = sortIndividuals(entries).map(rec => `<div class="ps-row">
-      <span class="ps-evt">${escapeHtml(chipLabel(rec))}</span>
-      <span class="ps-name">${escapeHtml(rec.swimmerName || '—')}</span>
-      <span class="ps-time">${escapeHtml(rec.time || '')}</span>
-    </div>`).join('') || `<div class="ps-row" style="opacity:.6;font-style:italic;grid-template-columns:1fr">—</div>`;
-    return `<div class="${sideCls}">
-      <div class="ps-side-title">${gender}</div>
-      ${rows}
-    </div>`;
-  }
-  function relayPsCellHtml(entries, gender){
-    const sideCls = 'ps-side-' + gender.toLowerCase();
-    const rows = sortRelays(entries).map(rec => {
-      const names = relaySwimmerList(rec).map(s => `<span>${escapeHtml(s)}</span>`).join('');
-      return `<div class="ps-relay">
-        <div class="ps-relay-head">
-          <span class="ps-relay-type">${escapeHtml(rec.event || '')}</span>
-          <span class="ps-relay-time">${escapeHtml(rec.time || '')}</span>
-        </div>
-        <div class="ps-relay-names">${names}</div>
-      </div>`;
-    }).join('') || `<div class="ps-relay" style="opacity:.6;font-style:italic">—</div>`;
-    return `<div class="${sideCls}">
-      <div class="ps-side-title">${gender}</div>
-      ${rows}
-    </div>`;
-  }
-  function ageCardHtml(g, cellHtml){
-    return `<div class="ps-agecard">
-      <div class="ps-agehead">
-        <span class="ps-age">${escapeHtml(g)}</span>
-      </div>
-      <div class="ps-pair">${cellHtml}</div>
-    </div>`;
-  }
-  function renderPrintSheets(buckets, indGroups, relGroups){
-    // ---- Individual sheet ----
-    const indCards = indGroups.map(g => {
-      const b = buckets.individual[g];
-      return ageCardHtml(g,
-        individualPsCellHtml(b.girls, 'Girls') +
-        individualPsCellHtml(b.boys,  'Boys'));
-    }).join('');
-    document.getElementById('printSheetIndividual').innerHTML = `
-      <div class="ps-header">
-        <img src="assets/logo-flat.jpg" alt=""/>
-        <div>
-          <h1>Highcroft Hurricanes</h1>
-          <div class="ps-sub">Individual Team Records</div>
-        </div>
-      </div>
-      <div class="ps-grid">${indCards}</div>
-      <div class="ps-footer">Highcroft Hurricanes Swim Team · All-time individual records</div>`;
-
-    // ---- Relay sheet ----
-    const relCards = relGroups.map(g => {
-      const b = buckets.relay[g];
-      return ageCardHtml(g,
-        relayPsCellHtml(b.girls, 'Girls') +
-        relayPsCellHtml(b.boys,  'Boys'));
-    }).join('');
-    document.getElementById('printSheetRelay').innerHTML = `
-      <div class="ps-header ps-header-relay">
-        <img src="assets/logo-flat.jpg" alt=""/>
-        <div>
-          <h1>Highcroft Hurricanes</h1>
-          <div class="ps-sub">Relay Team Records</div>
-        </div>
-      </div>
-      <div class="ps-grid">${relCards}</div>
-      <div class="ps-footer">Highcroft Hurricanes Swim Team · All-time relay records</div>`;
   }
 
   function wirePerCardPrint(host){
@@ -762,19 +602,21 @@
   }
 
   // ============ Print buttons ============
-  // The three section-level buttons print the compact one-page sheets built
-  // by renderPrintSheets — everything fits on one landscape page per section,
-  // with no age group ever splitting across pages (ps-agecard is atomic).
-  // The per-card ⎘ corner button still prints THAT one .award-card as a
-  // full-size single-poster page (safePrint sets .printing-one below).
+  // All three section-level buttons print the full poster system — every
+  // .award-card carries page-break-before:always (assets/styles.css), so
+  // each age group (Girls + Boys side-by-side) lands on its own landscape
+  // page, one after another. "Print all" needs no scope (both hosts are
+  // visible by default); the individual/relay buttons hide the other
+  // section's host so only that kind's posters print. The per-card ⎘
+  // corner button still prints just THAT one .award-card (printing-one).
   document.getElementById('printAllRecords').addEventListener('click', () => {
-    safePrint({ scopes: ['printing-compact-all'] });
+    safePrint({ scopes: ['printing-all'] });
   });
   document.getElementById('printIndividual').addEventListener('click', () => {
-    safePrint({ scopes: ['printing-compact-ind'] });
+    safePrint({ scopes: ['printing-ind'] });
   });
   document.getElementById('printRelay').addEventListener('click', () => {
-    safePrint({ scopes: ['printing-compact-rel'] });
+    safePrint({ scopes: ['printing-rel'] });
   });
 
   // ============ Boot ============
