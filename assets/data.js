@@ -758,10 +758,23 @@
     async function loadExistingRecords(){
       if(existingRecords) return;
       existingRecords = new Map();
+      // Seed the comparison map from the HARDCODED baseline first. Every
+      // hardcoded record is treated as the current standing record for its
+      // event until Firestore holds a faster one — that way a swim that beats
+      // the wall record for the first time correctly archives the hardcoded
+      // holder into history and writes the new fastest to Firestore.
+      const baseline = Array.isArray(global.HHST_HISTORICAL_RECORDS) ? global.HHST_HISTORICAL_RECORDS : [];
+      baseline.forEach(h => {
+        const shaped = shapeHardcodedRecord(h);
+        if(shaped) existingRecords.set(shaped.recordId, shaped);
+      });
+      // Firestore records OVERRIDE the baseline (they're records that have
+      // already been beaten and re-set). Silent-catch a missing collection —
+      // an empty Firestore just means the hardcoded baseline still stands.
       try {
         const rSnap = await FB.db.collection('hhst_records').get();
         rSnap.forEach(d => existingRecords.set(d.id, d.data() || {}));
-      } catch(e){ /* best-effort — missing collection = every time is a first record */ }
+      } catch(e){}
     }
     function checkRecord({ sw, key, name, mi, eventLabel, seconds, timeStr, meet, date, season }){
       if(!isFinite(seconds)) return;
@@ -795,13 +808,13 @@
         previousSwimmerKey: existing ? (existing.swimmerKey || '') : ''
       };
       // Archive the OUTGOING record to the history subcollection before we
-      // overwrite the main doc — records are permanent. Only archive a real
-      // previous record with a swimmer/time; a first-ever record has nothing
-      // to archive. Skip when the "existing" is actually another pending write
-      // from earlier in this same upload (its swimmerKey exists but recognized
-      // as a pending write via the newRecordWrites map).
+      // overwrite the main doc — records are permanent. Archive on swimmerName
+      // (not swimmerKey), so a hardcoded wall record being beaten for the
+      // first time also lands in history even though it has no swimmer key.
+      // Skip when the "existing" is actually another pending write from
+      // earlier in this same upload (recognized via newRecordWrites).
       const pendingInThisUpload = newRecordWrites.some(w => w.id === recId);
-      if(existing && !pendingInThisUpload && existing.swimmerKey && isFinite(existing.seconds)){
+      if(existing && !pendingInThisUpload && existing.swimmerName && isFinite(existing.seconds)){
         recordHistoryWrites.push({
           recordId: recId,
           data: {
@@ -2707,13 +2720,82 @@
   async function clearRoster(){ return clearAll({ roster:true, meetTimes:false }); }
   async function clearMeetTimes(){ return clearAll({ roster:false, meetTimes:true }); }
   // -------- Team records (hhst_records) --------
+  // Shape a raw hardcoded record entry (from window.HHST_HISTORICAL_RECORDS)
+  // into the same object shape Firestore-backed records use, with a computed
+  // recordId that matches recordDocId — so the two sources merge cleanly.
+  // Returns null if the entry is missing something it needs.
+  function shapeHardcodedRecord(h){
+    if(!h || !h.event || !h.ageGroup || !h.swimmerName || !h.time) return null;
+    const genderCode = h.gender === 'F' || h.gender === 'M' ? h.gender : parseGender(h.gender);
+    if(genderCode !== 'M' && genderCode !== 'F') return null;
+    const kind = h.kind === 'relay' ? 'relay' : 'individual';
+    const normEvent = kind === 'relay'
+      ? (h.event || '').toString().trim()
+      : normalizeRecordEvent(h.event);
+    if(!normEvent) return null;
+    const seconds = timeToSeconds(h.time);
+    if(!isFinite(seconds)) return null;
+    const recId = recordDocId(genderCode, h.ageGroup, normEvent);
+    const rec = {
+      recordId: recId,
+      id: recId,
+      kind,
+      ageGroup: h.ageGroup,
+      gender: genderCode,
+      genderLabel: genderLabel(genderCode),
+      event: normEvent,
+      swimmerKey: h.swimmerKey || '',
+      swimmerName: h.swimmerName,
+      time: fmtTime(h.time),
+      seconds,
+      meet: h.meet || '',
+      date: h.date || '',
+      season: h.season || '',
+      hardcoded: true
+    };
+    if(kind === 'relay' && Array.isArray(h.swimmers)) rec.swimmers = h.swimmers.slice(0, 8);
+    return rec;
+  }
   // Read every team record, sorted for display: age group ascending, then
   // event stroke/distance, then gender (girls before boys). Empty array
-  // when nothing's on record yet.
+  // when nothing's on record yet. Firestore-only — for the merged view
+  // (hardcoded baseline + Firestore overrides) callers want getMergedRecords.
   async function getRecords(){
     const snap = await FB.db.collection('hhst_records').get();
     const out = [];
     snap.forEach(d => out.push({ id: d.id, ...d.data() }));
+    out.sort((a, b) => {
+      const aBr = AGE_GROUP_ORDER.indexOf(a.ageGroup);
+      const bBr = AGE_GROUP_ORDER.indexOf(b.ageGroup);
+      if(aBr !== bBr) return (aBr < 0 ? 999 : aBr) - (bBr < 0 ? 999 : bBr);
+      const ev = compareEventLabel(a.event || '', b.event || '');
+      if(ev) return ev;
+      return (a.gender === 'F' ? 0 : 1) - (b.gender === 'F' ? 0 : 1);
+    });
+    return out;
+  }
+  // The merged record book the UI actually renders: hardcoded baseline
+  // OVERLAID with any Firestore records that have been re-set by a real
+  // upload. A Firestore doc always wins over a hardcoded entry with the
+  // same id — that's how "someone beat the wall record" propagates. The
+  // page works with an empty Firestore because the baseline is always
+  // present in code. Sorted the same way as getRecords() so the UI can
+  // treat both interchangeably.
+  async function getMergedRecords(){
+    const merged = new Map();
+    // Baseline first…
+    const baseline = Array.isArray(global.HHST_HISTORICAL_RECORDS) ? global.HHST_HISTORICAL_RECORDS : [];
+    baseline.forEach(h => {
+      const shaped = shapeHardcodedRecord(h);
+      if(shaped) merged.set(shaped.recordId, shaped);
+    });
+    // …then Firestore overrides (best-effort; a missing collection just
+    // means the hardcoded wall still stands).
+    try {
+      const snap = await FB.db.collection('hhst_records').get();
+      snap.forEach(d => merged.set(d.id, { id: d.id, ...d.data() }));
+    } catch(e){}
+    const out = Array.from(merged.values());
     out.sort((a, b) => {
       const aBr = AGE_GROUP_ORDER.indexOf(a.ageGroup);
       const bBr = AGE_GROUP_ORDER.indexOf(b.ageGroup);
@@ -2741,61 +2823,6 @@
     };
     out.sort((a, b) => ms(b) - ms(a));
     return out;
-  }
-  // Seed the record book with a batch of historical entries — used the one
-  // time to import the wall's pre-existing records so they survive the
-  // move to Firestore. `entries` is [{ ageGroup, gender:'M'|'F', event,
-  // swimmerName, time, meet?, date?, season? }, ...]. Existing docs are
-  // NEVER overwritten (records are permanent — a real upload that has since
-  // set a faster time always wins), so re-running the seed is a safe no-op.
-  // Returns { seeded, skipped }.
-  async function seedHistoricalRecords(entries){
-    entries = Array.isArray(entries) ? entries : [];
-    let seeded = 0, skipped = 0;
-    for(const e of entries){
-      if(!e || !e.event || !e.ageGroup || !e.swimmerName || !e.time) { skipped++; continue; }
-      const genderCode = e.gender === 'F' || e.gender === 'M' ? e.gender : parseGender(e.gender);
-      if(genderCode !== 'M' && genderCode !== 'F') { skipped++; continue; }
-      const kind = e.kind === 'relay' ? 'relay' : 'individual';
-      // Individual records need to normalize to "<dist> <Stroke>" so that
-      // records-from-ingest and seed records land on the same doc id. Relays
-      // don't have a distance-stroke shape, so their event string is kept
-      // as-is ("Medley Relay" / "Freestyle Relay") — the doc id still slugs
-      // it fine.
-      const normEvent = kind === 'relay'
-        ? (e.event || '').toString().trim()
-        : normalizeRecordEvent(e.event);
-      if(!normEvent) { skipped++; continue; }
-      const seconds = timeToSeconds(e.time);
-      if(!isFinite(seconds)) { skipped++; continue; }
-      const recId = recordDocId(genderCode, e.ageGroup, normEvent);
-      const ref = FB.db.collection('hhst_records').doc(recId);
-      const cur = await ref.get();
-      if(cur.exists){ skipped++; continue; } // never overwrite an existing record
-      const payload = {
-        recordId: recId,
-        kind,
-        ageGroup: e.ageGroup,
-        gender: genderCode,
-        genderLabel: genderLabel(genderCode),
-        event: normEvent,
-        swimmerKey: e.swimmerKey || '',
-        swimmerName: e.swimmerName,
-        time: fmtTime(e.time),
-        seconds,
-        meet: e.meet || '',
-        date: e.date || '',
-        season: e.season || '',
-        seeded: true,
-        setAt: FB.FieldValue.serverTimestamp()
-      };
-      if(kind === 'relay' && Array.isArray(e.swimmers)){
-        payload.swimmers = e.swimmers.slice(0, 8); // usually 4; a safety cap
-      }
-      await ref.set(payload);
-      seeded++;
-    }
-    return { seeded, skipped };
   }
   // Delete every uploads-registry row of a given mode ('roster' | 'results').
   async function deleteUploadsByMode(mode){
@@ -3493,7 +3520,7 @@
     getTimeAudit, restoreTimeEvent, recordManualTimeAudit, clearSeasonMeetTimes,
     migrateSeasonAges, countSwimmersNeedingSeasonMigration, inferMissingDistances, renameMeet, dedupeMeetByStroke,
     clearAll, clearRoster, clearMeetTimes,
-    getRecords, getRecordHistory, seedHistoricalRecords, normalizeRecordEvent, recordDocId,
+    getRecords, getMergedRecords, getRecordHistory, normalizeRecordEvent, recordDocId,
     isAdminLoggedIn, loginAdmin, logoutAdmin, onAuthChanged,
     statsForSwimmer, rankSwimmerInAgeGroup, buildLeaderboards, teamStats, teamStatsBySeason,
     getAllSeasons, currentSeason, currentSeasonWithTimes, filterSwimmerToSeason, getAllMeets,

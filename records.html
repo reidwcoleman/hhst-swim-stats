@@ -345,7 +345,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="assets/firebase-init.js"></script>
-<script src="assets/data.js?v=46"></script>
+<script src="assets/data.js?v=47"></script>
+<script src="assets/historical-records.js?v=2"></script>
 <script src="assets/mobile-nav.js" defer></script>
 <script>
   HHST.initTheme();
@@ -500,9 +501,11 @@
     const host = document.getElementById('recordsHost');
     const meta = document.getElementById('recordsMeta');
     if(!records.length){
+      // Should be unreachable — the hardcoded baseline is always present.
+      // Kept for defensive rendering in case the baseline script fails to load.
       host.innerHTML = `<div class="records-empty">
-        <h3>No records yet</h3>
-        <p>Team records will appear here automatically as meet times get uploaded, and the historical wall records can be seeded once from the admin dashboard.</p>
+        <h3>Records unavailable</h3>
+        <p>The record board couldn't load. Try refreshing the page.</p>
       </div>`;
       meta.textContent = '';
       return;
@@ -559,7 +562,10 @@
 
   (async function boot(){
     try {
-      const records = await HHST.getRecords();
+      // Merged view = hardcoded wall baseline + any Firestore records that
+      // have since been beaten. Always non-empty because the baseline is
+      // baked into the page — no seeding, no setup required.
+      const records = await HHST.getMergedRecords();
       render(records);
     } catch(err){
       console.error(err);
