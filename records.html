@@ -17,250 +17,117 @@
 
 <link rel="stylesheet" href="assets/styles.css?v=43"/>
 <style>
-  /* ====================================================================
-     records.html page-specific styling (prefixed `rec-`). The poster shell
-     reuses the global .award-card / .award-cols / .award-col chrome so the
-     printable posters share the exact look + @media print pagination of the
-     Fastest Five and Most Improved certificates. Only the inner record-row
-     table (.rec-table) and a few page-meta bits are defined here. The records
-     are hardcoded on this page only — nothing here reads or writes swimmer
-     profiles, rosters, or meet times.
-     ==================================================================== */
+  /* records.html — data-driven view of hhst_records. All colors come from the
+     site's theme variables so dark and light both feel native.
+     ============================================================= */
+  .records-shell{padding-bottom:80px}
+  footer{padding-bottom:calc(36px + 80px + env(safe-area-inset-bottom))}
 
-  .records-shell{ padding-bottom:80px; }
-  footer{ padding-bottom:calc(36px + 80px + env(safe-area-inset-bottom)); }
+  .records-empty{
+    text-align:center;padding:60px 30px;color:var(--text-muted);
+    background:var(--card-grad);border:1px solid var(--border);
+    border-radius:16px;box-shadow:var(--card-shadow);
+  }
+  .records-empty h3{font-size:20px;margin:0 0 8px;color:var(--text)}
+  .records-empty p{margin:0 auto;max-width:520px;line-height:1.55}
 
-  /* --- Section header above each poster group (mirrors awards.html) --- */
-  .rec-section-head{
-    display:flex;align-items:center;gap:12px;
-    margin:34px 2px 2px;scroll-margin-top:80px;flex-wrap:wrap;
+  .rec-age-section{margin-top:36px}
+  .rec-age-section:first-of-type{margin-top:24px}
+  .rec-age-head{
+    display:flex;align-items:center;gap:14px;margin:0 2px 14px;
+    font-family:var(--font-display);
   }
-  .rec-section-head .rec-section-eyebrow{
-    display:inline-flex;align-items:center;gap:8px;
-    font-size:11px;font-weight:700;text-transform:uppercase;
-    letter-spacing:.14em;color:var(--text-subtle);white-space:nowrap;
+  .rec-age-head h2{
+    margin:0;font-size:28px;font-weight:800;letter-spacing:-.02em;color:var(--text);
   }
-  .rec-section-head .rec-section-eyebrow::before{
-    content:"";width:6px;height:6px;border-radius:999px;
-    background:var(--accent);flex-shrink:0;
+  .rec-age-count{
+    display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;
+    font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+    background:var(--accent-tint);color:var(--accent);
+    border:1px solid var(--accent-border);
   }
-  .rec-section-head .rec-section-rule{
-    flex:1;height:1px;min-width:40px;
-    background:linear-gradient(90deg,var(--border-strong),transparent);
-  }
-  .rec-section-print{
-    display:inline-flex;align-items:center;gap:7px;
-    padding:8px 15px;font-size:12.5px;font-weight:700;
-  }
-  .rec-section-print svg{width:15px;height:15px;flex-shrink:0;}
-
-  /* --- Intro controls column (matches awards.html rhythm) --- */
-  .records-controls-col{
-    display:flex;flex-direction:column;align-items:flex-end;gap:6px;
-  }
-  .records-controls-note{
-    font-size:13px;color:var(--text-muted);
-    text-align:right;max-width:300px;line-height:1.5;
-  }
-  #printAllRecords{
-    padding:11px 22px;border-radius:var(--radius);font-size:14px;
-    box-shadow:var(--shadow-blue);
-  }
-  #printAllRecords:hover{ box-shadow:var(--shadow-blue); }
-  #printAllRecords:focus-visible{ outline:none; box-shadow:0 0 0 3px var(--ring),var(--shadow-blue); }
-  #printAllRecords:active{ transform:translateY(0) scale(.98); }
-
-  .award-print-one:focus-visible{ outline:none; box-shadow:0 0 0 3px var(--ring); }
-
-  /* ====================================================================
-     THE RECORD BOARD — each record is its own colored box:
-       [ event chip ]  Holder name              Time
-     Girls boards are rose-tinted, Boys boards blue-tinted, with a bold
-     colored left rail + filled accent chip so the poster reads with real
-     color (not a flat white table). Div-based (not a <table>) so the global
-     gold/silver/bronze "rank wash" on .award-col tbody rows can't bleed in —
-     these rows are strokes, not 1st/2nd/3rd places.
-     ==================================================================== */
-  .rec-board{ display:flex;flex-direction:column;gap:11px;margin-top:12px; }
-
-  .rec-row{
-    display:flex;align-items:center;gap:16px;
-    padding:15px 19px;border-radius:13px;
-    border:1px solid rgba(30,58,138,.12);
-    border-left:6px solid #2c4a6e;
-    background:#f4f7fb;
-    box-shadow:0 1px 3px -1px rgba(15,23,42,.1),inset 0 1px 0 rgba(255,255,255,.7);
+  .rec-age-rule{
+    flex:1;height:1px;background:linear-gradient(90deg,var(--border-strong),transparent);
   }
 
+  .rec-cols{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  @media (max-width:760px){ .rec-cols{grid-template-columns:1fr} }
+
+  .rec-col{
+    background:var(--card-grad);border:1px solid var(--border);
+    border-radius:14px;padding:18px 18px 14px;box-shadow:var(--card-shadow);
+  }
+  .rec-col-head{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding-bottom:12px;margin-bottom:10px;
+    border-bottom:1px solid var(--border);
+  }
+  .rec-col-title{
+    font-family:var(--font-display);font-size:18px;font-weight:800;
+    letter-spacing:-.01em;color:var(--text);
+  }
+  .rec-col-tag{
+    font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+    padding:3px 9px;border-radius:999px;
+  }
+  .rec-col-girls .rec-col-tag{
+    background:rgba(196,89,140,.14);color:#c4598c;
+    border:1px solid rgba(196,89,140,.28);
+  }
+  .rec-col-boys .rec-col-tag{
+    background:rgba(84,144,214,.14);color:#5490d6;
+    border:1px solid rgba(84,144,214,.28);
+  }
+
+  .rec-list{display:flex;flex-direction:column;gap:8px}
+  .rec-item{
+    display:grid;grid-template-columns:auto 1fr auto;align-items:center;
+    gap:12px;padding:10px 12px;border-radius:10px;
+    background:var(--surface-2,rgba(0,0,0,.02));
+    border:1px solid var(--border);
+    transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease;
+  }
+  .rec-item:hover{
+    transform:translateX(2px);border-color:var(--border-strong);
+    box-shadow:var(--shadow-sm);
+  }
+  [data-theme="dark"] .rec-item{background:rgba(255,255,255,.02)}
   .rec-evt{
-    flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;
-    min-width:68px;padding:7px 14px;border-radius:8px;
-    font-family:var(--font-body);font-weight:800;font-size:12px;
-    letter-spacing:.08em;text-transform:uppercase;color:#fff;
-    background:#2c4a6e;
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.16);
+    display:inline-flex;align-items:center;justify-content:center;
+    min-width:56px;padding:5px 10px;border-radius:6px;
+    font-family:var(--font-body);font-size:11px;font-weight:800;
+    letter-spacing:.06em;text-transform:uppercase;
+    background:var(--accent-tint);color:var(--accent);
+    border:1px solid var(--accent-border);
   }
+  .rec-meta{min-width:0}
   .rec-name{
-    flex:1 1 auto;min-width:0;text-align:left;
-    font-weight:700;font-size:22px;line-height:1.16;color:#16273d;
-    letter-spacing:-.01em;overflow-wrap:break-word;
+    font-size:15px;font-weight:700;color:var(--text);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .rec-sub{
+    font-size:12px;color:var(--text-muted);margin-top:1px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   }
   .rec-time{
-    flex:0 0 auto;text-align:right;white-space:nowrap;padding-left:6px;
-    font-family:var(--font-display);font-weight:800;font-size:27px;
-    font-variant-numeric:tabular-nums;letter-spacing:-.015em;color:#2c4a6e;
+    font-family:var(--font-display);font-weight:800;font-size:20px;
+    font-variant-numeric:tabular-nums;letter-spacing:-.015em;
+    color:var(--text);white-space:nowrap;
   }
 
-  /* Girls = muted wine/mauve (refined, not bubblegum) */
-  .rec-col-girls .rec-row{
-    background:#faf3f6;
-    border-color:rgba(125,47,82,.16);border-left-color:#9d3d63;
-  }
-  .rec-col-girls .rec-evt{ background:#8f3a5c; }
-  .rec-col-girls .rec-time{ color:#7d2f52; }
-
-  /* Boys = deep slate navy */
-  .rec-col-boys .rec-row{
-    background:#f2f6fb;
-    border-color:rgba(40,68,102,.16);border-left-color:#2c4a6e;
-  }
-  .rec-col-boys .rec-evt{ background:#2c4a6e; }
-  .rec-col-boys .rec-time{ color:#243f5e; }
-
-  /* Relay rows are stacked: a top line with the relay-type chip + the big
-     time, then the 4-swimmer lineup beneath at full column width (so the
-     names get room to be large and never collide with the time). */
-  .rec-row-relay{ flex-direction:column;align-items:stretch;gap:9px; }
-  .rec-relay-head{ display:flex;align-items:center;justify-content:space-between;gap:12px; }
-  .rec-relay-chip{
-    display:inline-flex;align-items:center;white-space:nowrap;
-    padding:6px 13px;border-radius:8px;
-    font-family:var(--font-body);font-weight:800;font-size:12px;letter-spacing:.08em;
-    text-transform:uppercase;color:#fff;background:#2c4a6e;
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.16);
-  }
-  .rec-relay-time{
-    font-family:var(--font-display);font-weight:800;font-size:25px;
-    font-variant-numeric:tabular-nums;letter-spacing:-.015em;color:#2c4a6e;white-space:nowrap;
-  }
-  /* Two swimmers per line (2×2 grid) so each name can be larger + bolder. */
-  .rec-relay-names{ display:grid;grid-template-columns:1fr 1fr;gap:6px 18px; }
-  .rec-swimmer{ font-size:23px;font-weight:700;line-height:1.2;color:#16273d;text-align:center;overflow-wrap:break-word; }
-  /* Longer names step down a size so they fit one line in their half cell. */
-  .rec-swimmer.rec-sw-2{ font-size:20px; }
-  .rec-swimmer.rec-sw-3{ font-size:17px; }
-  .rec-swimmer.rec-sw-4{ font-size:14px; }
-
-  /* Relay chip + time pick up the gender accent. */
-  .rec-col-girls .rec-relay-chip{ background:#8f3a5c; }
-  .rec-col-girls .rec-relay-time{ color:#7d2f52; }
-  .rec-col-boys .rec-relay-chip{ background:#2c4a6e; }
-  .rec-col-boys .rec-relay-time{ color:#243f5e; }
-
-  /* ---- Poster heading: big brand title + prominent record-type line ----
-     "Highcroft Hurricanes" is the headline; the record type
-     ("Individual Records" / "Relay Records") sits right under it, large and
-     colored, so it's the clear second read (it used to be a tiny pill that
-     was barely visible). The age group follows below. ---- */
-  .award-card .award-title{ font-size:57px;line-height:1;color:#1b3354; }
-  /* Record type + age group on ONE line ("Individual Records · 9-10") to save
-     a whole vertical line for bigger boards below. */
-  .rec-records-type{
-    display:flex;align-items:baseline;justify-content:center;flex-wrap:wrap;
-    column-gap:.32em;row-gap:2px;margin-top:8px;
-    font-family:var(--font-display);font-weight:800;line-height:1.02;
-    letter-spacing:.03em;text-transform:uppercase;
-  }
-  .rec-rt-label{ font-size:40px;color:#2c4a6e; }
-  .rec-rt-sep{ font-size:33px;color:#9aa7b6;font-weight:700; }
-  .rec-rt-age{ font-size:46px;color:#1b3354; }
-  .rec-type-relay .rec-rt-label{ color:#0f6e63; }
-
-  /* On-screen only: soften the corner brackets (full strength in print). */
-  @media screen{
-    .award-card .award-corner{ opacity:.5; }
-  }
-  .awards-host{ scroll-margin-top:80px; }
-
-  /* ---- Phone polish (screen-only; print uses the global @media print) ---- */
-  @media (max-width:768px){
-    .records-intro-head .records-controls-col{ align-items:stretch;width:100%; }
-    .records-controls-note{ max-width:none;text-align:left; }
-    #printAllRecords{ width:100%;justify-content:center; }
-    .rec-section-head{ margin-left:0;margin-right:0; }
-  }
-  @media (max-width:600px){
-    .rec-name{ font-size:15px; }
-    .rec-time{ font-size:17px; }
-    .rec-evt{ font-size:11.5px; }
-    .rec-swimmer{ font-size:15px; }
-    .rec-relay-time{ font-size:21px; }
+  .rec-col-empty{
+    padding:24px 8px;text-align:center;color:var(--text-muted);
+    font-size:13px;font-style:italic;
   }
 
-  /* ====================================================================
-     PRINT — the global @media print block in styles.css already handles the
-     .award-card landscape pagination, white ink-saver background, hidden
-     decorations, header/footer scale-up, and per-card (.printing-one) +
-     hide-the-other-host scoping. These rules only size the records-specific
-     .rec-table cells up for the full landscape sheet and add the
-     Individual/Relay section scopes. Nothing here touches the Fastest Five
-     or Most Improved posters (different page, different classes).
-     ==================================================================== */
-  @media print{
-    /* Section scopes for the per-section "Print these" buttons. */
-    body.printing-records-ind   #relayHost{ display:none !important; }
-    body.printing-records-relay #individualHost{ display:none !important; }
-
-    /* Bigger boxes + bigger names/times for the full landscape sheet. Folding
-       the age group into the record-type line freed a whole vertical line, so
-       the boards get larger. Sized so the tallest board (4 individual rows, or
-       the 2 relay boxes with 4 names each) still clears the 8in card. */
-    .rec-board{ gap:0.17in !important;margin-top:0.16in !important; }
-    .rec-row{
-      padding:0.19in 0.26in !important;border-radius:16px !important;
-      border-left-width:8px !important;box-shadow:none !important;
-      page-break-inside:avoid !important;break-inside:avoid !important;
-    }
-    .rec-evt{
-      font-size:16px !important;min-width:0.82in !important;padding:9px 13px !important;
-      box-shadow:none !important;
-    }
-    .rec-name{ font-size:32px !important;line-height:1.08 !important; }
-    .rec-time{ font-size:38px !important; }
-
-    /* Relays: type chip + big time on top; the 4-swimmer lineup runs two names
-       per line (2×2 grid) below, which lets each name be large + bold. */
-    .rec-row-relay{ padding:0.18in 0.17in !important;gap:0.12in !important; }
-    .rec-relay-chip{ font-size:14px !important;padding:8px 15px !important; }
-    .rec-relay-time{ font-size:36px !important; }
-    .rec-relay-names{ grid-template-columns:1fr 1fr !important;gap:0.12in 0.16in !important; }
-    .rec-swimmer{ font-size:30px !important;font-weight:700 !important;line-height:1.14 !important; }
-    /* Longer names step down so they fit one line in their half cell. */
-    .rec-swimmer.rec-sw-2{ font-size:26px !important; }
-    .rec-swimmer.rec-sw-3{ font-size:22px !important; }
-    .rec-swimmer.rec-sw-4{ font-size:18px !important; }
-
-    .award-cols{ align-self:stretch !important;width:100% !important; }
-
-    /* LAYOUT: the global print rule spreads blocks across the whole 8in sheet
-       (justify-content:space-between). Center the stack instead so the brand +
-       "record type · age group" line read as one group right above the table. */
-    .award-card{ justify-content:center !important;gap:0.19in !important; }
-    .award-header{ margin-bottom:0 !important; }
-
-    /* Heading scaled up; record type + age group share ONE centered line.
-       Solid colors (not gradients) so they print reliably. */
-    .award-card .award-title{ font-size:48px !important;color:#1b3354 !important;-webkit-text-fill-color:#1b3354 !important; }
-    .rec-records-type{
-      display:flex !important;align-items:baseline;justify-content:center;flex-wrap:wrap;
-      column-gap:.32em;margin-top:8px !important;line-height:1.02 !important;
-    }
-    .rec-rt-label{ font-size:39px !important;color:#2c4a6e !important;-webkit-text-fill-color:#2c4a6e !important; }
-    .rec-type-relay .rec-rt-label{ color:#0f6e63 !important;-webkit-text-fill-color:#0f6e63 !important; }
-    .rec-rt-sep{ font-size:32px !important;color:#9aa7b6 !important;-webkit-text-fill-color:#9aa7b6 !important; }
-    .rec-rt-age{ font-size:45px !important;color:#1b3354 !important;-webkit-text-fill-color:#1b3354 !important; }
-    .award-card .award-title-rule{ width:104px !important;height:5px !important;margin-top:9px !important; }
+  .records-toolbar{
+    display:flex;align-items:center;justify-content:space-between;
+    gap:12px;flex-wrap:wrap;margin-bottom:6px;
   }
+  .records-toolbar-meta{
+    font-size:13px;color:var(--text-muted);
+  }
+  .records-toolbar-meta strong{color:var(--text)}
 </style>
 </head>
 <body>
@@ -298,401 +165,119 @@
     <div class="leaderboard-hero-content">
       <div class="kicker"><span class="pulse"></span> Team Hall of Records</div>
       <h1>Team Records</h1>
-      <p class="lb-sub">The fastest swims in Highcroft Hurricanes history — individual records by age group and stroke, plus relay records. These are kept here as a standalone record book and don't affect any swimmer profile, roster, or meet results. Print any board as a poster.</p>
+      <p class="lb-sub">The fastest times ever swum by a Hurricane in each age group and event. Records update automatically when a new fastest time is uploaded — a new record is called out on the admin dashboard the moment it's set.</p>
     </div>
   </div>
 </section>
 
 <main class="admin-shell records-shell">
-
-  <div class="card no-print awards-intro">
-    <div class="awards-intro-head records-intro-head">
-      <div>
-        <h2>Print &amp; Hang</h2>
-        <p class="lead">Every age group gets a poster: Girls and Boys records side-by-side. Save the whole set as one PDF, or print a single board from its corner button. Posters print one-per-page on landscape US&nbsp;Letter — ink-saver white, ready for the trophy wall.</p>
-      </div>
-      <div class="awards-controls records-controls-col">
-        <button class="btn btn-gradient" id="printAllRecords">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-          Print all records · Save as PDF
-        </button>
-        <span class="records-controls-note">
-          Prints <strong>both</strong> Individual <strong>and</strong> Relay record posters for every age group, one per page.
-        </span>
-      </div>
-    </div>
+  <div class="records-toolbar">
+    <div class="records-toolbar-meta" id="recordsMeta">Loading records…</div>
   </div>
 
-  <!-- ============ INDIVIDUAL RECORDS ============ -->
-  <div class="rec-section-head no-print" id="individualSectionHead">
-    <span class="rec-section-eyebrow">Individual Team Records</span>
-    <span class="rec-section-rule" aria-hidden="true"></span>
-    <button class="btn ghost rec-section-print" id="printIndividual" type="button">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-      Print individual posters
-    </button>
-  </div>
-  <section id="individualHost" class="awards-host"></section>
-
-  <!-- ============ RELAY RECORDS ============ -->
-  <div class="rec-section-head no-print" id="relaySectionHead">
-    <span class="rec-section-eyebrow">Relay Team Records</span>
-    <span class="rec-section-rule" aria-hidden="true"></span>
-    <button class="btn ghost rec-section-print" id="printRelay" type="button">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-      Print relay posters
-    </button>
-  </div>
-  <section id="relayHost" class="awards-host"></section>
-
+  <div id="recordsHost"></div>
 </main>
 
 <footer>
   Highcroft Hurricanes Swim Team · <a href="leaderboards.html">Season Stats</a> · <a href="meet-recap.html">Meet Recap</a> · <a href="records.html">Records</a>
 </footer>
 
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="assets/firebase-init.js"></script>
+<script src="assets/data.js?v=44"></script>
+<script src="assets/mobile-nav.js" defer></script>
 <script>
-  // ============ Theme (inline — this page needs no Firebase/data.js) ============
-  (function(){
-    function initTheme(){
-      var saved = localStorage.getItem('hhst.theme') || 'light';
-      document.documentElement.setAttribute('data-theme', saved);
-    }
-    function toggleTheme(){
-      var cur = document.documentElement.getAttribute('data-theme');
-      var next = cur === 'light' ? 'dark' : 'light';
-      document.documentElement.setAttribute('data-theme', next);
-      try { localStorage.setItem('hhst.theme', next); } catch(e){}
-    }
-    initTheme();
-    var btn = document.getElementById('themeToggle');
-    if(btn) btn.addEventListener('click', toggleTheme);
-  })();
+  HHST.initTheme();
+  document.getElementById('themeToggle').addEventListener('click', HHST.toggleTheme);
 
-  // ============ RECORD DATA (hardcoded — page-only, never touches Firestore) ============
-  // Each age group has Girls + Boys columns. Order follows the team's age
-  // brackets. Times are stored exactly as on the official record board.
-  const INDIVIDUAL_RECORDS = [
-    { group:'6 & Under',
-      girls:[
-        { evt:'Free',   name:'J. Fishburn', time:'11.00' },
-        { evt:'Back',   name:'J. Fishburn', time:'13.06' },
-        { evt:'Breast', name:'S. Dixon',    time:'14.78' },
-      ],
-      boys:[
-        { evt:'Free',   name:'T. Salvitti',  time:'9.46'  },
-        { evt:'Back',   name:'D. Georges',   time:'11.72' },
-        { evt:'Breast', name:'Justin Clark', time:'14.00' },
-      ],
-    },
-    { group:'7-8',
-      girls:[
-        { evt:'Free',   name:'J. Fishburn', time:'16.40' },
-        { evt:'Back',   name:'K. Harmon',   time:'19.78' },
-        { evt:'Breast', name:'S. Dixon',    time:'21.32' },
-        { evt:'Fly',    name:'A. Eklund',   time:'19.53' },
-      ],
-      boys:[
-        { evt:'Free',   name:'Tristan Talwar', time:'14.60' },
-        { evt:'Back',   name:'Tristan Talwar', time:'17.10' },
-        { evt:'Breast', name:'Tristan Talwar', time:'19.11' },
-        { evt:'Fly',    name:'Tristan Talwar', time:'15.72' },
-      ],
-    },
-    { group:'9-10',
-      girls:[
-        { evt:'Free',   name:'Tara Talwar', time:'13.70' },
-        { evt:'Back',   name:'S. Dixon',    time:'16.82' },
-        { evt:'Breast', name:'Tara Talwar', time:'18.42' },
-        { evt:'Fly',    name:'Tara Talwar', time:'14.50' },
-      ],
-      boys:[
-        { evt:'Free',   name:'Tristan Talwar', time:'13.17' },
-        { evt:'Back',   name:'Tristan Talwar', time:'15.31' },
-        { evt:'Breast', name:'Tristan Talwar', time:'17.93' },
-        { evt:'Fly',    name:'Tristan Talwar', time:'14.35' },
-      ],
-    },
-    { group:'11-12',
-      girls:[
-        { evt:'Free',   name:'P. Fishburn', time:'27.79' },
-        { evt:'Back',   name:'Tara Talwar', time:'32.63' },
-        { evt:'Breast', name:'Tara Talwar', time:'35.00' },
-        { evt:'Fly',    name:'Tara Talwar', time:'29.28' },
-      ],
-      boys:[
-        { evt:'Free',   name:'Isaac Salvitti', time:'27.62' },
-        { evt:'Back',   name:'Tristan Talwar', time:'31.47' },
-        { evt:'Breast', name:'Tristan Talwar', time:'36.25' },
-        { evt:'Fly',    name:'Tristan Talwar', time:'29.64' },
-      ],
-    },
-    { group:'13-14',
-      girls:[
-        { evt:'Free',   name:'Tara Talwar', time:'26.25' },
-        { evt:'Back',   name:'Tara Talwar', time:'28.85' },
-        { evt:'Breast', name:'Tara Talwar', time:'33.34' },
-        { evt:'Fly',    name:'Tara Talwar', time:'27.13' },
-      ],
-      boys:[
-        { evt:'Free',   name:'Colton Wade',   time:'24.41' },
-        { evt:'Back',   name:'A. Chinchilla', time:'30.16' },
-        { evt:'Breast', name:'S. Ankolkar',   time:'32.53' },
-        { evt:'Fly',    name:'S. Ankolkar',   time:'26.97' },
-      ],
-    },
-    { group:'15-18',
-      girls:[
-        { evt:'Free',   name:'Lauren Soleo', time:'25.94' },
-        { evt:'Back',   name:'Tara Talwar',  time:'29.22' },
-        { evt:'Breast', name:'Tara Talwar',  time:'35.05' },
-        { evt:'Fly',    name:'Tara Talwar',  time:'27.20' },
-      ],
-      boys:[
-        { evt:'Free',   name:'Colton Wade', time:'21.66' },
-        { evt:'Back',   name:'Colton Wade', time:'25.52' },
-        { evt:'Breast', name:'Colton Wade', time:'30.11' },
-        { evt:'Fly',    name:'Colton Wade', time:'23.38' },
-      ],
-    },
-  ];
-
-  // Relay records: each entry has a relay type, the 4-swimmer roster, and time.
-  const RELAY_RECORDS = [
-    { group:'7-8',
-      girls:[
-        { type:'Medley Relay',    team:'A Eklund, S Yakobov, T Talwar, K Harmon',  time:'1:25.68' },
-        { type:'Freestyle Relay', team:'S Dixon, L Reichardt, L Soleo, A Hugo',    time:'1:16.34' },
-      ],
-      boys:[
-        { type:'Medley Relay',    team:'C Fawsi, L McGann, I Vandevender, E Palonsky', time:'1:22.84' },
-        { type:'Freestyle Relay', team:'J Clark, M Hatfield, G Savage, D Georges',     time:'1:13.84' },
-      ],
-    },
-    { group:'9-10',
-      girls:[
-        { type:'Medley Relay',    team:'A Eklund, S Yakobov, Tara Talwar, Maia Lyven', time:'1:10.00' },
-        { type:'Freestyle Relay', team:'R. Temple, C. Albin, S. Dixon, L. Soleo',      time:'1:03.47' },
-      ],
-      boys:[
-        { type:'Medley Relay',    team:'J Pullen, R Geason, J Bertolini-Felice, B Russel', time:'1:12.04' },
-        { type:'Freestyle Relay', team:'Seth McGann, T. Davis, M. Thomas, S. Ankolkar',    time:'1:02.34' },
-      ],
-    },
-    { group:'11-12',
-      girls:[
-        { type:'Medley Relay',    team:'A Eklund, Tara Talwar, A Arvind, E Swafford', time:'2:12.59' },
-        { type:'Freestyle Relay', team:'A Eklund, Tara Talwar, A Arvind, E Swafford', time:'2:01.19' },
-      ],
-      boys:[
-        { type:'Medley Relay',    team:'W Soleo, N Ankolkar, A Monroe, T Wade', time:'2:19.28' },
-        { type:'Freestyle Relay', team:'W Soleo, N Ankolkar, A Monroe, T Wade', time:'2:07.29' },
-      ],
-    },
-    { group:'13-14',
-      girls:[
-        { type:'Medley Relay',    team:'A Eklund, Tara Talwar, A Arvind, E Swafford', time:'2:04.21' },
-        { type:'Freestyle Relay', team:'A Eklund, Tara Talwar, A Arvind, E Swafford', time:'1:51.78' },
-      ],
-      boys:[
-        { type:'Medley Relay',    team:'W Soleo, N Ankolkar, A Monroe, T Wade',          time:'2:00.25' },
-        { type:'Freestyle Relay', team:'H. Elsaesser, B. Lentz, A. Chinchilla, C. Salvitti', time:'1:49.41' },
-      ],
-    },
-    { group:'15-18',
-      girls:[
-        { type:'Medley Relay',    team:'E Swafford, A Eklund, Tara Talwar, Jenna Pullen', time:'2:04.62' },
-        { type:'Freestyle Relay', team:'J Park, Kaelyn Harmon, C Rose, Jenna Pullen',     time:'1:52.63' },
-      ],
-      boys:[
-        { type:'Medley Relay',    team:'T Wade, Will Soleo, Joshua Pullen, Colton Wade', time:'1:48.25' },
-        { type:'Freestyle Relay', team:'T Wade, Will Soleo, Joshua Pullen, Colton Wade', time:'1:36.29' },
-      ],
-    },
-  ];
-
-  // ============ Helpers ============
   function escapeHtml(s){
     return (s||'').toString().replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
-  function cssEscape(s){
-    if(window.CSS && typeof CSS.escape === 'function') return CSS.escape(s);
-    return String(s).replace(/[^a-zA-Z0-9_-]/g, ch => '\\' + ch);
-  }
-  // Coaches say "the nine-tens", "the eleven-twelves" out loud — pluralize the
-  // numeric brackets on the poster headline. "6 & Under" is already plural.
-  function bracketLabel(b){
-    if(!b) return '';
-    if(/\d+\s*[-–&]\s*\d+/.test(b) && !b.endsWith('s')) return b + 's';
-    return b;
-  }
-  // Minute-format times ("1:22.84") get the .t-min class so print steps the
-  // font down to fit the column; sub-minute times ("9.46") stay full size.
-  function timeCellClass(t){ return (t||'').includes(':') ? ' t-min' : ''; }
 
-  // Shared poster shell — same chrome as the Fastest Five / Most Improved
-  // certificates so they all print identically. `kind` is 'individual' or
-  // 'relay' (drives the data-group key + a teal accent on relay posters).
-  function posterCard({ kind, group, eventLabel, innerCols }){
-    const isRelay = kind === 'relay';
-    const extraClass = isRelay ? ' award-card-relay' : '';
-    const typeClass = isRelay ? 'rec-records-type rec-type-relay' : 'rec-records-type';
-    return `<article class="award-card${extraClass}" data-group="${escapeHtml(kind)}-${escapeHtml(group)}">
-      <div class="award-corner tl"></div>
-      <div class="award-corner tr"></div>
-      <div class="award-corner bl"></div>
-      <div class="award-corner br"></div>
-      <div class="award-header">
-        <div class="award-logo-frame">
-          <img class="award-logo" src="assets/logo-flat.jpg" alt="Highcroft Hurricanes" />
-        </div>
-        <div class="award-header-text">
-          <h2 class="award-title">Highcroft Hurricanes</h2>
-          <div class="${typeClass}">
-            <span class="rec-rt-label">${escapeHtml(eventLabel)}</span>
-            <span class="rec-rt-sep" aria-hidden="true">·</span>
-            <span class="rec-rt-age">${escapeHtml(group)}</span>
-          </div>
-          <div class="award-title-rule" aria-hidden="true"></div>
-        </div>
+  function recordItemHtml(rec){
+    if(!rec) return '';
+    // Split the "50 Free" event label so the chip carries the stroke and the
+    // distance stays on the meta line — reads cleanly on both narrow phones and
+    // wide desktops. Everything else pulls from the record doc directly.
+    const parts = (rec.event || '').split(/\s+/);
+    const dist  = parts[0] || '';
+    const stroke = parts.slice(1).join(' ') || rec.event || '';
+    const submeta = [dist ? `${dist} yd` : '', rec.meet, rec.date, rec.season]
+      .filter(Boolean).map(escapeHtml).join(' · ');
+    return `<div class="rec-item">
+      <span class="rec-evt">${escapeHtml(stroke)}</span>
+      <div class="rec-meta">
+        <div class="rec-name">${escapeHtml(rec.swimmerName || '—')}</div>
+        <div class="rec-sub">${submeta}</div>
       </div>
-      ${innerCols}
-      <button class="award-print-one no-print" data-print="${escapeHtml(kind)}-${escapeHtml(group)}" title="Print just this poster" aria-label="Print this poster">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-      </button>
-    </article>`;
-  }
-
-  // ============ Individual records ============
-  function individualColumnHtml(entries, gender){
-    const cls = gender.toLowerCase();
-    const rows = entries.map(e => `<div class="rec-row">
-      <span class="rec-evt">${escapeHtml(e.evt)}</span>
-      <span class="rec-name">${escapeHtml(e.name)}</span>
-      <span class="rec-time${timeCellClass(e.time)}">${escapeHtml(e.time)}</span>
-    </div>`).join('');
-    return `<div class="award-col rec-col rec-col-${cls}">
-      <div class="award-col-head award-col-head-${cls}">${gender}</div>
-      <div class="rec-board">${rows}</div>
+      <span class="rec-time">${escapeHtml(rec.time || '')}</span>
     </div>`;
   }
 
-  function renderIndividual(){
-    const host = document.getElementById('individualHost');
-    const cards = INDIVIDUAL_RECORDS.map(g => {
-      const inner = `<div class="award-cols">
-        ${individualColumnHtml(g.girls, 'Girls')}
-        ${individualColumnHtml(g.boys,  'Boys')}
-      </div>`;
-      return posterCard({ kind:'individual', group:g.group, eventLabel:'Individual Records', innerCols:inner });
-    }).join('');
-    host.innerHTML = cards;
-    wirePerCardPrint(host);
-  }
-
-  // ============ Relay records ============
-  // Step a relay swimmer name down a size tier by total length so it fits one
-  // line in its half-width grid cell. No tier (short names) stay full size.
-  function swimmerTier(name){
-    const L = (name || '').length;
-    if(L >= 16) return ' rec-sw-4';
-    if(L >= 13) return ' rec-sw-3';
-    if(L >= 11) return ' rec-sw-2';
-    return '';
-  }
-  function relayColumnHtml(entries, gender){
-    const cls = gender.toLowerCase();
-    const rows = entries.map(e => {
-      // Two swimmers per line (2×2 grid). Each name's font steps down by length
-      // so a longer name shrinks just enough to stay on one line in its half
-      // cell instead of wrapping; short names stay big.
-      const lineup = e.team.split(',').map(s => s.trim()).filter(Boolean)
-        .map(s => `<span class="rec-swimmer${swimmerTier(s)}">${escapeHtml(s)}</span>`).join('');
-      return `<div class="rec-row rec-row-relay">
-        <div class="rec-relay-head">
-          <span class="rec-relay-chip">${escapeHtml(e.type)}</span>
-          <span class="rec-relay-time">${escapeHtml(e.time)}</span>
-        </div>
-        <div class="rec-relay-names">${lineup}</div>
-      </div>`;
-    }).join('');
-    return `<div class="award-col rec-col rec-col-${cls}">
-      <div class="award-col-head award-col-head-${cls}">${gender}</div>
-      <div class="rec-board">${rows}</div>
+  function columnHtml(records, gender, label){
+    const list = records.length
+      ? records.map(recordItemHtml).join('')
+      : `<div class="rec-col-empty">No ${label.toLowerCase()} records yet — upload a meet to set the first.</div>`;
+    return `<div class="rec-col rec-col-${gender.toLowerCase()}">
+      <div class="rec-col-head">
+        <span class="rec-col-title">${escapeHtml(label)}</span>
+        <span class="rec-col-tag">${escapeHtml(gender)}</span>
+      </div>
+      <div class="rec-list">${list}</div>
     </div>`;
   }
 
-  function renderRelay(){
-    const host = document.getElementById('relayHost');
-    const cards = RELAY_RECORDS.map(g => {
-      const inner = `<div class="award-cols">
-        ${relayColumnHtml(g.girls, 'Girls')}
-        ${relayColumnHtml(g.boys,  'Boys')}
+  function render(records){
+    const host = document.getElementById('recordsHost');
+    const meta = document.getElementById('recordsMeta');
+    if(!records.length){
+      host.innerHTML = `<div class="records-empty">
+        <h3>No records yet</h3>
+        <p>Team records will appear here automatically as meet times get uploaded. Each new fastest time for an age group + event is stored as a record — the coach sees a "NEW RECORD!" flash on the admin dashboard the moment it's set.</p>
       </div>`;
-      return posterCard({ kind:'relay', group:g.group, eventLabel:'Relay Records', innerCols:inner });
-    }).join('');
-    host.innerHTML = cards;
-    wirePerCardPrint(host);
-  }
-
-  function wirePerCardPrint(host){
-    host.querySelectorAll('[data-print]').forEach(btn => btn.addEventListener('click', () => {
-      safePrint({ scopes:['printing-one'], targetGroup: btn.dataset.print });
-    }));
-  }
-
-  // ============ safePrint() — same bulletproof flow as awards.html ============
-  let __activePrintCleanup = null;
-  function safePrint({ scopes = [], targetGroup = '' } = {}){
-    if(__activePrintCleanup){ try { __activePrintCleanup(); } catch(e){} }
-    const applied = new Set(scopes.filter(Boolean));
-    applied.forEach(c => document.body.classList.add(c));
-
-    if(targetGroup){
-      document.querySelectorAll('.award-card').forEach(c => c.classList.remove('print-target'));
-      const target = document.querySelector(`.award-card[data-group="${cssEscape(targetGroup)}"]`);
-      if(target) target.classList.add('print-target');
+      meta.textContent = '';
+      return;
     }
+    // Group by age group in canonical order; within each, girls col + boys col;
+    // within each col, records already come sorted (stroke/distance) from data.js.
+    const byAge = {};
+    HHST.AGE_GROUP_ORDER.forEach(g => { byAge[g] = { F: [], M: [] }; });
+    records.forEach(r => {
+      const g = byAge[r.ageGroup] || (byAge[r.ageGroup] = { F: [], M: [] });
+      (r.gender === 'F' ? g.F : g.M).push(r);
+    });
+    const sections = HHST.AGE_GROUP_ORDER.filter(ag => byAge[ag] && (byAge[ag].F.length || byAge[ag].M.length))
+      .map(ag => {
+        const g = byAge[ag];
+        return `<section class="rec-age-section">
+          <div class="rec-age-head">
+            <h2>${escapeHtml(ag)}</h2>
+            <span class="rec-age-count">${g.F.length + g.M.length} record${(g.F.length + g.M.length) === 1 ? '' : 's'}</span>
+            <span class="rec-age-rule" aria-hidden="true"></span>
+          </div>
+          <div class="rec-cols">
+            ${columnHtml(g.F, 'Girls', 'Girls')}
+            ${columnHtml(g.M, 'Boys', 'Boys')}
+          </div>
+        </section>`;
+      }).join('');
+    host.innerHTML = sections;
+    meta.innerHTML = `<strong>${records.length}</strong> record${records.length === 1 ? '' : 's'} across ${sections ? HHST.AGE_GROUP_ORDER.filter(ag => byAge[ag] && (byAge[ag].F.length || byAge[ag].M.length)).length : 0} age group${records.length === 1 ? '' : 's'}.`;
+  }
 
-    let cleaned = false, timeoutId = null;
-    const cleanup = () => {
-      if(cleaned) return;
-      cleaned = true;
-      applied.forEach(c => document.body.classList.remove(c));
-      if(targetGroup) document.querySelectorAll('.print-target').forEach(c => c.classList.remove('print-target'));
-      window.removeEventListener('afterprint', onAfter);
-      if(timeoutId){ clearTimeout(timeoutId); timeoutId = null; }
-      __activePrintCleanup = null;
-    };
-    const onAfter = () => cleanup();
-    window.addEventListener('afterprint', onAfter);
-    timeoutId = setTimeout(cleanup, 120000);
-    __activePrintCleanup = cleanup;
-
+  (async function boot(){
     try {
-      const ret = window.print();
-      if(ret && typeof ret.then === 'function') ret.catch(() => {});
+      const records = await HHST.getRecords();
+      render(records);
     } catch(err){
-      console.warn('Print dialog blocked:', err);
-      cleanup();
+      console.error(err);
+      document.getElementById('recordsHost').innerHTML =
+        `<div class="records-empty"><h3>Couldn't load records</h3><p>${escapeHtml(err.message || err)}</p></div>`;
+      document.getElementById('recordsMeta').textContent = '';
     }
-  }
-
-  // ============ Print buttons ============
-  document.getElementById('printAllRecords').addEventListener('click', () => {
-    safePrint({ scopes: [] }); // both sections, one poster per page
-  });
-  document.getElementById('printIndividual').addEventListener('click', () => {
-    safePrint({ scopes: ['printing-records-ind'] });
-  });
-  document.getElementById('printRelay').addEventListener('click', () => {
-    safePrint({ scopes: ['printing-records-relay'] });
-  });
-
-  // ============ Boot ============
-  renderIndividual();
-  renderRelay();
+  })();
 </script>
-<script src="assets/mobile-nav.js" defer></script>
 </body>
 </html>

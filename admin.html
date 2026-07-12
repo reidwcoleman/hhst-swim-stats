@@ -293,6 +293,19 @@
   [data-theme="light"] .upload-status.err{color:#b91c1c;
     background:rgba(226,85,76,.09);border-color:rgba(226,85,76,.32)}
 
+  /* ---- NEW RECORD! flourish shown in the upload status panel after a meet
+         file sets one or more team records. Each row is its own gold-tinted
+         card so multiple records stack cleanly. ---- */
+  .upload-new-records{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+  .upload-new-record{padding:11px 14px;border-radius:10px;
+    background:linear-gradient(135deg,rgba(250,204,21,.14),rgba(217,119,6,.10));
+    border:1px solid rgba(217,119,6,.35);color:var(--text);line-height:1.45;
+    box-shadow:0 1px 3px -1px rgba(15,23,42,.10)}
+  .upload-new-record-badge{display:inline-flex;align-items:center;gap:4px;
+    padding:2px 8px;border-radius:999px;margin-right:8px;
+    font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+    background:#b45309;color:#fff}
+
   /* ---- Uploaded Files panel ---- */
   #uploadsBody .upload-file-row{
     transition:border-color .18s ease,transform .18s ease,box-shadow .18s ease}
@@ -378,10 +391,10 @@
          Reset. ---- */
   .maintenance-btn{transition:transform .18s ease,border-color .18s ease,background .18s ease}
   .maintenance-btn:hover{transform:translateY(-1px)}
-  #clearRosterBtn,#clearTimesBtn{border-color:rgba(226,85,76,.32);color:var(--red-light)}
-  #clearRosterBtn:hover,#clearTimesBtn:hover{
+  #clearRosterBtn,#clearTimesBtn,#clearRecordsBtn{border-color:rgba(226,85,76,.32);color:var(--red-light)}
+  #clearRosterBtn:hover,#clearTimesBtn:hover,#clearRecordsBtn:hover{
     border-color:var(--red,#e2554c);background:rgba(226,85,76,.08)}
-  #clearRosterBtn svg,#clearTimesBtn svg{color:var(--red-light);opacity:.9}
+  #clearRosterBtn svg,#clearTimesBtn svg,#clearRecordsBtn svg{color:var(--red-light);opacity:.9}
 
   /* ---- Focus rings for bare <summary> disclosure rows in the cards ---- */
   details > summary:focus-visible{outline:none;border-radius:var(--radius-sm);
@@ -1373,6 +1386,10 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             Clear meet times only
           </button>
+          <button class="btn ghost maintenance-btn" id="clearRecordsBtn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M17 5h2a2 2 0 0 1 0 4h-2"/><path d="M7 5H5a2 2 0 0 0 0 4h2"/></svg>
+            Clear all records
+          </button>
           <button class="btn danger maintenance-btn" id="resetDataBtn">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9"/><polyline points="3 4 3 12 11 12"/></svg>
             Reset all data
@@ -1437,7 +1454,7 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
   </div>
 </div>
 
-<script src="assets/data.js?v=40"></script>
+<script src="assets/data.js?v=44"></script>
 <script>
   HHST.initTheme();
 
@@ -1726,7 +1743,10 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
 
     function setStatus(kind, msg){
       statusEl.className = 'upload-status ' + kind;
-      statusEl.textContent = msg;
+      // Upload messages can contain HTML (the "NEW RECORD!" flourish) —
+      // caller-supplied strings are already run through escapeHtml before
+      // being spliced in, so this is safe.
+      statusEl.innerHTML = msg;
     }
 
     async function handleFiles(fileList){
@@ -1810,6 +1830,7 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
         skippedSwimmers: new Set(),
         mergedMeets: [],
         mergedIntoFiles: new Set(),
+        newRecords: [],
         filesOk: 0,
         filesFailed: []
       };
@@ -1845,6 +1866,7 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
           (result.skippedSwimmers || []).forEach(n => totals.skippedSwimmers.add(n));
           (result.mergedMeets || []).forEach(m => totals.mergedMeets.push(m));
           (result.mergedIntoFiles || []).forEach(n => totals.mergedIntoFiles.add(n));
+          (result.newRecords || []).forEach(r => totals.newRecords.push(r));
           // result.swimmers is # touched per-file — for an overall figure we
           // re-read after all files have run, since the same swimmer may
           // appear in several uploads.
@@ -1932,12 +1954,33 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
         body += ` Skipped ${skippedArr.length} unknown swimmer${skippedArr.length===1?'':'s'} (${preview}${more}) — upload them in the Roster card first.`;
       }
 
-      let msg = `${fileLine} ${body}`;
+      // The status text now goes through innerHTML (so the NEW RECORD flourish
+      // can render), so anything derived from CSV cells must be escaped before
+      // being folded in. fileLine + body are made from meet names / swimmer
+      // names / etc, so escape them; only the NEW RECORD block is intentional HTML.
+      let msg = `${escapeHtml(fileLine)} ${escapeHtml(body)}`;
+      if(totals.newRecords && totals.newRecords.length){
+        const lines = totals.newRecords.map(r => {
+          const who = escapeHtml(r.swimmerName || '');
+          const grp = escapeHtml((r.genderLabel ? r.genderLabel + ' ' : '') + (r.ageGroup || ''));
+          const ev  = escapeHtml(r.event || '');
+          const t   = escapeHtml(r.time || '');
+          let delta = '';
+          if(isFinite(r.previousSeconds) && isFinite(r.seconds)){
+            const d = (r.previousSeconds - r.seconds);
+            if(d > 0) delta = ` — beat previous ${escapeHtml(r.previousTime || '')} by ${d.toFixed(2)}s`;
+          } else {
+            delta = ' — first record on the books';
+          }
+          return `<div class="upload-new-record"><span class="upload-new-record-badge">🏆 NEW RECORD!</span> <strong>${who}</strong> · ${grp} ${ev} · <strong>${t}</strong>${delta}</div>`;
+        }).join('');
+        msg += `<div class="upload-new-records">${lines}</div>`;
+      }
       if(totals.filesFailed.length){
-        msg += ` Failed: ${totals.filesFailed.map(x=>x.name).join(', ')}.`;
+        msg += ` Failed: ${escapeHtml(totals.filesFailed.map(x=>x.name).join(', '))}.`;
       }
       if(totals.errors.length){
-        const sample = totals.errors.slice(0,3).join('; ');
+        const sample = escapeHtml(totals.errors.slice(0,3).join('; '));
         const more = totals.errors.length > 3 ? `, +${totals.errors.length-3} more` : '';
         setStatus(totals.filesOk ? 'err' : 'err', `${msg} Issues: ${sample}${more}`);
       } else if(skippedArr.length || totals.filesFailed.length){
@@ -2235,6 +2278,17 @@ Ava,Thompson,2013-11-30,Gold,Marcus Thompson,marcus@example.com,,127 Lakeshore C
       await HHST.clearMeetTimes();
       await refreshAll();
       setStatus('ok','Meet times cleared.');
+    } catch(err){
+      console.error(err);
+      setStatus('err','Clear failed: ' + (err.message || err));
+    }
+  });
+
+  document.getElementById('clearRecordsBtn').addEventListener('click', async ()=>{
+    if(!confirm('Clear the entire team record book? Swimmers and meet times stay intact — the next upload will re-set records from surviving times.')) return;
+    try{
+      await HHST.clearAllRecords();
+      setStatus('ok','All team records cleared.');
     } catch(err){
       console.error(err);
       setStatus('err','Clear failed: ' + (err.message || err));

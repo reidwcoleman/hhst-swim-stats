@@ -23,6 +23,34 @@
   function meetTimeDocId(swimmerKey, eventLabel){
     return `${swimmerKey}__${slugify(eventLabel)}`;
   }
+  // Canonical "<dist> <ShortStroke>" form of an event for the team-records
+  // system — "50 Freestyle" / "50 Yard Free" / "50 free" all collapse to
+  // "50 Free". Returns '' when the event has no usable distance+stroke pair
+  // (so IM without an explicit distance and unrecognized events are skipped
+  // instead of getting a bogus record). Prefers explicit distance/stroke
+  // fields on a result object, falls back to parsing the label.
+  function normalizeRecordEvent(evOrObj){
+    let dist = '', stroke = '';
+    if(evOrObj && typeof evOrObj === 'object'){
+      dist   = (evOrObj.distance != null ? String(evOrObj.distance) : '').trim();
+      stroke = (evOrObj.stroke || '').trim();
+      if(!dist)   dist   = extractDistance(evOrObj.event || '');
+      if(!stroke) stroke = extractStroke(evOrObj.event || '');
+    } else {
+      const s = (evOrObj || '').toString();
+      dist   = extractDistance(s);
+      stroke = extractStroke(s);
+    }
+    if(!dist || !stroke) return '';
+    return `${dist} ${STROKE_ABBREV[stroke] || stroke}`;
+  }
+  // Deterministic hhst_records doc id — "boys_11-12_50-free". Gender label is
+  // required (records split M/F); ageGroup + normalized event are slugified
+  // so the id is URL-safe.
+  function recordDocId(genderCode, ageGroup, normEvent){
+    const g = genderCode === 'M' ? 'boys' : genderCode === 'F' ? 'girls' : 'mixed';
+    return `${g}_${slugify(ageGroup || 'unknown')}_${slugify(normEvent || 'unknown')}`;
+  }
   // Some exports (HHST's Times sheet, USA Swimming) tag the time with the
   // course code: "17.11Y" (yards), "1:07.94L" (long-course meters),
   // "S" (short-course meters), "M" (meters). Strip a single trailing
@@ -699,6 +727,12 @@
         if(oid && ownerDocs[oid]) mm.intoFile = ownerDocs[oid].fileName || '';
       }
     }
+    // Load the current team-records book once for this upload (results mode
+    // only — a roster upload writes no times, so records can't change). Time
+    // trials are excluded per-row inside checkRecord.
+    if(mode === 'results' && !timeTrial){
+      await loadExistingRecords();
+    }
     // Per-uploadId contribution ledger (results rows only). contrib[uploadId]
     // is this file's OWN share; contrib[<owner id>] is what it folded into an
     // original file. Drives the registry bookkeeping below.
@@ -708,6 +742,71 @@
     const skippedSwimmers = new Set();
     const writtenKeys = new Set();
     const meetTimeWrites = [];
+    // Team-records detection: read the current record book ONCE so every row
+    // in this upload can be compared against it (and against records this same
+    // file just set — the Map is updated in place, so if two swims in one
+    // upload both beat the record, the faster wins). Time trials, DQs, and
+    // rows with no known gender or age group are skipped inside checkRecord.
+    // Loaded lazily below so a roster-only upload never hits Firestore for records.
+    let existingRecords = null;
+    const newRecordWrites = [];
+    const newRecordsForCaller = [];
+    async function loadExistingRecords(){
+      if(existingRecords) return;
+      existingRecords = new Map();
+      try {
+        const rSnap = await FB.db.collection('hhst_records').get();
+        rSnap.forEach(d => existingRecords.set(d.id, d.data() || {}));
+      } catch(e){ /* best-effort — missing collection = every time is a first record */ }
+    }
+    function checkRecord({ sw, key, name, mi, eventLabel, seconds, timeStr, meet, date, season }){
+      if(!isFinite(seconds)) return;
+      const genderCode = mi.gender || sw.gender || '';
+      if(genderCode !== 'M' && genderCode !== 'F') return; // records split by gender
+      const bracket = mi.bracket || getAgeGroup(mi.age);
+      if(!bracket || bracket === 'Unknown') return;
+      const normEvent = normalizeRecordEvent({ event: eventLabel, distance: extractDistance(eventLabel), stroke: extractStroke(eventLabel) });
+      if(!normEvent) return;
+      const recId = recordDocId(genderCode, bracket, normEvent);
+      const existing = existingRecords.get(recId);
+      const prevSec = existing && isFinite(existing.seconds) ? existing.seconds : Infinity;
+      if(seconds >= prevSec) return; // not a new record
+      const payload = {
+        recordId: recId,
+        ageGroup: bracket,
+        gender: genderCode,
+        genderLabel: genderLabel(genderCode),
+        event: normEvent,
+        swimmerKey: key,
+        swimmerName: name,
+        time: timeStr,
+        seconds,
+        meet: meet || '',
+        date: date || '',
+        season: season || '',
+        previousSeconds: existing ? (existing.seconds != null ? existing.seconds : null) : null,
+        previousTime: existing ? (existing.time || '') : '',
+        previousSwimmerName: existing ? (existing.swimmerName || '') : '',
+        previousSwimmerKey: existing ? (existing.swimmerKey || '') : ''
+      };
+      // In-memory update so later rows in this same upload compare against the
+      // pending new record (avoids two "NEW RECORD" hits for the same event
+      // when a swimmer beats the standing record twice in one file).
+      existingRecords.set(recId, { ...payload });
+      // Only ONE write per record per upload — the latest (fastest) staged win.
+      const at = newRecordWrites.findIndex(w => w.id === recId);
+      const notifyEntry = { ...payload };
+      if(at >= 0){
+        newRecordWrites[at] = { id: recId, data: payload };
+        // Replace the notification too so the caller reports the fastest one.
+        const nAt = newRecordsForCaller.findIndex(n => n.recordId === recId);
+        if(nAt >= 0) newRecordsForCaller[nAt] = notifyEntry;
+        else newRecordsForCaller.push(notifyEntry);
+      } else {
+        newRecordWrites.push({ id: recId, data: payload });
+        newRecordsForCaller.push(notifyEntry);
+      }
+    }
     // A row is "self-describing" when it carries enough to stand up a roster
     // entry on its own: a name (always required) plus at least one real
     // attribute — age, age group, gender, DOB, or training group. A meet file
@@ -1049,6 +1148,26 @@
               uploadId: rowUploadId || ''
             }
           });
+          // Team-records check: a real, non-timeTrial swim with a known
+          // gender + age group is a candidate for the record book. New/faster
+          // times are staged for write below and returned in `newRecords`
+          // so the admin UI can flash "NEW RECORD!" for each.
+          if(!timeTrial && existingRecords){
+            checkRecord({
+              sw, key, name,
+              mi: {
+                gender: mi.gender || sw.gender || '',
+                bracket: mi.bracket || getAgeGroup(mi.age),
+                age: mi.age || ''
+              },
+              eventLabel,
+              seconds: result.seconds,
+              timeStr,
+              meet: result.meet,
+              date: result.date,
+              season: rowSeason
+            });
+          }
         }
       }
     }
@@ -1092,6 +1211,19 @@
           seasonInfo: (sw.seasonInfo && typeof sw.seasonInfo === 'object') ? sw.seasonInfo : {},
           uploadedAt: FB.FieldValue.serverTimestamp()
         }, { merge: true });
+      });
+      await batch.commit();
+    }
+
+    // Write any staged team-records updates. One doc per record id (gender +
+    // age group + normalized event) — the latest-staged fastest wins because
+    // checkRecord dedupes in place. setAt uses a server timestamp so the
+    // records page can order most-recent-first.
+    for(let i=0;i<newRecordWrites.length;i+=400){
+      const batch = FB.db.batch();
+      newRecordWrites.slice(i, i+400).forEach(w => {
+        batch.set(FB.db.collection('hhst_records').doc(w.id),
+          { ...w.data, setAt: FB.FieldValue.serverTimestamp() }, { merge: true });
       });
       await batch.commit();
     }
@@ -1214,6 +1346,7 @@
       meets: meetNames.size,
       mergedMeets,
       mergedIntoFiles,
+      newRecords: newRecordsForCaller,
       uploadId: uploadId || '',
       errors
     };
@@ -2525,6 +2658,28 @@
   }
   async function clearRoster(){ return clearAll({ roster:true, meetTimes:false }); }
   async function clearMeetTimes(){ return clearAll({ roster:false, meetTimes:true }); }
+  // -------- Team records (hhst_records) --------
+  // Read every team record, sorted for display: age group ascending, then
+  // event stroke/distance, then gender (girls before boys). Empty array
+  // when nothing's on record yet.
+  async function getRecords(){
+    const snap = await FB.db.collection('hhst_records').get();
+    const out = [];
+    snap.forEach(d => out.push({ id: d.id, ...d.data() }));
+    out.sort((a, b) => {
+      const aBr = AGE_GROUP_ORDER.indexOf(a.ageGroup);
+      const bBr = AGE_GROUP_ORDER.indexOf(b.ageGroup);
+      if(aBr !== bBr) return (aBr < 0 ? 999 : aBr) - (bBr < 0 ? 999 : bBr);
+      const ev = compareEventLabel(a.event || '', b.event || '');
+      if(ev) return ev;
+      return (a.gender === 'F' ? 0 : 1) - (b.gender === 'F' ? 0 : 1);
+    });
+    return out;
+  }
+  // Wipe every team record — the "Clear All Records" admin button. Doesn't
+  // touch swimmers or meet times; a subsequent upload will re-establish
+  // records from whatever times survive.
+  async function clearAllRecords(){ await clearCollection('hhst_records'); }
   // Delete every uploads-registry row of a given mode ('roster' | 'results').
   async function deleteUploadsByMode(mode){
     try {
@@ -3221,6 +3376,7 @@
     getTimeAudit, restoreTimeEvent, recordManualTimeAudit, clearSeasonMeetTimes,
     migrateSeasonAges, countSwimmersNeedingSeasonMigration, inferMissingDistances, renameMeet, dedupeMeetByStroke,
     clearAll, clearRoster, clearMeetTimes,
+    getRecords, clearAllRecords, normalizeRecordEvent, recordDocId,
     isAdminLoggedIn, loginAdmin, logoutAdmin, onAuthChanged,
     statsForSwimmer, rankSwimmerInAgeGroup, buildLeaderboards, teamStats, teamStatsBySeason,
     getAllSeasons, currentSeason, currentSeasonWithTimes, filterSwimmerToSeason, getAllMeets,
