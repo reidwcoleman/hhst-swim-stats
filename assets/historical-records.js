@@ -152,8 +152,10 @@
     { group:'13-14',
       girls:[
         { type:'Medley Relay',    team:['A Eklund','Tara Talwar','A Arvind','E Swafford'], time:'1:51.17' },
-        // Freestyle Relay time was not visible on the source board — skipped
-        // rather than fabricated. Add via admin edit once the plaque is legible.
+        // Freestyle Relay: the current board's time was unreadable, so this
+        // uses the previous board's on-file value (1:51.78). Update via
+        // admin edit if a faster time is set or the plaque is retaken.
+        { type:'Freestyle Relay', team:['A Eklund','Tara Talwar','A Arvind','E Swafford'], time:'1:51.78' },
       ],
       boys:[
         { type:'Medley Relay',    team:['W Soleo','N Ankokar','A Monroe','T Wade'],                 time:'2:00.25' },
