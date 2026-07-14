@@ -174,6 +174,71 @@ const disp = H.parseResultsFile('x', hy3);
 eq('sniffed hy3 has hy3 header', disp[0][0], 'first');
 
 // ----------------------------------------------------------------------------
+// 8. Relay parsing (parseRelayName, relayBracket, relayDocId, header mapping)
+// ----------------------------------------------------------------------------
+eq('relay name basic', H.parseRelayName('A: Larken Kelliher, Boston Buehler, Tyler Eklund, Isaac Salvitti'),
+   { letter: 'A', names: ['Larken Kelliher', 'Boston Buehler', 'Tyler Eklund', 'Isaac Salvitti'] });
+eq('relay name B squad', H.parseRelayName('B: Gabriel Rademacher, Tyler Eklund, Luke Roman, Andrei Dyranov'),
+   { letter: 'B', names: ['Gabriel Rademacher', 'Tyler Eklund', 'Luke Roman', 'Andrei Dyranov'] });
+eq('relay name no letter prefix', H.parseRelayName('Larken Kelliher, Boston Buehler, Tyler Eklund, Isaac Salvitti'),
+   { letter: '', names: ['Larken Kelliher', 'Boston Buehler', 'Tyler Eklund', 'Isaac Salvitti'] });
+eq('relay name blank', H.parseRelayName(''), { letter: '', names: [] });
+eq('relay name extra spaces', H.parseRelayName('A:  Larken Kelliher ,  Boston Buehler '),
+   { letter: 'A', names: ['Larken Kelliher', 'Boston Buehler'] });
+
+eq('relay bracket strips gender', H.relayBracket('Boys 11-12'), '11-12');
+eq('relay bracket strips Girls', H.relayBracket('Girls 8 & Under'), '8 & Under');
+eq('relay bracket strips Men/Women', H.relayBracket('Men 15-18'), '15-18');
+eq('relay bracket unknown', H.relayBracket(''), 'Unknown');
+
+ok('relay docId stable for same inputs',
+   H.relayDocId('2026 Summer','Meet A','Boys 11-12','200','Freestyle Relay','A') ===
+   H.relayDocId('2026 Summer','Meet A','Boys 11-12','200','Freestyle Relay','A'));
+ok('relay docId differs by letter',
+   H.relayDocId('2026 Summer','Meet A','Boys 11-12','200','Freestyle Relay','A') !==
+   H.relayDocId('2026 Summer','Meet A','Boys 11-12','200','Freestyle Relay','B'));
+
+eq('hdr relay_names', hdr('relay_names'), 'relaynames');
+eq('hdr age_group (relay export)', hdr('age_group'), 'agegroup');
+eq('hdr stroke -> event (relay type column)', hdr('stroke'), 'event');
+eq('hdr converted_time (relay export)', hdr('converted_time'), 'time');
+eq('hdr swim_meet (relay export)', hdr('swim_meet'), 'meet');
+
+// ----------------------------------------------------------------------------
+// 9. Real relay export fixture (if present on disk) — end-to-end sanity check
+// against the actual "Top Relay Times" CSV the coach uploads.
+// ----------------------------------------------------------------------------
+const relayFixturePath = '/Users/reidcoleman/Downloads/highcrofthurricanes_top_relay_times_260714102710.csv';
+if (fs.existsSync(relayFixturePath)) {
+  const relayCsv = fs.readFileSync(relayFixturePath, 'utf8');
+  const relayRows = H.parseCSV(relayCsv);
+  const relayHeaders = relayRows[0].map(H.mapHeader);
+  ok('relay fixture has expected header columns',
+     ['agegroup','place','time','relaynames','team','distance','event','date','meet']
+       .every(k => relayHeaders.includes(k)),
+     relayHeaders.join(','));
+
+  let badRows = 0, ageGroups = new Set(), events = new Set();
+  for (let r = 1; r < relayRows.length; r++) {
+    const cells = relayRows[r];
+    const rec = {};
+    relayHeaders.forEach((k, i) => { if (!rec[k]) rec[k] = (cells[i] || '').trim(); });
+    const secs = H.timeToSeconds(rec.time);
+    const parsed = H.parseRelayName(rec.relaynames);
+    if (!isFinite(secs) || parsed.names.length !== 4) badRows++;
+    ageGroups.add(rec.agegroup);
+    events.add(`${rec.distance} ${rec.event}`);
+  }
+  eq('relay fixture: every row parses to a real time + 4 swimmers', badRows, 0);
+  ok('relay fixture: found multiple age groups', ageGroups.size >= 4, `only ${ageGroups.size}`);
+  ok('relay fixture: found Freestyle + Medley relay events',
+     [...events].some(e => /Freestyle Relay/.test(e)) && [...events].some(e => /Medley Relay/.test(e)),
+     [...events].join(' | '));
+} else {
+  console.log(`(skipping real relay-fixture test — ${relayFixturePath} not found on this machine)`);
+}
+
+// ----------------------------------------------------------------------------
 console.log(`\n${pass} passed, ${fail} failed`);
 if (fail) { console.log('\nFAILURES:\n' + fails.map(f => '✗ ' + f).join('\n')); process.exit(1); }
 else console.log('All import parser tests passed.');

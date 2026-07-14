@@ -307,6 +307,7 @@
     <ul class="nav-links">
       <li><a href="index.html">New Search</a></li>
       <li><a href="records.html">Records</a></li>
+      <li><a href="relays.html">Relays</a></li>
       <li><a href="get-faster.html">Get Faster</a></li>
       <li><a href="admin.html" class="btn">Admin</a></li>
       <li>
@@ -550,6 +551,15 @@
       <div id="prTimeline" class="pr-timeline"></div>
     </div>
 
+    <!-- MY RELAYS — every relay this swimmer swam, plus how much time their
+         squad has dropped in each relay event since an earlier meet. -->
+    <div class="chart-card" id="myRelaysCard" style="display:none">
+      <h3>My Relays</h3>
+      <p class="lead">Every relay your swimmer has swum, most recent first — plus how much time their squad has dropped in each relay event since an earlier meet.</p>
+      <div id="myRelayDrops" class="pr-timeline"></div>
+      <div id="myRelayList" class="pr-timeline" style="margin-top:6px"></div>
+    </div>
+
     <!-- 6 · SEASON-OVER-SEASON PROGRESS -->
     <div class="chart-card" id="seasonProgCard" style="display:none">
       <h3>Season-over-Season Progress</h3>
@@ -618,7 +628,7 @@
   Highcroft Hurricanes Swim Team · <a href="index.html">Back to home</a>
 </footer>
 
-<script src="assets/data.js?v=47"></script>
+<script src="assets/data.js?v=48"></script>
 <script src="assets/training.js?v=3"></script>
 <script>
   HHST.initTheme();
@@ -630,6 +640,7 @@
   let swimmer = null;
   let stats = null;
   let allSwimmers = {};
+  let relayResults = [];
 
   (async () => {
     const loadingEl = document.getElementById('loadingState');
@@ -637,10 +648,14 @@
     const dashEl = document.getElementById('dashContent');
     try{
       // Load this swimmer AND the whole roster in parallel — we need the roster for rankings.
-      const [sw, all] = await Promise.all([
+      // Relay results are a best-effort side load: a swimmer with no relays
+      // (or a Firestore hiccup) should never block the rest of the dashboard.
+      const [sw, all, relays] = await Promise.all([
         key ? HHST.getSwimmer(key) : Promise.resolve(null),
-        HHST.readAll()
+        HHST.readAll(),
+        HHST.getRelayResults().catch(() => [])
       ]);
+      relayResults = relays || [];
       loadingEl.style.display = 'none';
       if(!sw){
         // Hide the hero too — otherwise it sits above the not-found card
@@ -891,6 +906,7 @@
     // Season-over-season progress + record-breaker timeline (deep stats)
     renderSeasonProgress(sw);
     renderRecordBreakers(stats);
+    renderMyRelays();
 
     // Personalized "how to get faster" plan, built from this swimmer's times
     renderTrainingPlan(stats);
@@ -1769,6 +1785,58 @@
 
   function escapeHtml(s){
     return (s||'').toString().replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  // Every relay this swimmer has swum, plus how much time their squad has
+  // dropped in each relay event. Matched by the same swimmerKey() used
+  // everywhere else on the site, so a relay import just needs the roster's
+  // own name spelling to show up here automatically.
+  function renderMyRelays(){
+    const card = document.getElementById('myRelaysCard');
+    const dropsHost = document.getElementById('myRelayDrops');
+    const listHost = document.getElementById('myRelayList');
+    if(!card || !dropsHost || !listHost) return;
+
+    const mine = HHST.relaysForSwimmer(swimmer.key, relayResults, { season: activeSeason });
+    if(!mine.length){ card.style.display = 'none'; return; }
+    card.style.display = 'block';
+
+    const { drops } = HHST.relayDropsForSwimmer(swimmer.key, relayResults, { season: activeSeason });
+    if(!drops.length){
+      dropsHost.innerHTML = '';
+    } else {
+      dropsHost.innerHTML = drops.slice(0, 8).map(d => `
+        <div class="pr-item">
+          <div class="pr-dot">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l4-9 4 5 4-11 4 15"/></svg>
+          </div>
+          <div class="pr-body">
+            <div class="pr-event">${escapeHtml(d.event)}</div>
+            <div class="pr-meta">${escapeHtml(d.toMeet||'—')} · ${escapeHtml(fmtDate(d.toDate))} · with ${escapeHtml((d.swimmerNames||[]).filter(n => HHST.swimmerKey(n) !== swimmer.key).join(', '))}</div>
+          </div>
+          <div class="pr-right">
+            <div class="pr-time">${escapeHtml(d.toTime)}</div>
+            <div class="pr-drop">−${d.drop.toFixed(2)}s</div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    listHost.innerHTML = mine.map(rr => `
+      <div class="pr-item">
+        <div class="pr-dot is-first">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="4"/><path d="M17 11l2 2 4-4"/><path d="M1 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg>
+        </div>
+        <div class="pr-body">
+          <div class="pr-event">${escapeHtml(rr.event)}${rr.letter ? ' · ' + escapeHtml(rr.letter) + ' Relay' : ''}</div>
+          <div class="pr-meta">${escapeHtml((rr.swimmerNames||[]).filter(n => HHST.swimmerKey(n) !== swimmer.key).join(', '))} — ${escapeHtml(rr.meet||'—')} · ${escapeHtml(fmtDate(rr.date))}</div>
+        </div>
+        <div class="pr-right">
+          <div class="pr-time">${escapeHtml(rr.time)}</div>
+          ${rr.place ? `<div class="pr-first">Place ${escapeHtml(rr.place)}</div>` : ''}
+        </div>
+      </div>
+    `).join('');
   }
 
   // ===== PR Share Card =====

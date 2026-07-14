@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<meta name="theme-color" content="#f4f8fb"/>
+<title>Relays — Highcroft Hurricanes</title>
+<meta name="robots" content="noindex,nofollow"/>
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg"/>
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png"/>
+
+<!-- Set the saved theme before first paint to avoid a flash -->
+<script>(function(){try{var t=localStorage.getItem('hhst.theme')||'light';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Figtree:ital,wght@0,300..900;1,300..900&family=IBM+Plex+Mono:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="assets/styles.css?v=43"/>
+<style>
+  /* ===== Relays (rl- prefixed) ===== */
+  .rl-section{margin:28px 0 0}
+  .rl-section-head{display:flex;align-items:baseline;gap:12px;margin:0 0 14px;flex-wrap:wrap}
+  .rl-section-head h2{font-family:var(--font-display);font-size:24px;font-weight:800;line-height:1.2;margin:0;letter-spacing:-.01em}
+  .rl-section-head .rl-gender-tag{
+    font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+    padding:4px 10px;border-radius:999px;color:#fff;
+  }
+  .rl-gender-tag.rl-g-f{background:#8f3a5c}
+  .rl-gender-tag.rl-g-m{background:#2c4a6e}
+  .rl-events-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px}
+  .rl-event-card h3{font-family:var(--font-display);font-size:16px;font-weight:700;margin:0 0 12px;color:var(--text)}
+  .rl-rows{display:flex;flex-direction:column;gap:8px}
+  .rl-row{
+    display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:var(--radius-md);
+    background:var(--surface);border:1px solid var(--border);
+  }
+  .rl-row.rl-rank-1{border-color:rgba(226,172,45,.45);background:linear-gradient(90deg,rgba(226,172,45,.07),var(--surface) 60%)}
+  .rl-rank{
+    flex:0 0 auto;width:26px;height:26px;display:grid;place-items:center;border-radius:8px;
+    font-family:var(--font-display);font-weight:800;font-size:13px;color:var(--text-muted);
+    background:var(--bg-alt);border:1px solid var(--border);
+  }
+  .rl-row.rl-rank-1 .rl-rank{color:#c98f0e;border-color:rgba(226,172,45,.4);background:rgba(226,172,45,.14)}
+  .rl-body{flex:1 1 auto;min-width:0}
+  .rl-names{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:4px}
+  .rl-chip{
+    font-size:12.5px;font-weight:600;color:var(--text);background:var(--bg-alt);
+    border:1px solid var(--border);border-radius:6px;padding:2px 8px;white-space:nowrap;
+  }
+  .rl-meta{font-size:12px;color:var(--text-subtle)}
+  .rl-time-col{flex:0 0 auto;text-align:right}
+  .rl-time{font-family:var(--font-display);font-weight:800;font-size:19px;font-variant-numeric:tabular-nums;color:var(--text);white-space:nowrap}
+  .rl-letter{font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:.04em}
+  .rl-empty-note{color:var(--text-subtle);font-size:13.5px;padding:14px}
+
+  @media (max-width:600px){
+    .rl-events-grid{grid-template-columns:1fr}
+    .rl-row{flex-wrap:wrap}
+    .rl-time-col{margin-left:auto}
+  }
+</style>
+
+<!-- Firebase compat SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="assets/firebase-init.js"></script>
+</head>
+<body>
+
+<header>
+  <nav>
+    <a class="brand" href="index.html">
+      <span class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2 12c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/>
+          <path d="M2 17c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/>
+          <path d="M2 7c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/>
+        </svg>
+      </span>
+      Highcroft <em>Hurricanes</em>
+    </a>
+    <ul class="nav-links">
+      <li><a href="index.html">Swimmer Lookup</a></li>
+      <li><a href="leaderboards.html">Season Stats</a></li>
+      <li><a href="meet-recap.html">Meet Recap</a></li>
+      <li><a href="awards.html">Fastest Five</a></li>
+      <li><a href="records.html">Records</a></li>
+      <li><a href="relays.html" class="active">Relays</a></li>
+      <li><a href="get-faster.html">Get Faster</a></li>
+      <li><a href="admin.html" class="btn">Admin</a></li>
+      <li>
+        <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+          <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+          <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+      </li>
+    </ul>
+  </nav>
+</header>
+
+<section class="dash-hero leaderboard-hero">
+  <div class="dash-hero-inner">
+    <div class="leaderboard-hero-content">
+      <div class="kicker"><span class="pulse"></span> Top Relays · Team &amp; Family View</div>
+      <h1>Relays</h1>
+      <p class="lb-sub">Every relay squad's fastest times, by age group and event. Swimmers can see their own relay history — and how much time they've dropped — on their personal dashboard.</p>
+    </div>
+  </div>
+</section>
+
+<main class="admin-shell">
+
+  <div id="loadingState" class="card empty">
+    <div class="ss-spinner" aria-hidden="true"></div>
+    <p class="lead" style="margin:0">Loading relay results…</p>
+  </div>
+  <style>
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .ss-spinner{display:inline-block;width:32px;height:32px;border:3px solid var(--border-strong);
+      border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:14px}
+  </style>
+
+  <div id="emptyState" class="card empty" style="display:none">
+    <h2 style="margin-bottom:6px">No relay results yet</h2>
+    <p class="lead">Upload the team's Top Relay Times CSV from the Admin page and this board will populate automatically.</p>
+    <a href="admin.html" class="btn lg" style="margin-top:8px;display:inline-flex">Open Admin</a>
+  </div>
+
+  <div id="relayStage" style="display:none">
+    <div class="ss-season-bar">
+      <label for="seasonSelect">Season</label>
+      <select id="seasonSelect" class="lb-select"></select>
+    </div>
+
+    <div id="relayBoard"></div>
+  </div>
+
+</main>
+
+<footer>
+  Highcroft Hurricanes Swim Team · <a href="index.html">Swimmer Lookup</a> · <a href="records.html">Records</a> · <a href="admin.html">Admin</a>
+</footer>
+
+<script src="assets/data.js?v=48"></script>
+<script src="assets/mobile-nav.js" defer></script>
+<script>
+  HHST.initTheme();
+  document.getElementById('themeToggle').addEventListener('click', HHST.toggleTheme);
+
+  let relayResults = [];
+
+  function escapeHtml(s){
+    return (s||'').toString().replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function compareSeasonLabelsDesc(a, b){
+    const ya = (a.match(/(\d{4})/)||[])[1] || 0, yb = (b.match(/(\d{4})/)||[])[1] || 0;
+    if(yb !== ya) return yb - ya;
+    return b.localeCompare(a, undefined, { numeric:true });
+  }
+
+  // Event display order within a group: by distance, then Freestyle before Medley.
+  function compareRelayEvent(a, b){
+    const da = parseInt(a, 10) || 0, db = parseInt(b, 10) || 0;
+    if(da !== db) return da - db;
+    const aFree = /free/i.test(a), bFree = /free/i.test(b);
+    if(aFree !== bFree) return aFree ? -1 : 1;
+    return a.localeCompare(b);
+  }
+
+  function renderBoard(){
+    const seasonSel = document.getElementById('seasonSelect');
+    const season = seasonSel ? seasonSel.value : '';
+    const groups = HHST.relayLeaderboards(relayResults, { season, limit: 5 });
+    const groupLabels = Object.keys(groups);
+    if(!groupLabels.length){
+      document.getElementById('relayBoard').innerHTML =
+        `<div class="card empty"><p class="lead" style="margin:0">No relay results for this season yet.</p></div>`;
+      return;
+    }
+
+    const brackets = HHST.sortAgeGroups(Array.from(new Set(groupLabels.map(g => HHST.relayBracket(g)))));
+    const html = brackets.map(bracket => {
+      const labels = groupLabels
+        .filter(g => HHST.relayBracket(g) === bracket)
+        .sort((a, b) => {
+          const ga = HHST.parseGenderFromAgeGroup(a), gb = HHST.parseGenderFromAgeGroup(b);
+          if(ga !== gb) return ga === 'F' ? -1 : 1;
+          return 0;
+        });
+      return labels.map(label => {
+        const gender = HHST.parseGenderFromAgeGroup(label);
+        const events = Object.keys(groups[label]).sort(compareRelayEvent);
+        const eventCards = events.map(event => {
+          const rows = groups[label][event].map((rr, i) => `
+            <div class="rl-row${i === 0 ? ' rl-rank-1' : ''}">
+              <div class="rl-rank">${i + 1}</div>
+              <div class="rl-body">
+                <div class="rl-names">
+                  ${(rr.swimmerNames || []).map(n => `<span class="rl-chip">${escapeHtml(n)}</span>`).join('')}
+                </div>
+                <div class="rl-meta">${escapeHtml(rr.meet || '')}${rr.date ? ' · ' + escapeHtml(rr.date) : ''}</div>
+              </div>
+              <div class="rl-time-col">
+                <div class="rl-time">${escapeHtml(rr.time || '')}</div>
+                ${rr.letter ? `<div class="rl-letter">${escapeHtml(rr.letter)} Relay</div>` : ''}
+              </div>
+            </div>
+          `).join('');
+          return `
+            <div class="card rl-event-card">
+              <h3>${escapeHtml(event)}</h3>
+              <div class="rl-rows">${rows || '<div class="rl-empty-note">No times yet.</div>'}</div>
+            </div>
+          `;
+        }).join('');
+        return `
+          <div class="rl-section">
+            <div class="rl-section-head">
+              <h2>${escapeHtml(label)}</h2>
+              ${gender ? `<span class="rl-gender-tag rl-g-${gender.toLowerCase()}">${gender === 'F' ? 'Girls' : 'Boys'}</span>` : ''}
+            </div>
+            <div class="rl-events-grid">${eventCards}</div>
+          </div>
+        `;
+      }).join('');
+    }).join('');
+
+    document.getElementById('relayBoard').innerHTML = html;
+  }
+
+  async function boot(){
+    try {
+      relayResults = await HHST.getRelayResults();
+    } catch(err){
+      console.error(err);
+      relayResults = [];
+    }
+    document.getElementById('loadingState').style.display = 'none';
+    if(!relayResults.length){
+      document.getElementById('emptyState').style.display = '';
+      return;
+    }
+
+    const seasons = Array.from(new Set(relayResults.map(rr => rr.season || '').filter(Boolean)))
+      .sort(compareSeasonLabelsDesc);
+    const seasonSel = document.getElementById('seasonSelect');
+    seasonSel.innerHTML = (seasons.length ? seasons : ['']).map(s =>
+      `<option value="${escapeHtml(s)}">${s ? escapeHtml(s) : 'All seasons'}</option>`).join('')
+      + (seasons.length ? '<option value="">All seasons</option>' : '');
+    seasonSel.addEventListener('change', renderBoard);
+
+    renderBoard();
+    document.getElementById('relayStage').style.display = '';
+  }
+
+  boot();
+</script>
+
+</body>
+</html>

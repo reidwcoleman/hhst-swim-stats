@@ -78,5 +78,19 @@ service cloud.firestore {
       allow read: if true;
       allow write: if request.auth != null;
     }
+
+    // Relay results — one doc per relay swim (place/time/lineup/event).
+    // Public read (relays.html + a swimmer's own dashboard both read it);
+    // only the authenticated coach can write (via the relay CSV import).
+    match /hhst_relay_results/{key} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Per-file relay upload registry (admin "Uploaded relay files" / per-file
+    // remove). Only the authenticated coach ever reads or writes it.
+    match /hhst_relay_uploads/{key} {
+      allow read, write: if request.auth != null;
+    }
   }
 }

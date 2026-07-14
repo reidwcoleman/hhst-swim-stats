@@ -2054,6 +2054,279 @@
     };
   }
 
+  // ============ Relay results (hhst_relay_results) ============
+  // A relay swim is its own doc — there's no single "owner" swimmer the way
+  // individual results are embedded on swimmers/{key}, since a relay is 4
+  // swimmers at once. Each doc is one row of the team's "Top Relay Times"
+  // export: one age-group + event (distance + relay type) + squad letter
+  // (A/B/C) at one meet. swimmerKeys uses the SAME swimmerKey() as individual
+  // results, so a swimmer's dashboard (already keyed by that id) can find
+  // every relay they swam with a plain array-contains query — no roster
+  // lookup or fuzzy matching needed at import time.
+  //
+  // "relay_names" cell looks like "A: Larken Kelliher, Boston Buehler, Tyler
+  // Eklund, Isaac Salvitti" — a squad letter, a colon, then the 4 legs in
+  // swim order. Returns { letter, names } — letter is '' when the cell has
+  // no recognizable "X:" prefix (names still parsed from the whole string).
+  function parseRelayName(raw){
+    const s = (raw || '').toString().trim();
+    if(!s) return { letter: '', names: [] };
+    const m = s.match(/^([A-Za-z]{1,2})\s*:\s*(.+)$/);
+    const letter = m ? m[1].toUpperCase() : '';
+    const namesPart = m ? m[2] : s;
+    const names = namesPart.split(',').map(n => n.replace(/\s+/g,' ').trim()).filter(Boolean);
+    return { letter, names };
+  }
+  // "Boys 11-12" -> "11-12" (bare bracket, for sortAgeGroups ordering — mirrors
+  // the gender-stripping in resolveBracket so relay + individual boards agree
+  // on bracket order).
+  function relayBracket(ageGroupLabel){
+    return (ageGroupLabel || '').toString()
+      .replace(/^\s*(boys|girls|men|women|male|female)\s+/i, '').trim() || 'Unknown';
+  }
+  // Deterministic hhst_relay_results doc id — one row of the export = one
+  // doc, so re-uploading a corrected/fuller export UPDATES in place instead
+  // of duplicating. Squad letter is part of the key because a meet can enter
+  // both an A and a B relay in the same age group + event.
+  function relayDocId(season, meet, ageGroupLabel, distance, relayType, letter){
+    return [slugify(season || 'noseason'), slugify(meet || 'unknownmeet'),
+      slugify(ageGroupLabel || 'unknown'), slugify(distance || '0'),
+      slugify(relayType || 'relay'), slugify(letter || 'x')].join('__');
+  }
+
+  // opts: { season, uploadId, fileName } — the export is a whole-season "Top
+  // Relay Times" report (like the individual whole-season path), so every
+  // row keeps its OWN meet + date columns; there's no single meet name to
+  // apply across the file.
+  async function ingestRelayRows(rows, opts){
+    opts = opts || {};
+    const season = (opts.season || '').toString().trim();
+    const uploadId = (opts.uploadId || '').toString().trim();
+    const fileName = (opts.fileName || '').toString();
+    if(!rows || rows.length < 2) return { added: 0, updated: 0, errors: ['Empty file'] };
+
+    const rawHeaders = rows[0];
+    const headers = rawHeaders.map(mapHeader);
+    const errors = [];
+    const docs = []; // { id, data }
+    const meetNames = new Set();
+
+    for(let r = 1; r < rows.length; r++){
+      const cells = rows[r];
+      if(!cells || !cells.length) continue;
+      const rec = {};
+      for(let i = 0; i < headers.length; i++){
+        const k = headers[i];
+        const v = (cells[i] || '').trim();
+        if(rec[k]) continue;
+        rec[k] = v;
+      }
+      const ageGroupLabel = rec.agegroup || '';
+      const distance = (rec.distance || '').trim();
+      const relayType = (rec.event || '').trim(); // 'stroke' column maps to 'event' ("Freestyle Relay"/"Medley Relay")
+      const meet = (rec.meet || '').trim();
+      const date = (rec.date || '').trim();
+      const timeStr = (rec.time || '').trim();
+      const seconds = timeToSeconds(timeStr);
+      const { letter, names } = parseRelayName(rec.relaynames);
+
+      if(!ageGroupLabel || !distance || !relayType || !names.length || !isFinite(seconds)){
+        errors.push(`Row ${r+1}: missing age group, distance, stroke, relay names, or an unreadable time — skipped`);
+        continue;
+      }
+      if(meet) meetNames.add(meet);
+
+      const id = relayDocId(season, meet, ageGroupLabel, distance, relayType, letter);
+      const data = {
+        season, meet, date,
+        ageGroup: ageGroupLabel,
+        bracket: relayBracket(ageGroupLabel),
+        gender: parseGenderFromAgeGroup(ageGroupLabel),
+        distance, relayType,
+        event: `${distance} ${relayType}`.trim(),
+        letter,
+        place: rec.place || '',
+        time: timeStr,
+        seconds,
+        team: rec.team || '',
+        swimmerNames: names,
+        swimmerKeys: names.map(n => swimmerKey(n)),
+        uploadId: uploadId || '',
+        fileName: fileName || ''
+      };
+      docs.push({ id, data });
+    }
+
+    if(!docs.length) return { added: 0, updated: 0, errors: errors.length ? errors : ['No usable relay rows found'] };
+
+    // Dedupe within this same file (two rows resolving to the same id — same
+    // meet/age-group/event/letter — keep only the fastest, same rule the
+    // individual importer uses for its own de-dupe).
+    const byId = new Map();
+    docs.forEach(d => {
+      const cur = byId.get(d.id);
+      if(!cur || d.data.seconds < cur.data.seconds) byId.set(d.id, d);
+    });
+    const finalDocs = Array.from(byId.values());
+
+    // A relay id already on file (from an earlier upload) counts as
+    // "updated"; a brand-new id counts as "added". Full-collection read is
+    // cheap here (a season's relay board is a couple hundred docs at most)
+    // and avoids needing a FieldPath.documentId() "in" query.
+    const existingIds = new Set();
+    const existingSnap = await FB.db.collection('hhst_relay_results').get();
+    existingSnap.forEach(d => existingIds.add(d.id));
+
+    for(let i = 0; i < finalDocs.length; i += 400){
+      const batch = FB.db.batch();
+      finalDocs.slice(i, i + 400).forEach(d => {
+        batch.set(FB.db.collection('hhst_relay_results').doc(d.id),
+          { ...d.data, updatedAt: FB.FieldValue.serverTimestamp() }, { merge: true });
+      });
+      await batch.commit();
+    }
+
+    const added = finalDocs.filter(d => !existingIds.has(d.id)).length;
+    const updated = finalDocs.length - added;
+
+    if(uploadId){
+      await FB.db.collection('hhst_relay_uploads').doc(uploadId).set({
+        uploadId, fileName: fileName || '', season,
+        rowCount: finalDocs.length, added, updated,
+        meetNames: Array.from(meetNames),
+        uploadedAt: FB.FieldValue.serverTimestamp()
+      }, { merge: true });
+    }
+
+    return { added, updated, rowCount: finalDocs.length, errors };
+  }
+  async function ingestRelayCSV(text, opts){
+    return ingestRelayRows(parseCSV(text), opts);
+  }
+  async function getRelayResults(){
+    const snap = await FB.db.collection('hhst_relay_results').get();
+    const out = [];
+    snap.forEach(d => out.push({ id: d.id, ...d.data() }));
+    return out;
+  }
+  async function getRelayUploads(){
+    const snap = await FB.db.collection('hhst_relay_uploads').get();
+    const out = [];
+    snap.forEach(d => out.push({ id: d.id, ...d.data() }));
+    out.sort((a, b) => {
+      const ms = u => { const t = u.uploadedAt; return (t && typeof t.toMillis === 'function') ? t.toMillis() : 0; };
+      return ms(b) - ms(a);
+    });
+    return out;
+  }
+  // Removes every relay result this upload wrote, plus its registry row.
+  async function deleteRelayUpload(uploadId){
+    uploadId = (uploadId || '').toString().trim();
+    if(!uploadId) return { removed: 0 };
+    const snap = await FB.db.collection('hhst_relay_results').where('uploadId', '==', uploadId).get();
+    const ids = [];
+    snap.forEach(d => ids.push(d.id));
+    for(let i = 0; i < ids.length; i += 400){
+      const batch = FB.db.batch();
+      ids.slice(i, i + 400).forEach(id => batch.delete(FB.db.collection('hhst_relay_results').doc(id)));
+      await batch.commit();
+    }
+    try { await FB.db.collection('hhst_relay_uploads').doc(uploadId).delete(); } catch(e){}
+    return { removed: ids.length };
+  }
+
+  // Top N relays per age-group + event (distance + relay type), fastest
+  // first — the coach-facing "Top Relays" board. Mirrors leaderboardsByEvent's
+  // group/sort/slice shape so relays.html can reuse the same rendering idiom.
+  // opts: { season, limit }.
+  function relayLeaderboards(relayResults, opts){
+    opts = opts || {};
+    const limit = opts.limit || 5;
+    const season = opts.season || '';
+    const byGroup = {}; // "Boys 11-12" -> { "200 Freestyle Relay": [...] }
+    (relayResults || []).forEach(rr => {
+      if(season && rr.season !== season) return;
+      if(!isFinite(rr.seconds)) return;
+      const group = rr.ageGroup || 'Unknown';
+      const event = rr.event || `${rr.distance || ''} ${rr.relayType || ''}`.trim();
+      if(!byGroup[group]) byGroup[group] = {};
+      if(!byGroup[group][event]) byGroup[group][event] = [];
+      byGroup[group][event].push(rr);
+    });
+    Object.keys(byGroup).forEach(group => {
+      Object.keys(byGroup[group]).forEach(event => {
+        byGroup[group][event] = byGroup[group][event]
+          .slice().sort((a, b) => a.seconds - b.seconds).slice(0, limit);
+      });
+    });
+    return byGroup;
+  }
+  // Every relay a given swimmer (by swimmerKey) has swum, newest first.
+  function relaysForSwimmer(swimmerKeyToFind, relayResults, opts){
+    const season = (opts && opts.season) || '';
+    return (relayResults || [])
+      .filter(rr => Array.isArray(rr.swimmerKeys) && rr.swimmerKeys.includes(swimmerKeyToFind))
+      .filter(rr => !season || rr.season === season)
+      .slice()
+      .sort((a, b) => {
+        const ta = parseFlexibleDate(a.date), tb = parseFlexibleDate(b.date);
+        if(isFinite(ta) && isFinite(tb) && ta !== tb) return tb - ta;
+        if(isFinite(ta) !== isFinite(tb)) return isFinite(ta) ? -1 : 1;
+        return 0;
+      });
+  }
+  // "How much time did THIS swimmer's relay drop?" — same idea as
+  // prDropsAtMeet, but grouped by relay EVENT (distance + relay type) rather
+  // than exact 4-swimmer lineup, since coaches rotate relay legs meet to meet
+  // (the same 4 swimmers rarely repeat). For each event this swimmer has
+  // swum a relay in, compares their squad's best (fastest) time in that
+  // event at each meet to the best at the closest EARLIER meet (by date) —
+  // so every real improvement between two relay swims shows up, not just
+  // the very first-ever swim. Only positive drops are returned, biggest
+  // first. opts: { season }.
+  function relayDropsForSwimmer(swimmerKeyToFind, relayResults, opts){
+    const season = (opts && opts.season) || '';
+    const mine = relaysForSwimmer(swimmerKeyToFind, relayResults, { season });
+    // Group this swimmer's own relay swims by event, best time per meet.
+    const byEvent = {}; // event -> [{meet,date,ts,seconds,time,swimmerNames}]
+    mine.forEach(rr => {
+      const k = rr.event || `${rr.distance || ''} ${rr.relayType || ''}`.trim();
+      const ts = parseFlexibleDate(rr.date);
+      (byEvent[k] = byEvent[k] || []).push({
+        meet: rr.meet, date: rr.date, ts: isFinite(ts) ? ts : -Infinity,
+        seconds: rr.seconds, time: rr.time, swimmerNames: rr.swimmerNames || []
+      });
+    });
+    const drops = [];
+    Object.keys(byEvent).forEach(event => {
+      // One entry per meet (best/fastest of this swimmer's squads at that
+      // meet), sorted oldest -> newest.
+      const byMeet = new Map();
+      byEvent[event].forEach(row => {
+        const cur = byMeet.get(row.meet);
+        if(!cur || row.seconds < cur.seconds) byMeet.set(row.meet, row);
+      });
+      const swims = Array.from(byMeet.values()).sort((a, b) => a.ts - b.ts);
+      for(let i = 1; i < swims.length; i++){
+        const prior = swims[i - 1], cur = swims[i];
+        const drop = prior.seconds - cur.seconds;
+        if(drop > 0.0001){
+          drops.push({
+            event,
+            drop,
+            fromSec: prior.seconds, toSec: cur.seconds,
+            fromTime: prior.time, toTime: cur.time,
+            fromMeet: prior.meet || '', toMeet: cur.meet || '',
+            toDate: cur.date || '',
+            swimmerNames: cur.swimmerNames
+          });
+        }
+      }
+    });
+    drops.sort((a, b) => b.drop - a.drop);
+    return { drops, total: drops.reduce((s, d) => s + d.drop, 0) };
+  }
+
   // ============ Time-edit audit trail (hhst_time_audit) ============
   // An append-only log of every time ADDED by hand or REMOVED in bulk, each
   // entry carrying the FULL payload of the affected times. That copy is what
@@ -3517,6 +3790,9 @@
     findSwimmer,
     deleteSwimmer, pruneNonRosterSwimmers, addSwimmerManual, updateSwimmer,
     getUploads, deleteUpload,
+    parseRelayName, ingestRelayRows, ingestRelayCSV,
+    getRelayResults, getRelayUploads, deleteRelayUpload,
+    relayLeaderboards, relaysForSwimmer, relayDropsForSwimmer, relayBracket, relayDocId,
     getTimeAudit, restoreTimeEvent, recordManualTimeAudit, clearSeasonMeetTimes,
     migrateSeasonAges, countSwimmersNeedingSeasonMigration, inferMissingDistances, renameMeet, dedupeMeetByStroke,
     clearAll, clearRoster, clearMeetTimes,
