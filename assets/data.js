@@ -727,12 +727,6 @@
         if(oid && ownerDocs[oid]) mm.intoFile = ownerDocs[oid].fileName || '';
       }
     }
-    // Load the current team-records book once for this upload (results mode
-    // only — a roster upload writes no times, so records can't change). Time
-    // trials are excluded per-row inside checkRecord.
-    if(mode === 'results' && !timeTrial){
-      await loadExistingRecords();
-    }
     // Per-uploadId contribution ledger (results rows only). contrib[uploadId]
     // is this file's OWN share; contrib[<owner id>] is what it folded into an
     // original file. Drives the registry bookkeeping below.
@@ -775,6 +769,12 @@
         const rSnap = await FB.db.collection('hhst_records').get();
         rSnap.forEach(d => existingRecords.set(d.id, d.data() || {}));
       } catch(e){}
+    }
+    // Load the current team-records book once for this upload (results mode
+    // only — a roster upload writes no times, so records can't change). Time
+    // trials are excluded per-row inside checkRecord.
+    if(mode === 'results' && !timeTrial){
+      await loadExistingRecords();
     }
     function checkRecord({ sw, key, name, mi, eventLabel, seconds, timeStr, meet, date, season }){
       if(!isFinite(seconds)) return;
