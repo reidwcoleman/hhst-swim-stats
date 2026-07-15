@@ -14,6 +14,12 @@
 
    Relays are stored as a single record per gender + age group +
    relay type, with a `swimmers` array holding the 4-swimmer lineup.
+
+   These names are hand-typed from the physical board — NOT read from
+   Firestore/the roster, so a typo here (e.g. a misspelled surname) will
+   never self-correct. If a record holder below is STILL on the current
+   roster, spell her/his name EXACTLY as it appears on the Roster page
+   (records.html shows whatever string is typed here, verbatim).
    ============================================================= */
 (function(global){
 
@@ -165,7 +171,7 @@
     { group:'15-18',
       girls:[
         { type:'Medley Relay',    team:['E Swafford','A Eklund','Tara Talwar','Jenna Pullen'], time:'2:04.62' },
-        { type:'Freestyle Relay', team:['A Eklund','M Cakenco','L Eklund','P Fishburn'],       time:'1:49.44' },
+        { type:'Freestyle Relay', team:['A Eklund','Maddy Cakerice','L Eklund','P Fishburn'],   time:'1:49.44' },
       ],
       boys:[
         { type:'Medley Relay',    team:['T Wade','Will Soleo','Joshua Pullen','Colton Wade'],  time:'1:48.25' },
